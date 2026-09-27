@@ -22,6 +22,7 @@ function region(t){const w=x=>new RegExp("\\b"+x+"\\b");for(const r of CM.REGION
 
 /* ---------- catalogue ---------- */
 const CAT=[
+ {id:"economies",re:/train de vie|reduire les depenses|reduction des depenses|economies|rationalis|gel des (achats|recrutements)|plafonner les (missions|depenses)/,titre:"Réduction des dépenses de l'État",fx:{eco:2,int:1,pop:.5},loy:-2,delai:60,cout:0},
  {id:"patrimoine",re:/patrimoine|declar\w* (de |des )?(leurs |ses )?biens|biens et avoirs|avoirs|declaration de fortune/,titre:"Déclaration des biens et avoirs",
   base:"article 66 de la Constitution et loi n° 003/2006 du 25 avril 2006 relative à la déclaration des biens et avoirs",fx:{int:3,pop:2},loy:-3,delai:30,cout:0},
  {id:"justice",re:/parquet|procureur|poursuiv|poursuite|auditionn|audition|entendre (les|le|la)|enquete judiciaire|ouvrir une enquete|interpell|arrest|tribunal|juge d instruction|traduire en justice|mettre aux arrets|garde a vue|police judiciaire/,titre:"Action judiciaire",fx:{int:2,soc:1,pop:1},delai:30,cout:.5},
@@ -42,7 +43,7 @@ const CAT=[
  {id:"transparence",re:/transparen|publier|rendre public|journal officiel|open data|budget citoyen/,titre:"Mesure de transparence",fx:{int:2,pop:1},delai:20,cout:0},
  {id:"interdire",re:/interdi|suspend|fermer|bannir|proscri/,titre:"Mesure d'interdiction",fx:{sec:.5,pop:-.5,int:-.3},delai:7,cout:0},
 ];
-const GENERIC={id:"generique",titre:"Directive",fx:{pop:.5},delai:30,cout:5};
+const GENERIC={id:"generique",titre:"Directive",fx:{pop:.5},delai:30,cout:0};
 const IMPER=/je veux|j exige|j ordonne|ordonne|exige|il faut|faites|demande[zr]? (a|aux|que)|je demande|qu on|que (tous|toutes|les|le|la)|instruis|instruction|decret|decide|je decide|mettez|lancez|prenez/;
 
 const cut=(s,n)=>s.length<=n?s:s.slice(0,Math.max(20,s.lastIndexOf(" ",n)))+"…";
@@ -83,11 +84,12 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};const orig=String(raw);if
       d.fx={};for(const k of ["pop","eco","soc","sec","infra","int"])d.fx[k]=clamp(+((j.effets||{})[k])||0,-5,5)}}catch(e){if(e&&e.code==="not_granted")refused=true}}
   if(c.base)d.base=c.base;
   if(opt.cout!=null&&opt.cout>0)d.cout=opt.cout;
+  {const m=t.match(/ministre (?:de la |des |du |de l |de |d )([a-z]+)/);const x=m&&E.MINISTERES.find(y=>norm(y.n).split(/[ ,]+/)[0].startsWith(m[1].slice(0,6)));if(x&&S.mode==="pres")d.resp=x.id;else if(c.id==="economies"&&S.mode==="pres"&&!d.resp)d.resp="MINFI"}
   // validation avant exécution : impact national, ou coût au-delà des marges de l'exécutant
   const gate=DIR.gate(S,d,opt);
   if(gate.need){d.why=gate.why;d.execJ=Math.max(.25,d.due-S.day);d.phase=gate.need==="pres"?"plan":"presid";const pj=planDays(S,d);d.planDue=S.day+pj;d.due=d.planDue+d.execJ;
     S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);const R=DIR.resp(S,d);
-    const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». Comme elle a un "+gate.why+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation. Coût estimé à ce stade : "+(d.cout||"moins de 1")+" milliard"+(d.cout>=2?"s":"")+" de FCFA."
+    const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». Comme elle a un "+gate.why+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation."+(d.cout?" Coût estimé à ce stade : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":d.cat==="economies"?" Cette mesure ne coûte rien : elle doit faire économiser de l'argent à l'État.":" Le coût sera chiffré dans le plan.")
       :"Votre décision « "+d.titre+" » a un "+gate.why+" : elle est transmise à la Présidence de la République pour approbation avant exécution. Réponse attendue vers le "+G.dayLabel(d.planDue)+".";
     window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+orig+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
   // coût (en milliards : État, ministère ou commune)
@@ -120,7 +122,7 @@ const STEPS={construire:["études techniques et choix des sites","appel d'offres
   audit:["désignation des équipes d'inspection","contrôles sur pièces et sur place","rapport, sanctions et recouvrement"]};
 function sendPlan(S,d){const R=DIR.resp(S,d);const tr=window.CAB&&R.n?CAB.trait(R.n):"cooperatif";if(tr==="ambitieux")d.cout=Math.round((d.cout||1)*1.2*10)/10;
   const st=STEPS[d.cat]||["cadrage, textes d'application et désignation des responsables","mobilisation des crédits et des moyens","mise en œuvre sur le terrain et suivi"];
-  const ej=Math.round(d.execJ*10)/10;d.plan="1) "+st[0]+" ; 2) "+st[1]+" ; 3) "+st[2]+". Délai d'exécution après votre accord : "+(ej<1?Math.round(ej*24)+" heures":ej+" jours")+". Coût : "+(d.cout||"moins de 1")+" milliard"+(d.cout>=2?"s":"")+" de FCFA"+(d.cout>capOf(d.resp)?", avec un financement complémentaire du budget de l'État":"")+".";
+  const ej=Math.round(d.execJ*10)/10;d.plan="1) "+st[0]+" ; 2) "+st[1]+" ; 3) "+st[2]+". Délai d'exécution après votre accord : "+(ej<1?Math.round(ej*24)+" heures":ej+" jours")+". Coût : "+(d.cout?String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA":d.cat==="economies"?"aucun ; économies attendues sur le fonctionnement de l'État":"négligeable")+(d.cout>capOf(d.resp)?", avec un financement complémentaire du budget de l'État":"")+".";
   window.SYS.inbox(S,{from:R.n+", "+R.lab,t:"Plan d'exécution à valider : "+d.titre.slice(0,70),b:"Instruction : « "+d.texte+" »\nMotif de la validation : "+d.why+".\nPlan proposé : "+d.plan+(tr==="negligent"?"\nLe dossier est peu détaillé.":tr==="prudent"?"\nLes risques juridiques et budgétaires sont analysés en annexe.":""),k:"alerte",dir:d.id,valid:true});
   G.toast("Plan d'exécution à valider : "+d.titre.slice(0,60));try{A.speak(R.n+" vous soumet le plan d'exécution de votre instruction, pour validation.",{voix:"f"})}catch(e){}}
 DIR.approve=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.phase!=="valid")return;commit(S,d);d.phase="exec";d.start=S.day;d.due=S.day+d.execJ;
@@ -143,7 +145,10 @@ DIR.tick=function(S){if(!S||!S.directives)return;for(const d of S.directives){if
     if(S.day<d.due)continue;
     if(d.cr==="audience"&&!d.audProg){d.audProg=S.day;DIR.audience(S,d,"compte rendu : "+d.titre,true);continue}
     if(d.cr==="audience"&&d.audProg&&S.day<d.due+3)continue;
-    d.done=true;report(S,d)}};
+    d.done=true;report(S,d);if(d.cat==="economies")savings(S,d)}};
+function savings(S,d){if(d.saved)return;d.saved=1;const q=/réussie/.test(d.res||"")?1:/partielle/.test(d.res||"")?.5:0;if(!q||!S.nums)return;const m=norm(d.texte||"").match(/(\d{1,2}) ?%/);const pct=m?+m[1]:20;
+  const tot=(E.TRAIN||[]).reduce((a,x)=>a+x.b,0)||400;const v=Math.round(Math.min(tot*pct/100,tot*.42)*q);S.nums.dette=Math.max(0,S.nums.dette-v);if(S.st&&S.st.eco!=null)S.st.eco=clamp(S.st.eco+1,0,100);
+  window.SYS.inbox(S,{from:"Direction générale du budget",t:"Économies réalisées : "+v+" milliards de FCFA par an",b:"La mesure « "+d.titre+" » a permis d'économiser environ "+v+" milliards de FCFA sur le fonctionnement de l'État. Ces fonds sont réaffectés au service de la dette et aux priorités sociales.",k:"bonne"})}
 /* le responsable qui rend compte */
 DIR.resp=function(S,d){if(d.resp&&S.gov&&S.gov.min&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];const m=E.MINISTERES.find(x=>x.id===d.resp);const sx=window.SYS.sexe(g.n);return{k:"min",id:d.resp,min:d.resp,n:g.n,sexe:sx,lab:window.SYS.accord("le ministre "+window.SYS.deM(m?m.n:d.resp)+(m?m.n:d.resp),sx)}}
   if(!d.rn)d.rn=window.SYS.nom("CE");const sx=window.SYS.sexe(d.rn);
