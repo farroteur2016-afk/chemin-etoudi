@@ -21,6 +21,19 @@ let S=null,tab="bureau",ui={};
 const GAME={};window.GAME=GAME;
 
 /* ---------- utilitaires d'interface ---------- */
+/* plein écran */
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function fullscreen(on){const d=document.documentElement;const want=on==null?!fsEl():on;
+  try{if(want){const r=d.requestFullscreen?d.requestFullscreen({navigationUI:"hide"}):d.webkitRequestFullscreen?d.webkitRequestFullscreen():null;
+      if(!r&&!d.webkitRequestFullscreen)return toast("Plein écran indisponible sur cet appareil : sur iPhone, utilisez « Partager › Sur l'écran d'accueil ».");
+      if(r&&r.catch)r.catch(()=>toast("Plein écran bloqué dans cette page : ouvrez le jeu (lien GitHub) dans Chrome, ou appuyez sur F11 sur PC."));
+      try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock("landscape").catch(()=>{})}catch(e){}}
+    else{(document.exitFullscreen||document.webkitExitFullscreen||(()=>{})).call(document)}}catch(e){toast("Plein écran bloqué ici : appuyez sur F11 sur PC.")}}
+GAME.fullscreen=fullscreen;
+const fsSync=()=>{const on=!!fsEl();document.querySelectorAll("#bFull,[data-full]").forEach(b=>{b.setAttribute("aria-pressed",on?"true":"false");b.title=on?"Quitter le plein écran (touche F)":"Plein écran (touche F)";if(b.dataset.full!=null)b.textContent=on?"⤡ Quitter le plein écran":"⛶ Plein écran"})};
+document.addEventListener("fullscreenchange",fsSync);document.addEventListener("webkitfullscreenchange",fsSync);
+document.addEventListener("keydown",e=>{if((e.key==="f"||e.key==="F")&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||"")&&!(e.target&&e.target.isContentEditable)){e.preventDefault();fullscreen()}});
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#bFull,[data-full]");if(b){e.preventDefault();fullscreen()}});
 function toast(msg,onClick){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;if(onClick){t.style.cursor="pointer";t.style.pointerEvents="auto";t.setAttribute("role","button");t.tabIndex=0;t.onclick=()=>{t.remove();onClick()}}document.body.appendChild(t);setTimeout(()=>t.remove(),onClick?6000:2600)}
 /* zones de saisie : retour à la ligne automatique, hauteur ajustée, Entrée pour valider (Maj+Entrée : nouvelle ligne) */
 document.addEventListener("input",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea[data-grow]")){t.style.height="auto";t.style.height=Math.min(220,t.scrollHeight)+"px"}});
@@ -258,7 +271,7 @@ function home(){
   $("panel").innerHTML='<div><span class="eyebrow">République du Cameroun · Paix – Travail – Patrie</span><h1 class="title">Chemin d\'Etoudi</h1></div>'+
    '<p>Gouvernez le Cameroun tel qu\'il est en septembre 2026, ou partez de l\'opposition à la conquête du palais d\'Etoudi. Toutes les règles suivent la Constitution et le Code électoral camerounais.</p>'+
    (saved&&saved.phase==="play"?'<div class="card"><span class="eyebrow">Partie sauvegardée</span><b>'+esc(saved.name)+' · '+esc(profilLabel(saved))+'</b><span class="small muted">'+esc(dayLabel(saved.day!=null?saved.day:saved.m*30))+(saved.savedAt?' · enregistrée '+esc(ago(saved.savedAt)):"")+'</span><div class="row"><button class="btn primary" id="bCont">Reprendre la partie</button><button class="btn small" id="bExp">Exporter</button></div></div>':"")+
-   '<div class="row"><button class="btn small ghost" id="bImp">Importer une partie (fichier)</button></div>'+
+   '<div class="row"><button class="btn small ghost" id="bImp">Importer une partie (fichier)</button><button class="btn small" data-full>⛶ Plein écran</button></div>'+
    '<span class="eyebrow">Choisissez votre profil</span><div class="grid2"><button class="opt" id="mPres"><b>Président</b><span>Vous dirigez le pays depuis Etoudi.</span></button><button class="opt" id="mMin"><b>Ministre</b><span>L\'un des 38 ministères, avec son vrai budget 2026.</span></button><button class="opt" id="mDep"><b>Député</b><span>Votez les lois, défendez votre circonscription.</span></button><button class="opt" id="mMaire"><b>Maire</b><span>Une commune de votre choix, sa caisse, ses projets.</span></button><button class="opt" id="mOpp"><b>Chef de parti</b><span>Un parti existant ou le vôtre, jusqu\'à Etoudi.</span></button><button class="opt" id="mIng"><b>Chef d\'entreprise</b><span>16 domaines : BTP, vidéosurveillance, solaire, numérique, santé, avocats…</span></button><button class="opt" id="mPro"><b>Professionnel</b><span>Médecin, enseignant, avocat, ingénieur, journaliste… Les habitants vous sollicitent, l\'État vous recrute.</span></button></div>'+
    (window.WORLD&&WORLD._pendingCode?'<p class="small" style="color:var(--y)">Invitation au monde '+esc(WORLD._pendingCode)+' : choisissez votre profil, vous le rejoindrez automatiquement.</p>':"")+
    '<div class="grid2"><button class="opt" id="mMulti"><b>Entre amis</b><span>Créez une partie de 2 à 6 joueurs, chacun sur son téléphone ou sur un seul appareil.</span></button><button class="opt" id="mJoin"><b>Rejoindre</b><span>Un ami vous a donné un code ? Entrez-le ici.</span></button></div>'+
@@ -434,7 +447,7 @@ function tabs(){
   $("tMenu").onclick=menu;
 }
 function menu(){
-  sheet('<h3 class="h2">Menu</h3><button class="btn" id="mAuto">'+(A.auto?"Désactiver":"Activer")+' la lecture automatique des dossiers</button>'+(S.mode==="pres"?'<button class="btn" id="mEasy">'+(S.easy?"Masquer":"Afficher")+' le sens des effets (mode facile)</button>':"")+'<button class="btn" id="mSrc">Sources et méthode</button><button class="btn" id="mExp">Exporter ma partie (fichier de sauvegarde)</button><button class="btn" id="mImp">Importer une partie</button><button class="btn" id="mHome">Sauvegarder et revenir à l\'accueil</button><button class="btn" id="mQuit">Abandonner la partie</button>',el=>{
+  sheet('<h3 class="h2">Menu</h3><button class="btn" data-full>'+(fsEl()?"⤡ Quitter le plein écran":"⛶ Plein écran")+'</button><button class="btn" id="mAuto">'+(A.auto?"Désactiver":"Activer")+' la lecture automatique des dossiers</button>'+(S.mode==="pres"?'<button class="btn" id="mEasy">'+(S.easy?"Masquer":"Afficher")+' le sens des effets (mode facile)</button>':"")+'<button class="btn" id="mSrc">Sources et méthode</button><button class="btn" id="mExp">Exporter ma partie (fichier de sauvegarde)</button><button class="btn" id="mImp">Importer une partie</button><button class="btn" id="mHome">Sauvegarder et revenir à l\'accueil</button><button class="btn" id="mQuit">Abandonner la partie</button>',el=>{
     el.querySelector("#mAuto").onclick=()=>{A.auto=!A.auto;GAME.syncAudio();el.remove();toast(A.auto?"Lecture automatique activée":"Lecture automatique désactivée")};
     const e=el.querySelector("#mEasy");if(e)e.onclick=()=>{S.easy=!S.easy;save();el.remove();render()};
     el.querySelector("#mSrc").onclick=()=>{el.remove();showSources()};
