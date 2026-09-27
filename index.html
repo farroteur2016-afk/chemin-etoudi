@@ -5737,6 +5737,7 @@ function modeOf(S,t){const pres=S.mode==="pres";
 
 /* ---------- agenda ---------- */
 function agenda(S){S.agenda=S.agenda||[];return S.agenda}
+VOIX.findPerson=(S,t)=>findPerson(S,norm(t));
 VOIX.agendaCard=function(S){const L=agenda(S).filter(a=>!a.done).sort((a,b)=>a.at-b.at);if(!L.length)return"";
   return'<div class="card"><span class="eyebrow">Agenda</span>'+L.slice(0,5).map(a=>'<div class="row" style="justify-content:space-between"><span class="small"><b>'+esc(G.dayLabel(a.at))+' · '+hh(hourNow({day:a.at}))+'</b> — '+esc(a.lab)+'</span><button class="btn small ghost" data-agx="'+a.id+'">Annuler</button></div>').join("")+'</div>'};
 VOIX.bindAgenda=function(S,root){(root||document).querySelectorAll("[data-agx]").forEach(b=>b.onclick=()=>{const a=agenda(S).find(x=>x.id===b.dataset.agx);if(a){a.done=1;G.toast("Rendez-vous annulé");G.render()}})};
@@ -5804,7 +5805,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     if(to.v===here.v){reply("Très bien, je vous emmène rencontrer "+un+kd.lab+" à "+to.v+".");closeP();setTimeout(()=>RENC.open(S,renc),600);return}
     reply("Je prépare votre visite chez "+un+kd.lab+" à "+to.v+".");setTimeout(closeP,1500);const err=VOY.goTo(S,to,mode,true,()=>setTimeout(()=>RENC.open(G.S,renc),700));if(err)reply("Impossible : "+err+".");return}}
   // convocation / audience
-  if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)&&!/s appelle/.test(t)){const P=findPerson(S,t);if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
+  if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)&&!/s appelle/.test(t)){const P=findPerson(S,t)||(/\b(convoque|convoquez|fais|faites|recois|recevez) (le|la)\b|\b(le|la) (convoquer|recevoir|faire venir)\b/.test(t)&&window.QA&&QA._last)||null;if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
     const w=parseWhen(S,t)||{at:S.day+.1,label:"dans environ deux heures"};const obj=(t.match(/pour (parler de|discuter de|le point sur|evoquer) (.+)$/)||[])[2];
     const can=S.mode==="pres"||(S.mode==="min"&&(P.min===S.minis.id||["prefet","police","gouverneur","hop","ent"].includes(P.k)&&P.min===S.minis.id));
     if(!can&&S.mode!=="pres"){const ok=Math.random()<(S.mode==="min"?.8:.35);if(!ok)return reply("Votre demande d'audience auprès "+deL(P.lab)+" a été enregistrée, mais son cabinet ne vous a pas encore proposé de créneau.");}
@@ -5997,7 +5998,7 @@ ACTU.mailBind=function(S,it,el){if(!it.actu)return;const a=items.find(x=>x.id===
     if(k==="terrain"){el.remove();done.push(k);const to=place(a);const p=window.VOY?VOY.goTo(S,to,null,true,()=>{good(2,"Visite de terrain après : "+a.titre);if(S.st)S.st.pop=clamp(S.st.pop+.6,0,100);if(S.opp)S.opp.noto=clamp(S.opp.noto+2,0,100);
         if(window.RENC)setTimeout(()=>RENC.open(S,{kind:who(a),reg:to.reg,ville:to.v,sujet:a.titre,contexte:a.resume}),700);G.render()},()=>{const i=done.indexOf("terrain");if(i>=0)done.splice(i,1)}):"voyage indisponible";
       if(p){G.toast("Déplacement impossible : "+p);done.pop()}return}
-    if(k==="ministre"){good(1.5,"Le ministre dépêché sur place : "+a.titre);if(am&&am.g)am.g.loy=clamp(am.g.loy+1,0,100);msg=(am?(am.g&&am.g.n?am.g.n+", ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":/^\S+s\b/.test(am.m.n)?"des ":"de la ")+am.m.n:"Le ministre compétent"):"Le ministre compétent")+" se rend à "+(a.ville||"l'endroit concerné")+" dès demain."}
+    if(k==="ministre"){good(1.5,"Le ministre dépêché sur place : "+a.titre);if(am){S.missions=S.missions||[];S.missions.push({min:am.id,ville:a.ville||(a.reg?CM.REG[a.reg].chef:"l'intérieur du pays"),objet:a.titre,from:S.day+.5,until:S.day+3.5})}if(am&&am.g)am.g.loy=clamp(am.g.loy+1,0,100);msg=(am?(am.g&&am.g.n?am.g.n+", ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":/^\S+s\b/.test(am.m.n)?"des ":"de la ")+am.m.n:"Le ministre compétent"):"Le ministre compétent")+" se rend à "+(a.ville||"l'endroit concerné")+" dès demain."}
     else if(k==="aide"){const md=S.mode==="pres"?1:S.mode==="min"?.1:.005;if(!pay(S,md))return G.toast("Fonds insuffisants.");good(3,"Aide d'urgence : "+a.titre);if(S.st)S.st.soc=clamp(S.st.soc+.5,0,100);if(S.minis)S.minis.perf=clamp(S.minis.perf+2,0,100);msg="L'aide d'urgence est débloquée et acheminée vers "+(a.ville||"les zones touchées")+"."}
     else if(k==="enquete"){good(1.5,"Enquête ordonnée : "+a.titre);if(S.st)S.st.int=clamp(S.st.int+.8,0,100);msg="Une enquête est ouverte. Le parquet vous rendra compte."}
     else if(k==="convoque"){if(!am)return G.toast("Aucun ministre identifié.");const at=Math.floor(S.day+1/3)+1+9/24-1/3;S.agenda=S.agenda||[];
@@ -6260,6 +6261,8 @@ function dirPoint(S,d){return d.titre+(d.titre.startsWith("Directive")?"":" — 
 
 QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);const pl=place(t);
   if(/(quelle heure|quel jour|quelle date|qui est|qui dirige|comment s appelle)/.test(t)&&!opt.final)return false;
+  // où est / que fait un responsable
+  if(/\b(ou est|ou se trouve|ou se trouvent|que fait|il est ou|elle est ou|ou sont|ou est ce que se trouve|joignable)\b/.test(t)&&window.VOIX&&VOIX.findPerson&&window.CAB){const P=VOIX.findPerson(S,raw);if(P&&P.n&&!/^le /.test(P.n)){const w=CAB.where(S,P);if(w){const f=P.sexe==="f";const rdv=(S.agenda||[]).some(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===P.n);if(rdv){reply(w);QA._last=P;return true}reply(w+" Voulez-vous "+(f?"la":"le")+" convoquer ? Dites par exemple : « convoque-"+(f?"la":"le")+" demain à 9 h ».");QA._last=P;return true}}}
   // où suis-je
   if(/(ou (je suis|suis je|je me trouve|me trouve je|sommes nous|est ce que je suis)|dans quelle ville|quelle ville|ma position|ou suis)/.test(t)){const h=window.VOY?VOY.here(S):null;if(h){reply("Vous êtes à "+h.v+(h.lieu?", "+h.lieu:"")+", région "+(/^[AEIOUÉ]/.test(CM.REG[h.reg].n)?"de l'":"du ")+CM.REG[h.reg].n+".");return true}}
   // agenda
@@ -6321,6 +6324,26 @@ const RESP={audit:"MINFI",prix:"MINCOMMERCE",arrieres:"MINFI",emploi:"MINEFOP",c
   electricite:"MINEE",eau:"MINEE",sante:"MINSANTE",education:"MINESEC",agriculture:"MINADER",transparence:"MINCOM",interdire:"MINATD"};
 CAB.resp=cat=>RESP[cat]||null;
 CAB.minName=(S,id)=>{const m=E.MINISTERES.find(x=>x.id===id);return m?m.n:id};
+
+/* ---------- où se trouve un responsable, que fait-il ? ---------- */
+const SIEGE={PAD:"Douala",SONARA:"Limbé",CAMRAIL:"Douala",CDC:"Limbé",SODECOTON:"Garoua",ALUCAM:"Édéa",PAK:"Kribi",ADC:"Douala",SODECAO:"Yaoundé",ONCC:"Douala"};
+CAB.where=function(S,P){if(!P||!P.n)return null;const n=P.n,day=Math.floor(S.day+1/3),h=((S.day%1)*24+8)%24;const wd=(new Date(2026,9,1).getDay()+day)%7;const r=hash(n+"|"+day)%12;const who=(P.n?P.n+", "+P.lab+",":P.lab);
+  const fonc=P.k==="min"?"à son ministère, à Yaoundé":P.k==="pm"?"à l'Immeuble Étoile (Primature), à Yaoundé":P.k==="sg"?"au palais d'Etoudi":P.k==="vp"?"à Yaoundé":
+    P.k==="gouverneur"?"à ses services, à "+(P.reg?CM.REG[P.reg].chef:"son chef-lieu"):P.k==="prefet"||P.k==="police"?"à son bureau, à "+(P.lab.split(" de ").pop()):P.k==="hop"?"à l'hôpital":P.k==="ent"?"au siège, à "+(SIEGE[P.org&&P.org.id]||"Yaoundé"):"à son bureau";
+  const base=P.k==="min"||P.k==="pm"||P.k==="sg"?"Yaoundé":P.k==="ent"?(SIEGE[P.org&&P.org.id]||"Yaoundé"):P.reg?CM.REG[P.reg].chef:"Yaoundé";
+  const mis=(S.missions||[]).find(m=>m.min===(P.min||P.id)&&S.day>=m.from-.5&&S.day<=m.until);
+  if(mis)return who+" est en mission à "+mis.ville+" sur vos instructions (dossier : « "+mis.objet+" »). Retour prévu le "+G.dayLabel(mis.until)+".";
+  const rdv=(S.agenda||[]).find(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===n&&a.at-S.day<2);
+  const F=P.sexe==="f";const tail=rdv?" "+(F?"Elle est attendue":"Il est attendu")+" à votre audience le "+G.dayLabel(rdv.at)+".":"";
+  if(h>=21||h<6)return who+" est à son domicile, à "+base+" (il est "+Math.floor(h)+" h)."+tail;
+  if(wd===0||wd===6)return who+" est en week-end à "+base+", joignable par téléphone."+tail;
+  const tr=CAB.trait(n);if(tr==="negligent"&&r===11)return who+" est injoignable depuis ce matin ; son secrétariat assure que "+(F?"elle":"il")+" « arrive »."+tail;
+  if(r===0){const R=CM.REGIONS[hash(n+day)%10];return who+" est en tournée dans la région "+R.n+", à "+R.chef+", jusqu'à ce soir."+tail}
+  if(r===1&&P.k==="min")return who+" participe à un conseil de cabinet à la Primature."+tail;
+  if(r===2&&(P.id==="MINREX"||P.id==="MINFI"||P.id==="MINEPAT"||P.k==="ent"))return who+" est en déplacement à l'étranger ("+["Paris","Addis-Abeba","Libreville","Washington","Pékin"][hash(n)%5]+"), retour dans deux jours."+tail;
+  if(r===3)return who+" est en réunion avec ses collaborateurs, "+fonc+"."+tail;
+  if(r===4)return who+" reçoit des audiences, "+fonc+"."+tail;
+  return who+" est "+fonc+(h<12?(F?", arrivée ce matin":", arrivé ce matin"):", au travail")+"."+tail};
 
 /* ---------- le collaborateur ---------- */
 function conseiller(S){if(S.conseiller)return S.conseiller;const reg=window.VOY?VOY.here(S).reg:"CE";let titre,n;

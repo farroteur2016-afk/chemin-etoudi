@@ -70,6 +70,7 @@ function modeOf(S,t){const pres=S.mode==="pres";
 
 /* ---------- agenda ---------- */
 function agenda(S){S.agenda=S.agenda||[];return S.agenda}
+VOIX.findPerson=(S,t)=>findPerson(S,norm(t));
 VOIX.agendaCard=function(S){const L=agenda(S).filter(a=>!a.done).sort((a,b)=>a.at-b.at);if(!L.length)return"";
   return'<div class="card"><span class="eyebrow">Agenda</span>'+L.slice(0,5).map(a=>'<div class="row" style="justify-content:space-between"><span class="small"><b>'+esc(G.dayLabel(a.at))+' · '+hh(hourNow({day:a.at}))+'</b> — '+esc(a.lab)+'</span><button class="btn small ghost" data-agx="'+a.id+'">Annuler</button></div>').join("")+'</div>'};
 VOIX.bindAgenda=function(S,root){(root||document).querySelectorAll("[data-agx]").forEach(b=>b.onclick=()=>{const a=agenda(S).find(x=>x.id===b.dataset.agx);if(a){a.done=1;G.toast("Rendez-vous annulé");G.render()}})};
@@ -137,7 +138,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     if(to.v===here.v){reply("Très bien, je vous emmène rencontrer "+un+kd.lab+" à "+to.v+".");closeP();setTimeout(()=>RENC.open(S,renc),600);return}
     reply("Je prépare votre visite chez "+un+kd.lab+" à "+to.v+".");setTimeout(closeP,1500);const err=VOY.goTo(S,to,mode,true,()=>setTimeout(()=>RENC.open(G.S,renc),700));if(err)reply("Impossible : "+err+".");return}}
   // convocation / audience
-  if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)&&!/s appelle/.test(t)){const P=findPerson(S,t);if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
+  if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)&&!/s appelle/.test(t)){const P=findPerson(S,t)||(/\b(convoque|convoquez|fais|faites|recois|recevez) (le|la)\b|\b(le|la) (convoquer|recevoir|faire venir)\b/.test(t)&&window.QA&&QA._last)||null;if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
     const w=parseWhen(S,t)||{at:S.day+.1,label:"dans environ deux heures"};const obj=(t.match(/pour (parler de|discuter de|le point sur|evoquer) (.+)$/)||[])[2];
     const can=S.mode==="pres"||(S.mode==="min"&&(P.min===S.minis.id||["prefet","police","gouverneur","hop","ent"].includes(P.k)&&P.min===S.minis.id));
     if(!can&&S.mode!=="pres"){const ok=Math.random()<(S.mode==="min"?.8:.35);if(!ok)return reply("Votre demande d'audience auprès "+deL(P.lab)+" a été enregistrée, mais son cabinet ne vous a pas encore proposé de créneau.");}

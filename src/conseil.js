@@ -24,6 +24,26 @@ const RESP={audit:"MINFI",prix:"MINCOMMERCE",arrieres:"MINFI",emploi:"MINEFOP",c
 CAB.resp=cat=>RESP[cat]||null;
 CAB.minName=(S,id)=>{const m=E.MINISTERES.find(x=>x.id===id);return m?m.n:id};
 
+/* ---------- où se trouve un responsable, que fait-il ? ---------- */
+const SIEGE={PAD:"Douala",SONARA:"Limbé",CAMRAIL:"Douala",CDC:"Limbé",SODECOTON:"Garoua",ALUCAM:"Édéa",PAK:"Kribi",ADC:"Douala",SODECAO:"Yaoundé",ONCC:"Douala"};
+CAB.where=function(S,P){if(!P||!P.n)return null;const n=P.n,day=Math.floor(S.day+1/3),h=((S.day%1)*24+8)%24;const wd=(new Date(2026,9,1).getDay()+day)%7;const r=hash(n+"|"+day)%12;const who=(P.n?P.n+", "+P.lab+",":P.lab);
+  const fonc=P.k==="min"?"à son ministère, à Yaoundé":P.k==="pm"?"à l'Immeuble Étoile (Primature), à Yaoundé":P.k==="sg"?"au palais d'Etoudi":P.k==="vp"?"à Yaoundé":
+    P.k==="gouverneur"?"à ses services, à "+(P.reg?CM.REG[P.reg].chef:"son chef-lieu"):P.k==="prefet"||P.k==="police"?"à son bureau, à "+(P.lab.split(" de ").pop()):P.k==="hop"?"à l'hôpital":P.k==="ent"?"au siège, à "+(SIEGE[P.org&&P.org.id]||"Yaoundé"):"à son bureau";
+  const base=P.k==="min"||P.k==="pm"||P.k==="sg"?"Yaoundé":P.k==="ent"?(SIEGE[P.org&&P.org.id]||"Yaoundé"):P.reg?CM.REG[P.reg].chef:"Yaoundé";
+  const mis=(S.missions||[]).find(m=>m.min===(P.min||P.id)&&S.day>=m.from-.5&&S.day<=m.until);
+  if(mis)return who+" est en mission à "+mis.ville+" sur vos instructions (dossier : « "+mis.objet+" »). Retour prévu le "+G.dayLabel(mis.until)+".";
+  const rdv=(S.agenda||[]).find(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===n&&a.at-S.day<2);
+  const F=P.sexe==="f";const tail=rdv?" "+(F?"Elle est attendue":"Il est attendu")+" à votre audience le "+G.dayLabel(rdv.at)+".":"";
+  if(h>=21||h<6)return who+" est à son domicile, à "+base+" (il est "+Math.floor(h)+" h)."+tail;
+  if(wd===0||wd===6)return who+" est en week-end à "+base+", joignable par téléphone."+tail;
+  const tr=CAB.trait(n);if(tr==="negligent"&&r===11)return who+" est injoignable depuis ce matin ; son secrétariat assure que "+(F?"elle":"il")+" « arrive »."+tail;
+  if(r===0){const R=CM.REGIONS[hash(n+day)%10];return who+" est en tournée dans la région "+R.n+", à "+R.chef+", jusqu'à ce soir."+tail}
+  if(r===1&&P.k==="min")return who+" participe à un conseil de cabinet à la Primature."+tail;
+  if(r===2&&(P.id==="MINREX"||P.id==="MINFI"||P.id==="MINEPAT"||P.k==="ent"))return who+" est en déplacement à l'étranger ("+["Paris","Addis-Abeba","Libreville","Washington","Pékin"][hash(n)%5]+"), retour dans deux jours."+tail;
+  if(r===3)return who+" est en réunion avec ses collaborateurs, "+fonc+"."+tail;
+  if(r===4)return who+" reçoit des audiences, "+fonc+"."+tail;
+  return who+" est "+fonc+(h<12?(F?", arrivée ce matin":", arrivé ce matin"):", au travail")+"."+tail};
+
 /* ---------- le collaborateur ---------- */
 function conseiller(S){if(S.conseiller)return S.conseiller;const reg=window.VOY?VOY.here(S).reg:"CE";let titre,n;
   if(S.mode==="pres"){titre="secrétaire général de la Présidence";n=S.gov&&S.gov.sg?S.gov.sg.n:window.SYS.nom("SU")}
