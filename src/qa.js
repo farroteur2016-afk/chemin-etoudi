@@ -45,6 +45,7 @@ QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return f
   if(/(dette|budget|tresor|caisse|argent|finances publiques|fonds|combien j ai|mon salaire|mes economies)/.test(t)&&!pl){let m="";if(S.mode==="pres"&&S.nums)m="La dette publique est de "+Math.round(S.nums.dette)+" milliards de FCFA"+(S.nums.deficit!=null?", déficit annuel "+Math.round(S.nums.deficit)+" milliards":"")+".";
     else if(S.mode==="min"&&S.minis)m="Crédits disponibles de votre ministère : "+Math.round(S.minis.fonds)+" millions de FCFA.";else if(S.opp&&S.opp.commune)m="Caisse de la commune : "+Math.round(S.opp.commune.fonds)+" millions de FCFA.";else if(S.opp)m="Trésorerie du parti : "+Math.round(S.opp.fonds)+" millions de FCFA.";
     if(window.EMP){try{m+=" Vos finances personnelles : "+Math.round(EMP.wallet(S)).toLocaleString("fr-FR")+" FCFA."}catch(e){}}reply(m||"Je n'ai pas d'information financière pour votre profil.");return true}
+  if(opt.final&&!QA.isQuestion(raw))return false;
   // point sur un événement ou un lieu
   const R=search(S,t,pl);
   if(R.length&&(R[0].s>=3||pl)){const x=R[0];if(x.k==="actu"){reply(actuPoint(S,x.a));return true}if(x.k==="dir"){reply(dirPoint(S,x.d));return true}if(x.k==="mail"){reply(x.m.t+". "+x.m.b.split("\n")[0]);return true}}

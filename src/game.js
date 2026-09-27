@@ -572,7 +572,7 @@ function endMonth(fromClock){
   // le parti au pouvoir
   for(const r of CM.REGIONS){const d=S.mode==="pres"?(S.st.pop-45)*.03:rnd(-.35,.3);shift(S.sup,r.id,S.power,d,S.power)}
   if(S.mode==="opp"){oppAI()}
-  SYS.tick(S);SYS.minesTick(S);if(window.PROF)PROF.monthTick(S);if(window.VIE){VIE.monthTick(S);VIE.ageTick(S)}if(window.PRO)PRO.monthTick(S);if(window.EMP)EMP.monthTick(S);
+  SYS.tick(S);SYS.minesTick(S);if(window.PROF)PROF.monthTick(S);if(window.VIE){VIE.monthTick(S);VIE.ageTick(S)}if(window.PRO)PRO.monthTick(S);if(window.VOY&&VOY.monthTick)VOY.monthTick(S);if(window.EMP)EMP.monthTick(S);
   // report d'élection ?
   for(const c of S.cal){if(!c.done&&(c.id==="leg"||c.id==="reg")&&c.m-S.m===2&&!(S.reportAsked&&S.reportAsked[c.id+c.m])){
     if(S.mode==="pres"){S.pendingReport=c.id}

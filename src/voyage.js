@@ -47,11 +47,13 @@ VOY.MODES={
  marche:{n:"À pied",ic:"🚶",city:4.5,road:4.5,maxKm:6,cost:()=>0,risk:.001},
  moto:{n:"Moto-taxi (bendskin)",ic:"🏍️",city:24,road:40,maxKm:60,cost:d=>Math.max(200,Math.round((150+d*55)/50)*50),risk:.02,note:"rapide dans les embouteillages, mais dangereux"},
  taxi:{n:"Taxi (place ou course)",ic:"🚕",city:17,road:55,maxKm:80,cost:d=>d<10?350:Math.round((1000+d*110)/100)*100,risk:.004},
- voiture:{n:"Votre voiture",ic:"🚗",city:18,road:62,cost:d=>Math.round(d*.1*840+2000),risk:.003,own:1},
- chauffeur:{n:"Voiture avec chauffeur",ic:"🚘",city:18,road:65,cost:d=>Math.round(d*.11*840+5000),risk:.002,work:1},
+ voiture:{n:"Votre voiture",ic:"🚗",city:18,road:72,cost:d=>Math.round(d*.1*840+2000),risk:.003,own:1},
+ chauffeur:{n:"Voiture avec chauffeur",ic:"🚘",city:18,road:72,cost:d=>Math.round(d*.11*840+5000),risk:.002,work:1},
  convoi:{n:"Convoi officiel avec escorte de motards",ic:"🚨",city:32,road:75,cost:d=>Math.round(d*.4*840+60000),risk:.001,work:1,esc:1,gene:1},
+ cortegeR:{n:"Cortège réduit",ic:"🚨",city:36,road:80,cost:d=>Math.round(d*.8*840+150000),risk:0,work:1,esc:1,gene:1.5},
+ restreint:{n:"Cortège restreint (2 véhicules)",ic:"🚙",city:24,road:72,cost:d=>Math.round(d*.25*840+30000),risk:.001,work:1,esc:1,gene:.3},
  cortege:{n:"Cortège présidentiel (routes bouclées)",ic:"🚨",city:45,road:85,cost:d=>Math.round(d*1.5*840+400000),risk:0,work:1,esc:2,gene:3},
- bus:{n:"Bus interurbain (agence de voyage)",ic:"🚌",city:15,road:52,minKm:40,cost:d=>Math.round((1500+d*16)/500)*500,risk:.006,work:0,night:1},
+ bus:{n:"Bus interurbain (agence de voyage)",ic:"🚌",city:15,road:66,minKm:40,cost:d=>Math.round((1500+d*16)/500)*500,risk:.006,work:0,night:1},
  train:{n:"Train Camrail",ic:"🚆",rail:1,road:60,cost:d=>Math.round((d*36)/500)*500+500,risk:.001,work:1},
  avion:{n:"Vol Camair-Co",ic:"✈️",air:1,cost:d=>Math.round((40000+d*85)/1000)*1000,risk:0,work:1,delay:.35},
  jet:{n:"Avion affrété (jet privé)",ic:"🛩️",air:2,cost:d=>Math.round((2500000+d*9000)/10000)*10000,risk:0,work:1},
@@ -61,8 +63,8 @@ VOY.MODES={
 /* modes autorisés et mode par défaut selon le rang (usages actuels) */
 function rank(S){if(S.mode==="pres")return"pres";if(S.mode==="min")return"min";if(S.profil==="depute")return"dep";if(S.profil==="maire")return"maire";if(S.mode==="ing")return"dg";if(S.mode==="pro")return(S.pro.grade>=2||S.pro.fonds>8e6)?"cadre":"pro";return"chef"}
 const NORMES={
- pres:{ok:["cortege","avionp","helico","chauffeur","convoi","voiture","taxi","moto"],city:"cortege",long:"avionp",lab:"Président de la République : cortège présidentiel en ville et sur route, avion présidentiel au-delà de 300 km."},
- min:{ok:["convoi","chauffeur","avion","jet","helico","train","voiture","taxi","moto","bus"],city:"chauffeur",long:"avion",lab:"Ministre : voiture de fonction avec chauffeur (escorte en option), vol Camair-Co pour les longues distances."},
+ pres:{ok:["cortege","cortegeR","restreint","avionp","helico","chauffeur","convoi","voiture","taxi","moto"],city:"cortege",long:"avionp",lab:"Président de la République : cortège présidentiel en ville et sur route, avion présidentiel au-delà de 300 km."},
+ min:{ok:["convoi","restreint","chauffeur","avion","jet","helico","train","voiture","taxi","moto","bus"],city:"chauffeur",long:"avion",lab:"Ministre : voiture de fonction avec chauffeur (escorte en option), vol Camair-Co pour les longues distances."},
  dep:{ok:["chauffeur","voiture","avion","train","bus","taxi","moto"],city:"chauffeur",long:"avion",lab:"Député : véhicule avec chauffeur, avion ou train pour rejoindre sa circonscription."},
  maire:{ok:["chauffeur","voiture","taxi","moto","bus","train","avion"],city:"chauffeur",long:"voiture",lab:"Maire : voiture de fonction de la commune avec chauffeur."},
  dg:{ok:["chauffeur","voiture","avion","jet","train","taxi","moto","bus"],city:"chauffeur",long:"avion",lab:"Directeur général : voiture avec chauffeur (vous travaillez à l'arrière), avion pour les longues distances."},
@@ -85,13 +87,13 @@ VOY.plan=function(S,from,to,mode){
   if(M.air===1&&(!AIR_COM.includes(a.n)||!AIR_COM.includes(b.n)||same))return{ok:false,why:"pas de vol commercial entre ces villes"};
   if(M.air===2&&(!AIR[a.n]||!AIR[b.n]||same))return{ok:false,why:"pas d'aéroport dans l'une des deux villes"};
   if(M.heli&&same&&d<5)return{ok:false,why:"inutile pour si peu"};
-  const cityTime=(c)=>(c.pop>1e6?.55:c.pop>3e5?.3:.15)*(M.esc?.35:mode==="moto"?.6:jam)*(17/(M.city||17));
+  const cityTime=(c)=>(c.pop>1e6?.35:c.pop>3e5?.2:.1)*(M.esc?.35:mode==="moto"?.6:jam)*(17/(M.city||17));
   let hrs;
-  if(M.air){hrs=(M.air===1?2.2:1)+d/(M.air===1?420:520)+cityTime(a)*.8+cityTime(b)*.8}
+  if(M.air){hrs=(M.air===1?1.8:.8)+d/(M.air===1?480:600)+cityTime(a)*.8+cityTime(b)*.8}
   else if(M.heli){hrs=.4+d/210}
-  else if(M.rail){hrs=.8+d/M.road+(d>400?2:0)}
+  else if(M.rail){hrs=.5+d/68+(d>400?4.5:0)}
   else if(same){hrs=d/(M.city*(M.esc?1:1/jam*1.4))+.1}
-  else{const inf=(infraOf(S,a.reg)+infraOf(S,b.reg))/2;const sp=M.road*(.55+inf/140);hrs=d/sp+cityTime(a)+cityTime(b)+(d>350&&!M.esc?1.5:0)}
+  else{const inf=(infraOf(S,a.reg)+infraOf(S,b.reg))/2;const sp=M.road*(.85+inf/300);hrs=d/sp+cityTime(a)+cityTime(b)+(d>350&&!M.esc?1:0)+(mode==="bus"?.3+d/700:0)}
   let cost=M.cost(d);const who=S.mode==="pres"&&["cortege","avionp","helico","chauffeur","convoi"].includes(mode)?"État":S.mode==="min"&&["chauffeur","convoi","avion","jet","helico"].includes(mode)?"ministère":S.profil==="maire"&&mode==="chauffeur"?"commune":S.mode==="ing"&&["chauffeur","avion","jet"].includes(mode)?"entreprise":"personnel";
   const sec=Math.min(secOf(S,a.reg),secOf(S,b.reg));
   return{ok:true,d,hrs,cost,who,sec,jam:jam>1,same,a,b,mode};
@@ -112,20 +114,15 @@ VOY.open=function(preReg,preCity){
      '<label class="f" for="vyV">Ville<select id="vyV">'+cities.map(c=>'<option'+(c.n===v?" selected":"")+'>'+esc(c.n)+'</option>').join("")+'</select></label>'+
      (lieux.length?'<label class="f" for="vyL">Lieu précis<select id="vyL"><option value="">Centre-ville</option>'+lieux.map(l=>'<option'+(l===lieu?" selected":"")+'>'+esc(l)+'</option>').join("")+'</select></label>':"")+
      '<p class="small muted">'+esc(v)+' : environ '+fmt(Math.round(city(v).pop/1000))+' 000 habitants'+(AIR[v]?" · "+esc(AIR[v]):"")+(GARES.includes(v)?" · gare Camrail":"")+'.</p>'+
-     '<p class="small" style="color:var(--y)">Usage pour votre rang : '+esc(N.lab)+'</p><div class="choices">'+
-     opts.map(([k,p])=>{const M=VOY.MODES[k];return'<button class="choice" data-vm="'+k+'"'+(p.ok?"":" disabled")+' aria-pressed="'+(k===mode)+'" style="'+(k===mode?"border-color:var(--y)":"")+(p.ok?"":";opacity:.45")+'"><span class="t">'+M.ic+' '+esc(M.n)+(k===dm?' <span class="pill ok">par défaut</span>':"")+'</span><span class="small muted">'+(p.ok?dur(p.hrs)+' · '+p.d+' km · '+F(p.cost)+(p.who!=="personnel"?" (payé par : "+p.who+")":"")+(M.work?" · vous pouvez travailler pendant le trajet":"")+(M.note?" · "+M.note:""):esc(p.why))+'</span></button>'}).join("")+'</div>'+
-     '<label class="row small" for="vyW" style="gap:8px"><input type="checkbox" id="vyW"'+(watch?" checked":"")+'> Regarder la vidéo du trajet (vous pourrez la passer à tout moment)</label>'+
-     '<button class="btn primary" id="vyGo">Partir</button>';
+     '<button class="btn primary" id="vyNext">Choisir le moyen de transport ▸</button>';
     el.querySelector("#vyR").onchange=e=>{reg=e.target.value;v=CM.REG[reg].chef;lieu=null;mode=null;draw(el)};
     el.querySelector("#vyV").onchange=e=>{v=e.target.value;lieu=null;mode=null;draw(el)};
     const sl=el.querySelector("#vyL");if(sl)sl.onchange=e=>{lieu=e.target.value||null};
-    el.querySelectorAll("[data-vm]").forEach(b=>b.onclick=()=>{mode=b.dataset.vm;draw(el)});
-    el.querySelector("#vyW").onchange=e=>{watch=e.target.checked};
-    el.querySelector("#vyGo").onclick=()=>{const p=VOY.plan(S,here,to,mode);if(!p.ok)return G.toast(p.why);if(!pay(S,p))return G.toast("Fonds insuffisants pour ce trajet.");el.remove();go(S,here,{reg,v,lieu},p,watch,mode!==dm)};
+    el.querySelector("#vyNext").onclick=()=>{if(v===here.v&&!lieu&&here.lieu==null)return G.toast("Vous êtes déjà à "+v+" : choisissez un lieu précis ou une autre ville.");el.remove();VOY.ask(S,{reg,v,lieu},{})};
   };
   G.sheet('<h3 class="h2">Se déplacer</h3><div id="vyBody"></div>',el=>draw(el));
 };
-function dur(h){if(h<1)return Math.max(5,Math.round(h*60/5)*5)+" min";const H=Math.floor(h),m=Math.round((h-H)*60/10)*10;return H+" h"+(m?String(m).padStart(2,"0"):"")}
+function dur(h){if(h<1)return Math.max(5,Math.round(h*60/5)*5)+" min";let H=Math.floor(h),m=Math.round((h-H)*60/10)*10;if(m>=60){H++;m=0}return H+" h"+(m?String(m).padStart(2,"0"):"")}
 function pay(S,p){const c=p.cost;
   if(p.who==="État"){S.nums.dette+=c/1e9;return true}
   if(p.who==="ministère"){if(S.minis.fonds<c/1e6)return false;S.minis.fonds-=c/1e6;return true}
@@ -142,17 +139,25 @@ function go(S,from,to,p,watch,horsNorme,cb){
   const el=document.createElement("div");el.className="film";el.innerHTML='<div class="fview" id="fview"></div><div class="lb top"></div><div class="lb bot"></div>'+
    '<div class="fhud"><span class="rec" style="color:#fde047">● EN ROUTE</span><span class="src">'+M.ic+' '+esc(M.n)+'</span></div><div class="fclock">'+esc(G.dayLabel(S.day))+' · '+dur(p.hrs)+'</div>'+
    '<div class="lower"><span class="k">'+esc(from.v)+' → '+esc(to.v)+(p.d?" · "+p.d+" km":"")+'</span><b>'+esc(to.lieu||("Direction "+to.v))+'</b><span class="sub" id="vySub"></span></div>'+
-   '<div class="fbar"><i id="fprog"></i></div><div class="fctl"><button class="btn small primary" id="vySkip">Passer la vidéo et arriver</button></div>';
-  document.body.appendChild(el);
+   '<div class="fbar"><i id="fprog"></i></div><div class="fctl"><button class="btn small" id="vyWork">'+(p.self?"🎙 Travailler à la voix (au volant)":"💼 Travailler pendant le trajet")+'</button><button class="btn small primary" id="vySkip">Passer la vidéo et arriver</button></div>';
+  document.body.appendChild(el);document.body.classList.add("travel");VOY.driving=!!p.self;VOY.inTrip=true;
+  const h0=hourNow(S);const clk=q=>{const h=(h0+p.hrs*q)%24,H=Math.floor(h),Mi=Math.floor((h-H)*60);const c=el.querySelector(".fclock");if(c)c.textContent=G.dayLabel(S.day+p.hrs*q/24)+" · "+String(H).padStart(2,"0")+":"+String(Mi).padStart(2,"0")+" · arrivée prévue dans "+dur(Math.max(0,p.hrs*(1-q)))};clk(0);
+  $("vyWork").onclick=()=>{if(p.self){if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){G.toast("Au volant, seul le travail à la voix est autorisé, et votre navigateur n'a pas de micro disponible.");return}if(window.VOIX)VOIX.open({driving:true})}else VOY.workPanel(S)};
   const sub=(M.work?"Pendant le trajet, vous travaillez sur vos dossiers. ":"")+(p.mode==="cortege"?"Les routes sont bouclées ; les motards de la Garde présidentielle ouvrent la voie.":p.mode==="convoi"?"Les motards de l'escorte ouvrent la voie, sirènes hurlantes.":p.mode==="moto"?"Le bendskin se faufile entre les voitures.":p.mode==="train"?"Le train Camrail traverse la campagne.":M.air?"Décollage, vol au-dessus des nuages, puis atterrissage.":p.mode==="helico"?"L'hélicoptère survole la région.":p.jam?"C'est l'heure de pointe : la circulation est dense.":"La route défile.");
   $("vySub").textContent=sub;
   const road=p.same?null:(p.d>250?CM.REG[pick([from.reg,to.reg])].land:RB.land);const insec=p.sec<30&&!M.esc&&!M.air&&!M.heli;
   S3.attach($("fview"));if(window.VID&&VID.filmOn)VID.filmOn($("fview"));S3.travel({mode:p.mode,local:p.same,seed:Math.floor(S.day),from:{land:RA.land,pop:city(from.v).pop,profile:VOY.profile(from.reg),name:from.v,apt:AIR[from.v]},to:{land:RB.land,pop:city(to.v).pop,profile:VOY.profile(to.reg),apt:AIR[to.v],name:to.v},road,insec,
-    onProgress:q=>{const b=$("fprog");if(b)b.style.width=(q*100).toFixed(1)+"%"},onEnd:()=>setTimeout(close,700)});
+    onProgress:q=>{const b=$("fprog");if(b)b.style.width=(q*100).toFixed(1)+"%";clk(q)},onEnd:()=>setTimeout(close,700)});
   if(RA)try{A.ambient(p.mode==="avion"||p.mode==="avionp"||p.mode==="jet"?"conseil":"ville")}catch(e){}
-  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();if(window.VID&&VID.filmOff)VID.filmOff();el.remove();arrive()}
+  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();if(window.VID&&VID.filmOff)VID.filmOff();el.remove();document.body.classList.remove("travel");VOY.driving=false;VOY.inTrip=false;const vp=$("vxPanel");if(vp)vp.remove();document.querySelectorAll(".sheet[data-trip]").forEach(s=>s.remove());arrive()}
   $("vySkip").onclick=close;
 }
+/* travailler pendant le trajet (passager) : courrier et assistant */
+VOY.workPanel=function(S){const L=S.inbox.filter(i=>!i.read).slice(0,8);
+  G.sheet('<span class="eyebrow">En route</span><h3 class="h2">Travailler pendant le trajet</h3><div class="row"><button class="btn primary" id="wpVox">🎙 Assistant (voix ou écrit)</button><button class="btn" id="wpDir">📜 Mes directives</button></div>'+
+   '<span class="eyebrow">Courrier non lu ('+L.length+')</span>'+(L.length?'<div class="choices">'+L.map(i=>'<button class="choice" data-wm="'+i.id+'"><span class="t">'+esc(i.t)+'</span><span class="small muted">'+esc(i.from)+'</span></button>').join("")+'</div>':'<p class="small muted">Rien en attente.</p>'),el=>{el.setAttribute("data-trip","");
+    el.querySelector("#wpVox").onclick=()=>{el.remove();if(window.VOIX)VOIX.open()};el.querySelector("#wpDir").onclick=()=>{el.remove();if(window.DIR)DIR.sheet(S)};
+    el.querySelectorAll("[data-wm]").forEach(b=>b.onclick=()=>{el.remove();window.SYS.openMail(S,b.dataset.wm)})})};
 function arrival(S,from,to,p,horsNorme){
   const M=VOY.MODES[p.mode];const RB=CM.REG[to.reg];let extra=[];let hrs=p.hrs;
   // aléas du voyage
@@ -163,7 +168,8 @@ function arrival(S,from,to,p,horsNorme){
   // effets du rang et des choix
   if(M.gene&&!p.same||M.gene&&p.a.pop>3e5){window.SYS.cause(S,from.reg,(p.mode==="cortege"?"Routes bouclées des heures pour le cortège présidentiel à ":"Embouteillages monstres au passage du convoi officiel à ")+from.v,-M.gene*.6,"")}
   if(horsNorme&&(S.mode==="pres"||S.mode==="min")&&["taxi","moto","voiture","bus"].includes(p.mode)){extra.push("Vu dans un "+(p.mode==="moto"?"bendskin":p.mode)+" sans escorte : les réseaux sociaux s'enflamment, et la sécurité s'inquiète.");if(S.st)S.st.pop=clamp(S.st.pop+1.5,0,100);if(Math.random()<.06){extra.push("Incident de sécurité en chemin : la Garde présidentielle vous exfiltre.");if(S.st)S.st.sec=clamp(S.st.sec-1,0,100)}}
-  if(M.work){const w=Math.min(6,hrs);if(S.ent){const c=S.ent.chantiers.find(x=>x.st==="cours");if(c)c.prog=Math.min(100,c.prog+w*.6);S.ent.rep=clamp(S.ent.rep+.3,0,100);extra.push("Vous avez avancé vos dossiers à l'arrière de la voiture.")}
+  if(p.typ==="incognito"){extra.push("Déplacement incognito : la population apprécie la simplicité.");if(S.st)S.st.pop=clamp(S.st.pop+.5,0,100);if((S.mode==="pres"||S.mode==="min")&&Math.random()<.04){extra.push("Frayeur en route : sans escorte, votre véhicule a été pris à partie.");if(S.st)S.st.sec=clamp(S.st.sec-1,0,100)}}
+  if(M.work&&!p.self){const w=Math.min(6,hrs);if(S.ent){const c=S.ent.chantiers.find(x=>x.st==="cours");if(c)c.prog=Math.min(100,c.prog+w*.6);S.ent.rep=clamp(S.ent.rep+.3,0,100);extra.push("Vous avez avancé vos dossiers à l'arrière de la voiture.")}
     else if(S.minis){S.minis.perf=clamp(S.minis.perf+w*.12,0,100);extra.push("Vous avez signé des parapheurs pendant le trajet.")}
     else if(S.mode==="pres"){S.integ=clamp((S.integ||35)+.2,0,100);extra.push("Vous avez travaillé sur vos dossiers pendant le trajet.")}
     else if(S.pro){S.pro.xp+=1}}
@@ -174,8 +180,56 @@ function arrival(S,from,to,p,horsNorme){
 }
 /* ---------- agglomérations (pour la carte) ---------- */
 /* déplacement lancé par programme (commandes vocales) : renvoie un message d'erreur ou null */
-VOY.goTo=function(S,to,mode,watch,cb){const here=VOY.here(S);const N=VOY.norme(S);const dm=VOY.defaultMode(S,here,to);let m=mode&&N.ok.includes(mode)?mode:dm;let p=VOY.plan(S,here,to,m);
-  if(!p.ok){m=dm;p=VOY.plan(S,here,to,m)}if(!p.ok)return p.why;if(!pay(S,p))return"fonds insuffisants pour ce trajet";go(S,here,to,p,watch!==false,m!==dm,cb);return null};
+VOY.goTo=function(S,to,mode,watch,cb,cancel){const here=VOY.here(S);const dm=VOY.defaultMode(S,here,to);const p=VOY.plan(S,here,to,dm);if(!p.ok&&!VOY.plan(S,here,to,"voiture").ok&&!VOY.plan(S,here,to,"avion").ok)return p.why;
+  VOY.ask(S,to,{mode,watch,cb,cancel});return null};
+/* départ immédiat sans fenêtre (tests, automatismes) */
+VOY.goNow=function(S,to,mode,watch,cb,o){o=o||{};const here=VOY.here(S);const N=VOY.norme(S);const dm=VOY.defaultMode(S,here,to);let m=mode&&N.ok.includes(mode)?mode:dm;let p=VOY.plan(S,here,to,m);
+  if(!p.ok){m=dm;p=VOY.plan(S,here,to,m)}if(!p.ok)return p.why;p.typ=o.typ||"officiel";p.self=m==="voiture";if(!pay(S,p))return"fonds insuffisants pour ce trajet";go(S,here,to,p,watch!==false,m!==dm,cb);return null};
+
+/* ---------- fenêtre de départ : moyen, type, cortège, chauffeur, vidéo ---------- */
+const ESC={pres:[["complet","Cortège complet (routes bouclées)"],["reduit","Cortège réduit"],["restreint","Cortège restreint (2 véhicules)"],["sans","Sans cortège"]],
+  min:[["complet","Convoi avec escorte de motards"],["restreint","Escorte restreinte (1 véhicule)"],["sans","Sans escorte"]]};
+const OFFICIEL=["pres","min","maire","dep","dg"];
+function officialDriver(S,typ){const r=rank(S);return typ==="officiel"&&["pres","min","maire","dep"].includes(r)}
+VOY.hasDriver=(S,typ)=>officialDriver(S,typ||"officiel")||!!S.chauffeur;
+const salDriver=S=>S.mode==="ing"?180000:150000;
+VOY.recruit=function(S){if(S.chauffeur)return S.chauffeur;const sal=salDriver(S);const payer=S.mode==="ing"&&S.ent?"entreprise":"personnel";
+  if(payer==="entreprise"){if(S.ent.fonds<sal/1e6)return null;S.ent.fonds-=sal/1e6}else if(window.EMP){if(EMP.wallet(S)<sal)return null;EMP.credit(S,-sal)}
+  const reg=VOY.here(S).reg;S.chauffeur={n:window.SYS.nom(reg,Math.random()<.15?"f":"m"),sal,payer,since:S.day};
+  window.SYS.inbox(S,{from:"Ressources humaines",t:"Chauffeur recruté : "+S.chauffeur.n,b:"Salaire : "+F(sal)+" par mois (premier mois payé), à la charge "+(payer==="entreprise"?"de l'entreprise":"de vos finances personnelles")+".",k:"info",read:true});return S.chauffeur};
+VOY.monthTick=function(S){const c=S.chauffeur;if(!c)return;let ok=true;if(c.payer==="entreprise"&&S.ent){if(S.ent.fonds<c.sal/1e6)ok=false;else S.ent.fonds-=c.sal/1e6}else if(window.EMP){if(EMP.wallet(S)<c.sal)ok=false;else EMP.credit(S,-c.sal)}
+  if(!ok){window.SYS.inbox(S,{from:"Ressources humaines",t:"Votre chauffeur démissionne",b:c.n+" n'a pas été payé ce mois-ci et quitte votre service.",k:"alerte"});S.chauffeur=null}};
+VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.here(S);const N=VOY.norme(S);const r=rank(S);const dm=VOY.defaultMode(S,here,to);
+  const fromMode=m=>{if(["cortege","convoi"].includes(m))return{moy:"vehicule",esc:"complet",drv:true};if(m==="cortegeR")return{moy:"vehicule",esc:"reduit",drv:true};if(m==="restreint")return{moy:"vehicule",esc:"restreint",drv:true};if(m==="chauffeur")return{moy:"vehicule",esc:"sans",drv:true};if(m==="voiture")return{moy:"vehicule",esc:"sans",drv:false};return{moy:m,esc:"sans",drv:false}};
+  let pre=o.mode;if(pre==="rapide"){let best=null,bh=1e9;for(const k of N.ok){const q=VOY.plan(S,here,to,k);if(q.ok&&q.hrs<bh){bh=q.hrs;best=k}}pre=best}
+  const st=Object.assign({typ:OFFICIEL.includes(r)?"officiel":"prive",watch:o.watch!==false},fromMode(pre&&N.ok.includes(pre)?pre:dm));let gone=false;
+  const modeOf=()=>{if(st.moy!=="vehicule")return st.moy;if(st.typ==="incognito")st.esc="sans";if(st.esc==="complet")return r==="pres"?"cortege":"convoi";if(st.esc==="reduit")return"cortegeR";if(st.esc==="restreint")return"restreint";return st.drv?"chauffeur":"voiture"};
+  const others=Object.keys(VOY.MODES).filter(k=>N.ok.includes(k)&&!["cortege","cortegeR","restreint","convoi","chauffeur","voiture"].includes(k));
+  const vehOk=N.ok.some(k=>["cortege","convoi","chauffeur","voiture","restreint"].includes(k));
+  const draw=el=>{const m=modeOf();const p=VOY.plan(S,here,to,m);const drvNeeded=st.moy==="vehicule"&&st.esc==="sans"&&st.drv;const hasD=VOY.hasDriver(S,st.typ);
+    const self=st.moy==="vehicule"&&st.esc==="sans"&&!st.drv;const pv=k=>{const q=VOY.plan(S,here,to,k);return q.ok?dur(q.hrs)+" · "+F(q.cost):q.why};
+    el.querySelector("#vaBody").innerHTML='<div class="kv"><span>Départ</span><b>'+esc((here.lieu?here.lieu+", ":"")+here.v)+'</b><span>Arrivée</span><b>'+esc((to.lieu?to.lieu+", ":"")+to.v)+'</b></div>'+
+     '<span class="eyebrow">Moyen de transport</span><div class="choices">'+(vehOk?'<button class="choice" data-am="vehicule" aria-pressed="'+(st.moy==="vehicule")+'" style="'+(st.moy==="vehicule"?"border-color:var(--y)":"")+'"><span class="t">🚗 Véhicule (voiture'+(ESC[r]?", cortège ou escorte":"")+')</span></button>':"")+
+       others.map(k=>{const q=VOY.plan(S,here,to,k);const M=VOY.MODES[k];return'<button class="choice" data-am="'+k+'"'+(q.ok?"":" disabled")+' aria-pressed="'+(st.moy===k)+'" style="'+(st.moy===k?"border-color:var(--y)":"")+(q.ok?"":";opacity:.45")+'"><span class="t">'+M.ic+" "+esc(M.n)+'</span><span class="small muted">'+esc(pv(k))+'</span></button>'}).join("")+'</div>'+
+     (OFFICIEL.includes(r)?'<span class="eyebrow">Type de déplacement</span><div class="row">'+[["officiel","Officiel"],["prive","Privé"],["incognito","Incognito"]].map(([k,l])=>'<button class="btn small'+(st.typ===k?" primary":"")+'" data-at="'+k+'">'+l+'</button>').join("")+'</div><p class="small muted">'+(st.typ==="officiel"?"Frais pris en charge par "+(r==="pres"?"l'État":r==="min"?"le ministère":r==="maire"?"la commune":r==="dg"?"l'entreprise":"l'institution")+", protocole normal.":st.typ==="prive"?"À vos frais, protocole allégé.":"Sans protocole ni escorte, à vos frais : discret, mais plus risqué.")+'</p>':"")+
+     (st.moy==="vehicule"&&ESC[r]&&st.typ!=="incognito"?'<span class="eyebrow">'+(r==="pres"?"Cortège":"Escorte")+'</span><div class="choices">'+ESC[r].map(([k,l])=>'<label class="row small" style="gap:8px"><input type="radio" name="vaEsc" value="'+k+'"'+(st.esc===k?" checked":"")+'> '+esc(l)+'</label>').join("")+'</div>':"")+
+     (st.moy==="vehicule"?'<span class="eyebrow">Conduite</span>'+(st.esc!=="sans"?'<p class="small">Les véhicules du '+(r==="pres"?"cortège":"convoi")+' sont conduits par des chauffeurs de l\'État.</p>':
+       '<label class="row small" style="gap:8px"><input type="checkbox" id="vaDrv"'+(st.drv?" checked":"")+'> Me faire conduire par un chauffeur</label>'+
+       (drvNeeded&&!hasD?'<div class="card" style="gap:6px"><b>Vous n\'avez pas de chauffeur.</b><span class="small">Sans chauffeur, impossible de vous faire conduire : recrutez-en un ('+F(salDriver(S))+' par mois, à la charge '+(S.mode==="ing"?"de l\'entreprise":"de vos finances personnelles")+'), ou conduisez vous-même.</span><button class="btn primary" id="vaRec">Recruter un chauffeur</button></div>':
+        drvNeeded?'<p class="small muted">Chauffeur : '+esc(officialDriver(S,st.typ)?"chauffeur de fonction":S.chauffeur.n)+'.</p>':"")):"")+
+     '<div class="card" style="gap:4px"><b>'+esc(VOY.MODES[m].ic+" "+VOY.MODES[m].n)+'</b><span class="small">'+(p.ok?dur(p.hrs)+" · "+p.d+" km · "+F(p.cost)+(st.typ==="officiel"&&p.who!=="personnel"?" (payé par : "+p.who+")":" (à vos frais)"):esc(p.why))+'</span>'+
+       '<span class="small" style="color:'+(self?"var(--warn,#f0a93a)":"var(--ok,#43c47c)")+'">'+(self?"Vous êtes au volant : téléphone interdit. Pendant la vidéo, vous ne pourrez travailler qu'à la voix.":st.moy==="marche"?"À pied : vous pourrez passer des appels à la voix.":"Vous êtes passager : vous pourrez travailler pendant le trajet (écrit et voix).")+'</span></div>'+
+     '<label class="row small" style="gap:8px"><input type="checkbox" id="vaW"'+(st.watch?" checked":"")+'> Regarder la vidéo du trajet (sinon, arrivée directe)</label>'+
+     '<div class="row"><button class="btn primary" id="vaGo"'+(p.ok&&!(drvNeeded&&!hasD)?"":" disabled")+'>Partir</button><button class="btn ghost" id="vaNo">Annuler</button></div>';
+    el.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{st.moy=b.dataset.am;draw(el)});
+    el.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{st.typ=b.dataset.at;draw(el)});
+    el.querySelectorAll("input[name=vaEsc]").forEach(i=>i.onchange=()=>{st.esc=i.value;if(st.esc!=="sans")st.drv=true;draw(el)});
+    const dv=el.querySelector("#vaDrv");if(dv)dv.onchange=()=>{st.drv=dv.checked;draw(el)};
+    const rc=el.querySelector("#vaRec");if(rc)rc.onclick=()=>{const c=VOY.recruit(S);if(!c)return G.toast("Fonds insuffisants pour payer un chauffeur.");G.toast("Chauffeur recruté : "+c.n);draw(el)};
+    el.querySelector("#vaW").onchange=e=>{st.watch=e.target.checked};
+    el.querySelector("#vaNo").onclick=()=>{el.remove();if(!gone&&o.cancel)o.cancel()};
+    el.querySelector("#vaGo").onclick=()=>{const m2=modeOf();const q=VOY.plan(S,here,to,m2);if(!q.ok)return G.toast(q.why);q.typ=st.typ;q.self=self;if(st.typ!=="officiel")q.who="personnel";if(!pay(S,q))return G.toast("Fonds insuffisants pour ce trajet.");gone=true;el.remove();go(S,here,to,q,st.watch,m2!==dm,o.cb)}};
+  G.sheet('<span class="eyebrow">Déplacement</span><h3 class="h2">Comment voulez-vous y aller ?</h3><div id="vaBody"></div>',el=>{el.setAttribute("data-noinstr","");draw(el);el.addEventListener("click",e=>{if((e.target===el||e.target.hasAttribute("data-close"))&&!gone&&o.cancel)o.cancel()})})};
 VOY.city=n=>city(n);VOY.LIEUX=LIEUX;VOY.dur=dur;
 VOY.agglosHTML=function(){const top=VOY.CITIES.slice().sort((a,b)=>b.pop-a.pop).slice(0,16);const max=top[0].pop;
   return'<div class="card"><span class="eyebrow">Grandes agglomérations (estimations 2025)</span>'+top.map(c=>'<div class="row" style="justify-content:space-between;gap:8px"><span class="small" style="min-width:110px"><b>'+esc(c.n)+'</b> <span class="muted">'+esc(CM.REG[c.reg].n)+'</span></span><span style="flex:1;height:8px;background:var(--panel3);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:'+Math.max(2,c.pop/max*100)+'%;background:var(--y)"></i></span><span class="small" style="font-family:var(--mono);min-width:64px;text-align:right">'+(c.pop>=1e6?(c.pop/1e6).toFixed(1)+" M":Math.round(c.pop/1000)+" k")+'</span><button class="btn small" data-goto="'+esc(c.n)+'" data-gr="'+c.reg+'">Y aller</button></div>').join("")+'</div>'};

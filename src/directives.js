@@ -112,6 +112,24 @@ DIR.mailBind=function(S,it,el){const d=it.dir&&(S.directives||[]).find(x=>x.id==
     else if(k==="sanction"){if(S.st)S.st.int=clamp(S.st.int+1,0,100);if(S.gov&&S.gov.pm)S.gov.pm.loy=clamp(S.gov.pm.loy-2,0,100);d.done=false;d.due=S.day+30;msg="Des responsables sont relevés de leurs fonctions ; la mesure est relancée."}
     el.remove();G.toast(msg);say(msg);window.SYS.inbox(S,{from:"Cabinet",t:"Suite : "+d.titre,b:msg,k:"info",read:true});G.render()})};
 
+/* modifier une directive en cours : consigne, région, délai */
+DIR.edit=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.done)return;const rest=Math.max(1,Math.round(d.due-S.day));
+  G.sheet('<span class="eyebrow">Modifier la directive</span><h3 class="h2">'+esc(d.titre)+'</h3>'+
+   '<label class="f" for="deTx">Votre instruction<textarea id="deTx" rows="4" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit">'+esc(d.texte||"")+'</textarea></label>'+
+   '<label class="f" for="deReg">Région concernée<select id="deReg"><option value="">Tout le pays</option>'+CM.REGIONS.map(r=>'<option value="'+r.id+'"'+(d.reg===r.id?" selected":"")+'>'+esc(r.n)+'</option>').join("")+'</select></label>'+
+   '<label class="f" for="deJ">Délai d\'exécution restant (jours)<input type="number" id="deJ" min="1" max="720" value="'+rest+'"></label>'+
+   '<p class="small muted">Raccourcir le délai coûte plus cher et augmente le risque d\'échec ; changer l\'instruction relance l\'analyse de la mesure.</p>'+
+   '<div class="row"><button class="btn primary" id="deOk">Enregistrer les modifications</button><button class="btn ghost" id="deNo">Annuler</button></div>',el=>{el.setAttribute("data-noinstr","");
+    el.querySelector("#deNo").onclick=()=>{el.remove();DIR.sheet(S)};
+    el.querySelector("#deOk").onclick=()=>{const tx=el.querySelector("#deTx").value.trim();if(!tx)return G.toast("L'instruction ne peut pas être vide.");const j=Math.max(1,Math.min(720,+el.querySelector("#deJ").value||rest));const rg=el.querySelector("#deReg").value||null;
+      const ch=[];if(tx!==d.texte){const t=norm(tx);const c=CAT.find(x=>x.re.test(t))||GENERIC;const oldCost=d.cout||0;d.texte=tx;d.cat=c.id;d.fx={...c.fx};d.base=c.base||"";
+        if(c===GENERIC){const x=tx.replace(/^(je veux (que|qu')|j'exige (que|qu')|j'ordonne (que|qu')?|il faut (que|qu')?|faites (en sorte (que|qu'))?)\s*/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}else d.titre=c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");
+        d.cout=c.cout;const extra=Math.max(0,d.cout-oldCost)*.25;if(extra){if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000)}ch.push("instruction")}
+      if(rg!==d.reg){d.reg=rg;ch.push("région")}
+      if(j!==rest){const faster=j<rest;d.due=S.day+j;if(faster){const extra=(d.cout||2)*.25*(rest/j-1)*.3;if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000);d.cout=Math.round((d.cout||0)*(1+.3*(rest/j-1)))}ch.push("délai")}
+      el.remove();if(!ch.length){DIR.sheet(S);return}
+      const msg="Directive modifiée ("+ch.join(", ")+") : "+d.titre+". Nouvelle échéance : "+G.dayLabel(d.due)+".";
+      window.SYS.inbox(S,{from:d.qui||"Cabinet",t:"Modification : "+d.titre.slice(0,70),b:"Nouvelle instruction : « "+d.texte+" »\n"+msg,k:"info",read:true,reg:d.reg});G.toast(msg.slice(0,120));try{A.speak(msg,{voix:"f"})}catch(e){}G.render();DIR.sheet(S)}})};
 /* carte de suivi (dépliable) et fiche détaillée */
 const tDir=d=>d.titre==="Directive"?(d.texte||"Directive").slice(0,80):d.titre;
 DIR.card=function(S){const all=S.directives||[];const L=all.filter(d=>!d.done);if(!all.length)return"";
@@ -124,9 +142,10 @@ DIR.sheet=function(S){const all=(S.directives||[]).slice().reverse();const on=al
      '<div class="kv small"><span>Donnée par</span><b>'+esc(d.qui||"")+'</b><span>Concerne</span><b>'+esc(d.cat==="patrimoine"?d.cible.lab:d.reg?CM.REG[d.reg].n:"Tout le pays")+'</b>'+
      (d.base?'<span>Base légale</span><b>'+esc(d.base)+'</b>':"")+'<span>Lancée le</span><b>'+esc(G.dayLabel(d.start))+'</b><span>Échéance</span><b>'+esc(G.dayLabel(d.due))+(d.done?"":" ("+Math.max(0,Math.round(d.due-S.day))+" j)")+'</b>'+
      (d.cout?'<span>Coût estimé</span><b>'+d.cout+' Md FCFA</b>':"")+'<span>Statut</span><b>'+(d.done?esc(d.res||"Terminée : compte rendu au courrier"):"En cours d'exécution")+'</b></div>'+
-     (d.done?"":'<div class="bar"><i style="width:'+pct+'%"></i></div><div class="row"><button class="btn small" data-dacc="'+d.id+'">Accélérer (+50 % du coût, délai réduit d\'un tiers)</button><button class="btn small ghost" data-dann="'+d.id+'">Annuler la directive</button></div>')+'</div>'};
+     (d.done?"":'<div class="bar"><i style="width:'+pct+'%"></i></div><div class="row"><button class="btn small primary" data-dedit="'+d.id+'">✏️ Modifier</button><button class="btn small" data-dacc="'+d.id+'">Accélérer (+50 % du coût, délai réduit d\'un tiers)</button><button class="btn small ghost" data-dann="'+d.id+'">Annuler la directive</button></div>')+'</div>'};
   G.sheet('<span class="eyebrow">Suivi</span><h3 class="h2">Vos directives</h3>'+(on.length?'<span class="eyebrow">En cours ('+on.length+')</span>'+on.map(item).join(""):'<p class="small muted">Aucune directive en cours.</p>')+
    (off.length?'<span class="eyebrow">Terminées ('+off.length+')</span>'+off.map(item).join(""):""),el=>{el.setAttribute("data-noinstr","");
+    el.querySelectorAll("[data-dedit]").forEach(b=>b.onclick=()=>{el.remove();DIR.edit(S,b.dataset.dedit)});
     el.querySelectorAll("[data-dacc]").forEach(b=>b.onclick=()=>{const d=S.directives.find(x=>x.id===b.dataset.dacc);if(!d)return;const extra=(d.cout||2)*.5*.25;
       if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min"){const M=extra*1000;if(S.minis.fonds<M)return G.toast("Crédits insuffisants.");S.minis.fonds-=M}
       d.due=Math.max(S.day+1,d.due-(d.due-S.day)/3);d.cout=Math.round((d.cout||2)*1.5);G.toast("Exécution accélérée : rapport le "+G.dayLabel(d.due));el.remove();DIR.sheet(S);G.render()});

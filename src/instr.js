@@ -29,6 +29,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
    (SR?'<button class="btn" data-imic aria-label="Dicter la consigne" title="Dicter la consigne">🎙</button>':'')+'<button class="btn primary" data-igo>OK</button></div><p class="small muted" data-ihint></p>';
   box.insertBefore(d,close||null);
   const inp=d.querySelector("input"),hint=t=>{d.querySelector("[data-ihint]").textContent=t||""};
+  if(window.VOY&&VOY.driving){inp.disabled=true;inp.placeholder="Au volant : dictez votre consigne avec 🎙";const g=d.querySelector("[data-igo]");if(g)g.disabled=true}
   const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";await INSTR.run(el,v,hint)};
   d.querySelector("[data-igo]").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
   const mic=d.querySelector("[data-imic]");if(mic)mic.onclick=()=>{try{A.stop()}catch(e){}const r=new SR();r.lang="fr-FR";r.interimResults=true;mic.textContent="⏹";hint("J'écoute…");

@@ -62,6 +62,7 @@ function findHospital(S,t){if(!S.org)return null;const c=findCity(t),r=findRegio
   if(!L.length&&(c||r)){const reg=c?c.reg:r.id;L=S.org.hop.filter(h=>h.reg===reg&&(!c||norm(h.n).includes(norm(c.n))));if(!L.length)L=S.org.hop.filter(h=>h.reg===reg)}
   if(!L.length){const here=VOY.here(S);L=S.org.hop.filter(h=>h.reg===here.reg)}return L[0]||null}
 function modeOf(S,t){const pres=S.mode==="pres";
+  if(/urgen|au plus vite|le plus vite|rapidement|tout de suite|immediatement/.test(t)&&!/taxi|moto|bus|train|voiture|pied/.test(t))return"rapide";
   if(/sans (cortege|escorte|protocole)|discret|incognito|sans convoi/.test(t))return/taxi/.test(t)?"taxi":/moto|bendskin/.test(t)?"moto":/pied/.test(t)?"marche":"chauffeur";
   if(/cortege/.test(t))return pres?"cortege":"convoi";if(/convoi|escorte|motard/.test(t))return"convoi";if(/taxi/.test(t))return"taxi";if(/moto|bendskin|mototaxi/.test(t))return"moto";
   if(/a pied|en marchant/.test(t))return"marche";if(/avion|vol\b|par air/.test(t))return pres?"avionp":"avion";if(/jet/.test(t))return"jet";if(/train|camrail/.test(t))return"train";if(/helico/.test(t))return"helico";if(/bus|car\b|agence/.test(t))return"bus";
@@ -76,7 +77,7 @@ let busy=false;
 VOIX.tick=function(S){if(!S||busy||S.phase!=="play")return;const due=agenda(S).filter(a=>!a.done&&S.day>=a.at).sort((a,b)=>a.at-b.at)[0];if(!due)return;due.done=1;busy=true;setTimeout(()=>{run(S,due);},200)};
 function closeP(){try{stop()}catch(e){}const e=$("vxPanel");if(e)e.remove()}
 function run(S,a){closeP();const end=()=>{busy=false;G.render();setTimeout(()=>VOIX.tick(G.S),400)};
-  if(a.type==="trip"){const err=VOY.goTo(S,a.to,a.mode,true,()=>{if(a.visit)visit(S,a.visit);end()});if(err){say("Le déplacement prévu n'a pas pu avoir lieu : "+err+".");end()}return}
+  if(a.type==="trip"){const err=VOY.goTo(S,a.to,a.mode,true,()=>{if(a.visit)visit(S,a.visit);end()},end);if(err){say("Le déplacement prévu n'a pas pu avoir lieu : "+err+".");end()}return}
   if(a.type==="meet")return meeting(S,a,end);
   if(a.type==="renc"){const here=VOY.here(S);if(here.v===a.to.v){end();RENC.open(S,a.renc);return}const err=VOY.goTo(S,a.to,a.mode,true,()=>{end();setTimeout(()=>RENC.open(G.S,a.renc),700)});if(err){say("Le déplacement prévu n'a pas pu avoir lieu : "+err+".");end()}return}
   end()}
@@ -142,15 +143,15 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     agenda(S).push({id:nid(),type:"meet",at:w.at,who:P,objet:obj||"point de situation",lab:(can?"Audience : ":"Rendez-vous avec ")+(P.n?P.n+", ":"")+P.lab});G.render();
     return reply((can?"Très bien. ":"Votre demande est acceptée. ")+(P.n?P.n+", "+P.lab+", ":P.lab.charAt(0).toUpperCase()+P.lab.slice(1)+" ")+(can?"est convoqué"+(P.sexe==="f"?"e ":" "):"vous recevra ")+w.label+(S.mode==="pres"?" au palais d'Etoudi.":"."))}
   // déplacement / visite
-  if(/\b(aller|va|vais|rendre|deplacer|visite|visiter|partir|conduis|emmene|voyage)\b/.test(t)){if(!window.VOY)return reply("Les déplacements ne sont pas disponibles.");
+  if(/\b(aller|va|vais|rendre|deplacer|deplace|visite|visiter|partir|pars|conduis|conduisez|conduire|emmene|emmenez|emmener|voyage|voyager|ramene|ramenez|ramener|rentrer|rentre|rentrons|retourner|retourne|retour|amene|amenez|amener|transporte|transportez|filer|file|direction|rejoindre|rejoins|gagner)\b/.test(t)){if(!window.VOY)return reply("Les déplacements ne sont pas disponibles.");
     let to=null,visitInfo=null;const here=VOY.here(S);
     if(/hopital|clinique|centre de sante/.test(t)){const h=findHospital(S,t);if(h){const c=VOY.CITIES.find(x=>h.n.includes(x.n))||VOY.CITIES.find(x=>x.reg===h.reg&&x.n===CM.REG[h.reg].chef);to={reg:h.reg,v:c?c.n:CM.REG[h.reg].chef,lieu:h.n};visitInfo={hop:h.id,name:h.n,reg:h.reg}}}
     if(!to){for(const [cty,L] of Object.entries(VOY.LIEUX||{}))for(const l of L)if(t.includes(norm(l).replace(/\(.*\)/,"").trim()))to={reg:VOY.city(cty).reg,v:cty,lieu:l}}
     if(!to){const c=findCity(t);if(c)to={reg:c.reg,v:c.n,lieu:null};else{const r=findRegion(t);if(r)to={reg:r.id,v:r.chef,lieu:null}}}
     if(!to&&/marche/.test(t))to={reg:here.reg,v:here.v,lieu:"le marché"};
     if(!to)return reply("Où voulez-vous aller ? Dites par exemple : je veux aller à Douala en avion, ou : visite l'hôpital Laquintinie sans cortège.");
-    const mode=modeOf(S,t);const N=VOY.norme(S);let note="";if(mode&&!N.ok.includes(mode))note=" Ce moyen de transport n'est pas prévu pour votre rang : j'utilise celui par défaut.";
-    const w=parseWhen(S,t);const ml=mode&&N.ok.includes(mode)?VOY.MODES[mode].n.toLowerCase():"le moyen habituel pour votre rang";
+    const mode=modeOf(S,t);const N=VOY.norme(S);let note="";if(mode&&mode!=="rapide"&&!N.ok.includes(mode))note=" Ce moyen de transport n'est pas prévu pour votre rang : j'utilise celui par défaut.";
+    const w=parseWhen(S,t);const ml=mode==="rapide"?"par le moyen le plus rapide":mode&&N.ok.includes(mode)?VOY.MODES[mode].n.toLowerCase():"le moyen habituel pour votre rang";
     if(w&&w.at-S.day>.05){agenda(S).push({id:nid(),type:"trip",at:w.at,to,mode,visit:visitInfo,lab:"Déplacement : "+(to.lieu?to.lieu+", ":"")+to.v+" ("+ml+")"});G.render();return reply("C'est noté. Départ "+w.label+" pour "+(to.lieu||to.v)+", "+ml+"."+note)}
     reply("Je prépare votre déplacement vers "+(to.lieu||to.v)+", "+ml+"."+note);setTimeout(closeP,1500);const err=VOY.goTo(S,to,mode,true,()=>{if(visitInfo)visit(S,visitInfo)});if(err)reply("Impossible : "+err+".");return}
   if(window.DIR&&DIR.matches(t)&&!(window.QA&&QA.isQuestion(raw))){DIR.handle(S,raw,reply);return}
@@ -160,20 +161,21 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
 /* ---------- interface : micro et saisie ---------- */
 let rec=null,listening=false;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 function log(t){const l=$("vxLog");if(!l)return;const d=document.createElement("div");d.textContent=t;d.className=t.startsWith("Vous")?"me":"it";l.appendChild(d);l.scrollTop=l.scrollHeight}
-VOIX.open=function(){let el=$("vxPanel");if(el){el.remove();return}
+VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.driving));let el=$("vxPanel");if(el){el.remove();if(!o.driving)return}
   el=document.createElement("div");el.id="vxPanel";el.className="vxpanel";
   el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="btn small ghost" id="vxX">Fermer</button></div><div class="vxlog" id="vxLog"></div>'+
    '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Parler</button><input type="text" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"><button class="btn" id="vxGo">OK</button></div>'+
    '<span class="small muted" id="vxHint">'+(SR?"Appuyez sur Parler, puis dites votre consigne.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
   document.body.appendChild(el);$("vxX").onclick=()=>{stop();el.remove()};
-  const send=()=>{const v=$("vxIn").value.trim();if(v){$("vxIn").value="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter")send()};
+  if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Appuyez sur Parler et donnez vos consignes à la voix.";setTimeout(()=>{if(SR)start()},300)}
+  const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter")send()};
   $("vxMic").onclick=()=>listening?stop():start();
   if(!$("vxLog").children.length)log("Jeu : Bonjour. Dites par exemple « convoque le ministre de la Défense demain à 9 h » ou « je veux visiter l'hôpital Laquintinie sans cortège ».");
 };
 function start(){if(!SR){G.toast("Reconnaissance vocale indisponible ici : tapez la consigne.");return}try{A.stop()}catch(e){}
   rec=new SR();rec.lang="fr-FR";rec.interimResults=true;rec.maxAlternatives=1;listening=true;const b=$("vxMic");if(b){b.textContent="⏹ J'écoute…";b.setAttribute("aria-pressed","true")}
   rec.onresult=e=>{let fin="",tmp="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else tmp+=r[0].transcript}const h=$("vxHint");if(h)h.textContent=tmp||fin;if(fin){stop();VOIX.handle(fin)}};
-  rec.onerror=e=>{stop();const h=$("vxHint");if(h)h.textContent=e.error==="not-allowed"||e.error==="service-not-allowed"?"Le micro est bloqué ici (autorisez-le, ou utilisez la version hors ligne dans Chrome). Vous pouvez taper la consigne.":"Micro : "+e.error+". Réessayez ou tapez la consigne."};
+  rec.onerror=e=>{stop();const h=$("vxHint");if(h)h.textContent=window.VOY&&VOY.driving?"Micro indisponible : au volant, vous ne pouvez pas écrire. Autorisez le micro dans Chrome, ou passez la vidéo pour arriver.":e.error==="not-allowed"||e.error==="service-not-allowed"?"Le micro est bloqué ici (autorisez-le, ou utilisez la version hors ligne dans Chrome). Vous pouvez taper la consigne.":"Micro : "+e.error+". Réessayez ou tapez la consigne."};
   rec.onend=()=>stop();try{rec.start()}catch(e){stop()}}
 function stop(){listening=false;try{rec&&rec.stop()}catch(e){}const b=$("vxMic");if(b){b.textContent="🎙 Parler";b.setAttribute("aria-pressed","false")}}
 })();

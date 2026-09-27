@@ -92,8 +92,8 @@ function listen(onFinal,onState){if(!SR){onState("off");return}try{A.stop()}catc
 /* ---------- l'entretien ---------- */
 RENC.open=function(S,o){if(!S||S.phase!=="play")return;const k=K[o.kind]||K.habitant;
   const reg=o.reg||(window.VOY?VOY.here(S).reg:"CE");const ville=o.ville||(window.VOY?VOY.here(S).v:CM.REG[reg].chef);
-  const sexe=o.sexe||(o.kind==="commercant"?"f":Math.random()<.35?"f":"m");
-  const P={kind:o.kind||"habitant",n:o.n||window.SYS.nom(reg),lab:o.lab||(sexe==="f"&&o.kind!=="commercant"?fem(k.lab):k.lab),lieu:o.lieu||k.lieu,reg,ville,sujet:o.sujet||"",contexte:o.contexte||"",sexe};
+  const sexe=o.sexe||(o.n?window.SYS.sexe(o.n):o.kind==="commercant"?"f":Math.random()<.35?"f":"m");
+  const P={kind:o.kind||"habitant",n:o.n||window.SYS.nom(reg,sexe),lab:o.lab?window.SYS.accord(o.lab,sexe):(sexe==="f"&&o.kind!=="commercant"?fem(k.lab):k.lab),lieu:o.lieu||k.lieu,reg,ville,sujet:o.sujet||"",contexte:o.contexte||"",sexe};
   const turns=[];let mood=0,eng=null,cost=false,ended=false,busy=false;
   let mode="choix";try{mode=localStorage.getItem("etoudi-renc-mode")||"choix"}catch(e){}
   const vp=$("vxPanel");if(vp)vp.remove();
