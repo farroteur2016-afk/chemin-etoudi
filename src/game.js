@@ -67,7 +67,7 @@ function bindAudio(){
   const btrip=$("bTrip");if(btrip)btrip.onclick=()=>{A.unlock();if(window.VOY)VOY.open()};
   const bvid=$("bVid");if(bvid)bvid.onclick=()=>{A.unlock();if(window.VID)VID.picker()};
   bv.onclick=()=>{A.voiceOn=!A.voiceOn;if(!A.voiceOn)A.stop();sync();toast(A.voiceOn?"Voix off activée":"Voix off coupée")};
-  ba.onclick=()=>{A.unlock();A.setAmb(!A.ambOn);sync();toast(A.ambOn?"Ambiance sonore activée":"Ambiance sonore coupée")};
+  ba.onclick=()=>{A.unlock();if(window.MUS)MUS.sheet();else{A.setAmb(!A.ambOn);sync()}};
   GAME.syncAudio=sync;sync();
   document.addEventListener("pointerdown",()=>A.unlock(),{once:true});
 }
