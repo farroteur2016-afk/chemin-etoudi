@@ -36,7 +36,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
     r.onresult=e=>{let f="",t="";for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)f+=x[0].transcript;else t+=x[0].transcript}if(t)hint(t);if(f){inp.value=f;try{r.stop()}catch(x){}go()}};
     r.onerror=e=>{hint(e.error==="not-allowed"||e.error==="service-not-allowed"?"Micro bloqué ici : autorisez-le dans Chrome, ou écrivez la consigne.":"Micro : "+e.error)};r.onend=()=>{mic.textContent="🎙"};try{r.start()}catch(e){mic.textContent="🎙"}}};
 
-INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
+INSTR.run=async function(el,text,hint){if(window.DICO)text=DICO.fix(text);hint=hint||(()=>{});const S=G.S;
   const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
   if(window.NOTE&&NOTE.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();NOTE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
   const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}

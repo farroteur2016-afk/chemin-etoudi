@@ -191,7 +191,7 @@ textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px
   <div class="view" id="view">
     <div class="nogl" id="nogl" hidden>Votre appareil n'affiche pas la 3D. Le jeu reste jouable.</div>
     <div class="hud">
-      <div class="row" style="gap:6px;align-items:flex-start"><span class="chip" id="hudDate">Cameroun · <b>octobre 2026</b></span><button class="chip" id="hudMood" hidden aria-label="Humeur de la population"></button></div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;min-width:0"><div class="row" style="gap:6px;align-items:flex-start"><span class="chip" id="hudDate">Cameroun · <b>octobre 2026</b></span><button class="chip" id="hudMood" hidden aria-label="Humeur de la population"></button></div><span class="chip" id="hudLoc" hidden aria-live="polite" title="Votre position" style="max-width:min(72vw,420px);overflow:hidden;text-overflow:ellipsis"></span></div>
       <div class="tools">
         <button class="icon" id="bGfx" aria-label="Paramètres" title="Paramètres (graphismes, son, avatar)"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4.3 4 1.2 6L12 15l-4.9 3 1.2-6L4 8l5.6-.4z"/></svg></button>
         <button class="icon" id="bWalk" aria-pressed="false" aria-label="Marcher dans la rue" title="Marcher dans la rue"><svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="m9 21 2-6 3 3v5M8 12l3-4 4 2 2 3M11 8l-1 5"/></svg></button>
@@ -237,6 +237,7 @@ textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px
 <script src="actus-data.js"></script>
 <script src="actu.js"></script>
 <script src="rencontre.js"></script>
+<script src="dico.js"></script>
 <script src="genre.js"></script>
 <script src="qa.js"></script>
 <script src="conseil.js"></script>

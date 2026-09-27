@@ -42,6 +42,17 @@ const isRush=h=>(h>=6.5&&h<=9)||(h>=16.5&&h<=19.5);
 VOY.here=function(S){if(!S.loc){const reg=S.mode==="pres"?"CE":S.pro?S.pro.reg:S.ent?S.ent.reg:S.opp?S.opp.home:S.minis?"CE":"CE";const v=S.opp&&S.opp.commune?S.opp.commune.ville:CM.REG[reg].chef;S.loc={reg,v:city(v)?v:CM.REG[reg].chef,lieu:S.mode==="pres"?"Palais d'Etoudi":null}}return S.loc};
 VOY.cityInfo=n=>{const c=city(n);return c?{n:c.n,pop:c.pop}:null};
 
+/* position affichée en permanence sous la date */
+VOY.whereLabel=function(S){if(!S||S.phase!=="play")return"";const h=VOY.here(S);const c=city(h.v);
+  if(VOY.inTrip)return"🚗 En route vers "+(VOY.tripTo||"votre destination");
+  const rue=(window.Ultra&&Ultra.inStreet&&Ultra.inStreet())||(S3&&S3.inStreet&&S3.inStreet());if(rue)return"🚶 Dans la rue, à pied · "+h.v;
+  if(h.pays)return"🌍 "+(h.lieu?h.lieu+", ":"")+h.pays;
+  const clean=l=>{l=String(l).replace(/^(sa|son|ses|le|la|les)\s+/i,"").replace(/^l'/i,"");return l.charAt(0).toUpperCase()+l.slice(1)};
+  if(h.lieu){const L=h.lieu,ic=/h[oô]pital|clinique|centre de sant/i.test(L)?"🏥":/palais|pr[eé]sidence/i.test(L)?"🏛️":/ambassade|consulat/i.test(L)?"🏳️":/march[eé]/i.test(L)?"🛒":/cacao|plantation|champ|bananeraie/i.test(L)?"🌳":/d[eé]barcad|port\b/i.test(L)?"⚓":/chefferie/i.test(L)?"🛖":/si[eè]ge|entreprise|soci[eé]t[eé]|usine/i.test(L)?"🏢":/quartier|domicile/i.test(L)?"🏘️":/[eé]cole|campus|universit/i.test(L)?"🎓":"📍";return ic+" "+clean(L)+", "+h.v}
+  const home=S.mode==="pres"?"Yaoundé":S.mode==="min"?"Yaoundé":S.opp&&S.opp.commune?S.opp.commune.ville:S.ent?CM.REG[S.ent.reg].chef:S.pro?CM.REG[S.pro.reg].chef:S.opp?CM.REG[S.opp.home].chef:null;
+  if(h.v===home){if(S.mode==="pres")return"🏛️ Palais d'Etoudi, Yaoundé";if(S.mode==="min"&&S.minis)return"🏢 Ministère "+(window.SYS&&SYS.deM?SYS.deM(S.minis.n):"de ")+S.minis.n+", Yaoundé";
+    if(S.opp&&S.opp.commune)return"🏛️ Hôtel de ville, "+h.v;if(S.ent)return"🏢 Siège de "+(S.ent.nom||"votre entreprise")+", "+h.v;if(S.pro){const w=S.pro.employeur&&S.pro.employeur.n;return(/h[oô]pital|clinique/i.test(w||"")?"🏥 ":"🏢 ")+(w||"Votre lieu de travail")+", "+h.v}if(S.opp)return"🏢 Siège du parti, "+h.v}
+  return(c&&c.pop<60000?"🏘️ "+h.v+" (petite ville)":"📍 Centre-ville de "+h.v)+", région "+(/^[AEIOUÉ]/.test(CM.REG[h.reg].n)?"de l'":"du ")+CM.REG[h.reg].n};
 /* ---------- moyens de transport ---------- */
 VOY.MODES={
  marche:{n:"À pied",ic:"🚶",city:4.5,road:4.5,maxKm:6,cost:()=>0,risk:.001},
@@ -140,7 +151,7 @@ function go(S,from,to,p,watch,horsNorme,cb){
    '<div class="fhud"><span class="rec" style="color:#fde047">● EN ROUTE</span><span class="src">'+M.ic+' '+esc(M.n)+'</span></div><div class="fclock">'+esc(G.dayLabel(S.day))+' · '+dur(p.hrs)+'</div>'+
    '<div class="lower"><span class="k">'+esc(from.v)+' → '+esc(to.v)+(p.d?" · "+p.d+" km":"")+'</span><b>'+esc(to.lieu||("Direction "+to.v))+'</b><span class="sub" id="vySub"></span></div>'+
    '<div class="fbar"><i id="fprog"></i></div><div class="fctl"><button class="btn small" id="vyWork">'+(p.self?"🎙 Travailler à la voix (au volant)":"💼 Travailler pendant le trajet")+'</button><button class="btn small primary" id="vySkip">Passer la vidéo et arriver</button></div>';
-  document.body.appendChild(el);document.body.classList.add("travel");VOY.driving=!!p.self;VOY.inTrip=true;
+  document.body.appendChild(el);document.body.classList.add("travel");VOY.driving=!!p.self;VOY.inTrip=true;VOY.tripTo=to.v;
   const h0=hourNow(S);const clk=q=>{const h=(h0+p.hrs*q)%24,H=Math.floor(h),Mi=Math.floor((h-H)*60);const c=el.querySelector(".fclock");if(c)c.textContent=G.dayLabel(S.day+p.hrs*q/24)+" · "+String(H).padStart(2,"0")+":"+String(Mi).padStart(2,"0")+" · arrivée prévue dans "+dur(Math.max(0,p.hrs*(1-q)))};clk(0);
   $("vyWork").onclick=()=>{if(p.self){if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){G.toast("Au volant, seul le travail à la voix est autorisé, et votre navigateur n'a pas de micro disponible.");return}if(window.VOIX)VOIX.open({driving:true})}else VOY.workPanel(S)};
   const sub=(M.work?"Pendant le trajet, vous travaillez sur vos dossiers. ":"")+(p.mode==="cortege"?"Les routes sont bouclées ; les motards de la Garde présidentielle ouvrent la voie.":p.mode==="convoi"?"Les motards de l'escorte ouvrent la voie, sirènes hurlantes.":p.mode==="moto"?"Le bendskin se faufile entre les voitures.":p.mode==="train"?"Le train Camrail traverse la campagne.":M.air?"Décollage, vol au-dessus des nuages, puis atterrissage.":p.mode==="helico"?"L'hélicoptère survole la région.":p.jam?"C'est l'heure de pointe : la circulation est dense.":"La route défile.");

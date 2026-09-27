@@ -103,7 +103,7 @@ function meeting(S,a,end){const P=a.who;if(P&&P.n&&!P.sexe&&window.SYS)P.sexe=wi
 function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name)+". Voici la situation de l'établissement.");setTimeout(()=>{window.VIE.openOrg(S,{k:"hop",id:v.hop});if(window.VID)setTimeout(()=>{},0)},900);S.st&&(S.st.pop=clamp(S.st.pop+.5,0,100));window.SYS.cause(S,v.reg,"Visite surprise à "+lc(v.name),1.5,"sante")}}
 
 /* ---------- compréhension d'une consigne ---------- */
-VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous : "+raw);
+VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0);const raw=window.DICO?DICO.fix(raw0):raw0;const t=norm(raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
   // appel téléphonique immédiat

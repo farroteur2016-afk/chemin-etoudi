@@ -55,7 +55,9 @@ function subs(who,text,opts){
 GAME.subs=subs;
 
 function roleLabel(){return S.mode==="pres"?"Présidence":S.mode==="min"?S.minis.id:S.mode==="ing"?"Entreprise":S.mode==="pro"?PRO.LIST[S.pro.id].n:S.profil==="maire"?"Mairie":S.profil==="depute"?"Assemblée":"Opposition"}
-function hud(){if(window.SYS)window.SYS.hudMood(S);const h=$("hudDate");
+function hudLoc(){const e=$("hudLoc");if(!e)return;const t=S&&window.VOY&&VOY.whereLabel?VOY.whereLabel(S):"";e.hidden=!t;if(e.textContent!==t)e.textContent=t}
+setInterval(hudLoc,1000);
+function hud(){hudLoc();if(window.SYS)window.SYS.hudMood(S);const h=$("hudDate");
   if(!S){h.innerHTML="Cameroun · <b>"+esc(monthLabel(0))+"</b>";h.onclick=null;return}
   h.innerHTML=esc(roleLabel())+" · <b>"+esc(dayLabel(S.day))+"</b>"+(S.paused?" ⏸":S.speed>1?" ⏩":"");h.style.cursor="pointer";h.onclick=timeSheet}
 
