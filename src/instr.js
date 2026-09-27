@@ -27,7 +27,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
   const d=document.createElement("div");d.className="instr";
   d.innerHTML='<span class="eyebrow">Autre instruction</span><div class="row" style="gap:6px;flex-wrap:nowrap;align-items:flex-end"><textarea data-grow rows="1" placeholder="Écrivez votre propre consigne…" aria-label="Autre instruction" style="flex:1;min-width:0"></textarea>'+
    (SR?'<button class="btn" data-imic aria-label="Dicter la consigne" title="Dicter la consigne">🎙</button>':'')+'<button class="btn primary" data-igo>OK</button></div><p class="small muted" data-ihint></p>';
-  box.insertBefore(d,close||null);
+  box.appendChild(d);
   const inp=d.querySelector("textarea"),hint=t=>{d.querySelector("[data-ihint]").textContent=t||""};
   if(window.VOY&&VOY.driving){inp.disabled=true;inp.placeholder="Au volant : dictez votre consigne avec 🎙";const g=d.querySelector("[data-igo]");if(g)g.disabled=true}
   const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";inp.style.height="";await INSTR.run(el,v,hint)};

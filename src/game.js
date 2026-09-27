@@ -99,6 +99,7 @@ function advanceDays(d,auto){
   if(window.RENC)RENC.tick(S);
   if(window.DIR)DIR.tick(S);
   if(window.NOTE)NOTE.tick(S);
+  if(window.INTL)INTL.tick(S);
   if(window.CAB)CAB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }

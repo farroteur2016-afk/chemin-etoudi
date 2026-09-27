@@ -1967,6 +1967,7 @@ function advanceDays(d,auto){
   if(window.RENC)RENC.tick(S);
   if(window.DIR)DIR.tick(S);
   if(window.NOTE)NOTE.tick(S);
+  if(window.INTL)INTL.tick(S);
   if(window.CAB)CAB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }
@@ -5456,7 +5457,7 @@ VOY.cityInfo=n=>{const c=city(n);return c?{n:c.n,pop:c.pop}:null};
 VOY.whereLabel=function(S){if(!S||S.phase!=="play")return"";const h=VOY.here(S);const c=city(h.v);
   if(VOY.inTrip)return"🚗 En route vers "+(VOY.tripTo||"votre destination");
   const rue=(window.Ultra&&Ultra.inStreet&&Ultra.inStreet())||(S3&&S3.inStreet&&S3.inStreet());if(rue)return"🚶 Dans la rue, à pied · "+h.v;
-  if(h.pays)return"🌍 "+(h.lieu?h.lieu+", ":"")+h.pays;
+  if(h.pays)return"🌍 "+(h.lieu?h.lieu+" · ":"")+h.v+" ("+h.pays+")";
   const clean=l=>{l=String(l).replace(/^(sa|son|ses|le|la|les)\s+/i,"").replace(/^l'/i,"");return l.charAt(0).toUpperCase()+l.slice(1)};
   if(h.lieu){const L=h.lieu,ic=/h[oô]pital|clinique|centre de sant/i.test(L)?"🏥":/palais|pr[eé]sidence/i.test(L)?"🏛️":/ambassade|consulat/i.test(L)?"🏳️":/march[eé]/i.test(L)?"🛒":/cacao|plantation|champ|bananeraie/i.test(L)?"🌳":/d[eé]barcad|port\b/i.test(L)?"⚓":/chefferie/i.test(L)?"🛖":/si[eè]ge|entreprise|soci[eé]t[eé]|usine/i.test(L)?"🏢":/quartier|domicile/i.test(L)?"🏘️":/[eé]cole|campus|universit/i.test(L)?"🎓":"📍";return ic+" "+clean(L)+", "+h.v}
   const home=S.mode==="pres"?"Yaoundé":S.mode==="min"?"Yaoundé":S.opp&&S.opp.commune?S.opp.commune.ville:S.ent?CM.REG[S.ent.reg].chef:S.pro?CM.REG[S.pro.reg].chef:S.opp?CM.REG[S.opp.home].chef:null;
@@ -5524,7 +5525,7 @@ VOY.defaultMode=function(S,from,to){const N=VOY.norme(S);const p=VOY.plan(S,from
 
 /* ---------- écran de déplacement ---------- */
 VOY.open=function(preReg,preCity){
-  const S=G.S;if(!S||S.phase!=="play")return;const here=VOY.here(S);const N=VOY.norme(S);
+  const S=G.S;if(!S||S.phase!=="play")return;if(S.loc&&S.loc.pays&&window.INTL)return INTL.sheet(S);const here=VOY.here(S);const N=VOY.norme(S);
   let reg=preReg||here.reg,v=preCity||(preReg?CM.REG[preReg].chef:here.v),lieu=null,mode=null,watch=true;
   const draw=el=>{const to={reg,v};const dm=VOY.defaultMode(S,here,to);if(!mode||!N.ok.includes(mode))mode=dm;
     const cities=VOY.CITIES.filter(c=>c.reg===reg).sort((a,b)=>b.pop-a.pop);const lieux=LIEUX[v]||[];
@@ -5535,10 +5536,11 @@ VOY.open=function(preReg,preCity){
      '<label class="f" for="vyV">Ville<select id="vyV">'+cities.map(c=>'<option'+(c.n===v?" selected":"")+'>'+esc(c.n)+'</option>').join("")+'</select></label>'+
      (lieux.length?'<label class="f" for="vyL">Lieu précis<select id="vyL"><option value="">Centre-ville</option>'+lieux.map(l=>'<option'+(l===lieu?" selected":"")+'>'+esc(l)+'</option>').join("")+'</select></label>':"")+
      '<p class="small muted">'+esc(v)+' : environ '+fmt(Math.round(city(v).pop/1000))+' 000 habitants'+(AIR[v]?" · "+esc(AIR[v]):"")+(GARES.includes(v)?" · gare Camrail":"")+'.</p>'+
-     '<button class="btn primary" id="vyNext">Choisir le moyen de transport ▸</button>';
+     '<button class="btn" id="vyIntl">🌍 Voyager à l\'étranger</button><button class="btn primary" id="vyNext">Choisir le moyen de transport ▸</button>';
     el.querySelector("#vyR").onchange=e=>{reg=e.target.value;v=CM.REG[reg].chef;lieu=null;mode=null;draw(el)};
     el.querySelector("#vyV").onchange=e=>{v=e.target.value;lieu=null;mode=null;draw(el)};
     const sl=el.querySelector("#vyL");if(sl)sl.onchange=e=>{lieu=e.target.value||null};
+    el.querySelector("#vyIntl").onclick=()=>{el.remove();if(window.INTL)INTL.open()};
     el.querySelector("#vyNext").onclick=()=>{if(v===here.v&&!lieu&&here.lieu==null)return G.toast("Vous êtes déjà à "+v+" : choisissez un lieu précis ou une autre ville.");el.remove();VOY.ask(S,{reg,v,lieu},{})};
   };
   G.sheet('<h3 class="h2">Se déplacer</h3><div id="vyBody"></div>',el=>draw(el));
@@ -5601,10 +5603,10 @@ function arrival(S,from,to,p,horsNorme){
 }
 /* ---------- agglomérations (pour la carte) ---------- */
 /* déplacement lancé par programme (commandes vocales) : renvoie un message d'erreur ou null */
-VOY.goTo=function(S,to,mode,watch,cb,cancel){const here=VOY.here(S);const dm=VOY.defaultMode(S,here,to);const p=VOY.plan(S,here,to,dm);if(!p.ok&&!VOY.plan(S,here,to,"voiture").ok&&!VOY.plan(S,here,to,"avion").ok)return p.why;
+VOY.goTo=function(S,to,mode,watch,cb,cancel){if(S.loc&&S.loc.pays&&window.INTL){INTL.askRetour(S,to,{cb,cancel});return null}const here=VOY.here(S);const dm=VOY.defaultMode(S,here,to);const p=VOY.plan(S,here,to,dm);if(!p.ok&&!VOY.plan(S,here,to,"voiture").ok&&!VOY.plan(S,here,to,"avion").ok)return p.why;
   VOY.ask(S,to,{mode,watch,cb,cancel});return null};
 /* départ immédiat sans fenêtre (tests, automatismes) */
-VOY.goNow=function(S,to,mode,watch,cb,o){o=o||{};const here=VOY.here(S);const N=VOY.norme(S);const dm=VOY.defaultMode(S,here,to);let m=mode&&N.ok.includes(mode)?mode:dm;let p=VOY.plan(S,here,to,m);
+VOY.goNow=function(S,to,mode,watch,cb,o){if(S.loc&&S.loc.pays)return"vous êtes à l'étranger";o=o||{};const here=VOY.here(S);const N=VOY.norme(S);const dm=VOY.defaultMode(S,here,to);let m=mode&&N.ok.includes(mode)?mode:dm;let p=VOY.plan(S,here,to,m);
   if(!p.ok){m=dm;p=VOY.plan(S,here,to,m)}if(!p.ok)return p.why;p.typ=o.typ||"officiel";p.self=m==="voiture";if(!pay(S,p))return"fonds insuffisants pour ce trajet";go(S,here,to,p,watch!==false,m!==dm,cb);return null};
 
 /* ---------- fenêtre de départ : moyen, type, cortège, chauffeur, vidéo ---------- */
@@ -5620,7 +5622,7 @@ VOY.recruit=function(S){if(S.chauffeur)return S.chauffeur;const sal=salDriver(S)
   window.SYS.inbox(S,{from:"Ressources humaines",t:"Chauffeur recruté : "+S.chauffeur.n,b:"Salaire : "+F(sal)+" par mois (premier mois payé), à la charge "+(payer==="entreprise"?"de l'entreprise":"de vos finances personnelles")+".",k:"info",read:true});return S.chauffeur};
 VOY.monthTick=function(S){const c=S.chauffeur;if(!c)return;let ok=true;if(c.payer==="entreprise"&&S.ent){if(S.ent.fonds<c.sal/1e6)ok=false;else S.ent.fonds-=c.sal/1e6}else if(window.EMP){if(EMP.wallet(S)<c.sal)ok=false;else EMP.credit(S,-c.sal)}
   if(!ok){window.SYS.inbox(S,{from:"Ressources humaines",t:"Votre chauffeur démissionne",b:c.n+" n'a pas été payé ce mois-ci et quitte votre service.",k:"alerte"});S.chauffeur=null}};
-VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.here(S);const N=VOY.norme(S);const r=rank(S);const dm=VOY.defaultMode(S,here,to);
+VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;if(S.loc&&S.loc.pays&&window.INTL)return INTL.askRetour(S,to,o);const here=VOY.here(S);const N=VOY.norme(S);const r=rank(S);const dm=VOY.defaultMode(S,here,to);
   const fromMode=m=>{if(["cortege","convoi"].includes(m))return{moy:"vehicule",esc:"complet",drv:true};if(m==="cortegeR")return{moy:"vehicule",esc:"reduit",drv:true};if(m==="restreint")return{moy:"vehicule",esc:"restreint",drv:true};if(m==="chauffeur")return{moy:"vehicule",esc:"sans",drv:true};if(m==="voiture")return{moy:"vehicule",esc:"sans",drv:false};return{moy:m,esc:"sans",drv:false}};
   let pre=o.mode;if(pre==="rapide"){let best=null,bh=1e9;for(const k of N.ok){const q=VOY.plan(S,here,to,k);if(q.ok&&q.hrs<bh){bh=q.hrs;best=k}}pre=best}
   const st=Object.assign({typ:OFFICIEL.includes(r)?"officiel":"prive",watch:o.watch!==false},fromMode(pre&&N.ok.includes(pre)?pre:dm));let gone=false;
@@ -5687,10 +5689,170 @@ VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.h
     el.querySelector("#vaNo").onclick=()=>{el.remove();if(!gone&&o.cancel)o.cancel()};
     el.querySelector("#vaGo").onclick=()=>{const m2=modeOf();const q=VOY.plan(S,here,to,m2);if(!q.ok)return G.toast(q.why);q.typ=st.typ;q.self=self;if(st.typ!=="officiel")q.who="personnel";if(!pay(S,q))return G.toast("Fonds insuffisants pour ce trajet.");gone=true;el.remove();go(S,here,to,q,st.watch,m2!==dm,o.cb)}};
   G.sheet('<span class="eyebrow">Déplacement</span><h3 class="h2">Comment voulez-vous y aller ?</h3><div id="vaBody"></div>',el=>{el.setAttribute("data-noinstr","");draw(el);el.addEventListener("click",e=>{if((e.target===el||e.target.hasAttribute("data-close"))&&!gone&&o.cancel)o.cancel()})})};
-VOY.city=n=>city(n);VOY.LIEUX=LIEUX;VOY.dur=dur;
+VOY.city=n=>city(n);VOY.LIEUX=LIEUX;VOY.dur=dur;VOY.pay=pay;
 VOY.agglosHTML=function(){const top=VOY.CITIES.slice().sort((a,b)=>b.pop-a.pop).slice(0,16);const max=top[0].pop;
   return'<div class="card"><span class="eyebrow">Grandes agglomérations (estimations 2025)</span>'+top.map(c=>'<div class="row" style="justify-content:space-between;gap:8px"><span class="small" style="min-width:110px"><b>'+esc(c.n)+'</b> <span class="muted">'+esc(CM.REG[c.reg].n)+'</span></span><span style="flex:1;height:8px;background:var(--panel3);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:'+Math.max(2,c.pop/max*100)+'%;background:var(--y)"></i></span><span class="small" style="font-family:var(--mono);min-width:64px;text-align:right">'+(c.pop>=1e6?(c.pop/1e6).toFixed(1)+" M":Math.round(c.pop/1000)+" k")+'</span><button class="btn small" data-goto="'+esc(c.n)+'" data-gr="'+c.reg+'">Y aller</button></div>').join("")+'</div>'};
 VOY.bind=function(root){root.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>VOY.open(b.dataset.gr,b.dataset.goto))};
+})();
+
+</script>
+<script>
+/* Chemin d'Etoudi — voyages à l'étranger, pour tous les profils (présents et futurs) :
+   destinations réelles, vol commercial / avion présidentiel / jet privé selon le rang, route pour les pays voisins,
+   visas (CEMAC sans visa, passeport diplomatique pour les missions officielles), activités sur place
+   (ambassade, officiels du pays, diaspora, investisseurs, sommets), effets de l'absence, et retour au pays. */
+(function(){
+"use strict";
+const CM=window.CM,E=window.ETAT,G=window.GAME,S3=window.Scene3D,A=window.Audio2;
+const $=id=>document.getElementById(id);
+const esc=G.esc,clamp=G.clamp,pick=G.pick;
+const INTL={};window.INTL=INTL;
+const F=n=>Math.round(n).toLocaleString("fr-FR")+" FCFA";
+const say=t=>{try{A.speak(t,{voix:"f"})}catch(e){}};
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'\-]/g," ").replace(/\s+/g," ").trim();
+const dur=h=>window.VOY?VOY.dur(h):Math.round(h)+" h";
+
+/* destinations : distance approximative depuis Yaoundé (km), zone, visa, terre (décor vidéo), lieux notables */
+const DEST=[
+ {pays:"Gabon",v:"Libreville",km:480,z:"Afrique centrale",cemac:1,route:"Ebolowa",rkm:520,land:"cote"},
+ {pays:"Guinée équatoriale",v:"Malabo",km:330,z:"Afrique centrale",cemac:1,land:"cote"},
+ {pays:"Tchad",v:"N'Djamena",km:1040,z:"Afrique centrale",cemac:1,route:"Kousséri",rkm:15,land:"sahel"},
+ {pays:"République centrafricaine",v:"Bangui",km:880,z:"Afrique centrale",cemac:1,route:"Garoua-Boulaï",rkm:610,land:"foret"},
+ {pays:"Congo",v:"Brazzaville",km:1140,z:"Afrique centrale",cemac:1,land:"foret"},
+ {pays:"Nigeria",v:"Abuja",km:760,z:"Afrique de l'Ouest",route:"Mamfe",rkm:640,land:"savane"},
+ {pays:"Nigeria",v:"Lagos",km:1000,z:"Afrique de l'Ouest",land:"port"},
+ {pays:"République démocratique du Congo",v:"Kinshasa",km:1150,z:"Afrique centrale",land:"foret"},
+ {pays:"Côte d'Ivoire",v:"Abidjan",km:1800,z:"Afrique de l'Ouest",land:"cote"},
+ {pays:"Sénégal",v:"Dakar",km:3300,z:"Afrique de l'Ouest",land:"cote"},
+ {pays:"Éthiopie",v:"Addis-Abeba",km:3400,z:"Afrique de l'Est",lieu:"Siège de l'Union africaine",land:"hauts"},
+ {pays:"Maroc",v:"Rabat",km:3900,z:"Afrique du Nord",land:"cote"},
+ {pays:"Afrique du Sud",v:"Pretoria",km:3700,z:"Afrique australe",land:"plateau"},
+ {pays:"France",v:"Paris",km:5000,z:"Europe",land:"ville"},
+ {pays:"Belgique",v:"Bruxelles",km:5100,z:"Europe",lieu:"Institutions de l'Union européenne",land:"ville"},
+ {pays:"Suisse",v:"Genève",km:4800,z:"Europe",lieu:"Palais des Nations (ONU)",land:"ville"},
+ {pays:"Royaume-Uni",v:"Londres",km:5400,z:"Europe",land:"ville"},
+ {pays:"Allemagne",v:"Berlin",km:5300,z:"Europe",land:"ville"},
+ {pays:"Russie",v:"Moscou",km:6200,z:"Europe",land:"ville"},
+ {pays:"États-Unis",v:"New York",km:9300,z:"Amériques",lieu:"Siège des Nations unies",land:"ville"},
+ {pays:"États-Unis",v:"Washington",km:9500,z:"Amériques",land:"ville"},
+ {pays:"Canada",v:"Ottawa",km:9300,z:"Amériques",land:"ville"},
+ {pays:"Chine",v:"Pékin",km:11400,z:"Asie",land:"ville"},
+ {pays:"Japon",v:"Tokyo",km:13300,z:"Asie",land:"ville"},
+ {pays:"Émirats arabes unis",v:"Dubaï",km:5700,z:"Moyen-Orient",land:"ville"},
+ {pays:"Arabie saoudite",v:"Riyad",km:4600,z:"Moyen-Orient",land:"sahel"},
+ {pays:"Turquie",v:"Istanbul",km:5000,z:"Europe",land:"ville"}];
+INTL.DEST=DEST;
+const VISA={Europe:[52000,12],"Amériques":[110000,20],Asie:[60000,10],"Moyen-Orient":[70000,7],"Afrique du Nord":[45000,7],"Afrique de l'Ouest":[35000,5],"Afrique de l'Est":[40000,5],"Afrique australe":[45000,7],"Afrique centrale":[30000,4]};
+INTL.find=t=>{t=norm(t);return DEST.find(d=>new RegExp("\\b"+norm(d.v)+"\\b").test(t))||DEST.find(d=>new RegExp("\\b"+norm(d.pays)+"\\b").test(t))||null};
+const MOTIFS={officiel:"Visite officielle",sommet:"Sommet ou conférence internationale",eco:"Mission économique",prive:"Voyage privé",sante:"Soins médicaux",formation:"Formation ou congrès professionnel",tourisme:"Tourisme"};
+function rank(S){return S.mode==="pres"?"pres":S.mode==="min"?"min":S.mode==="ing"?"dg":S.profil==="maire"||S.profil==="depute"?"elu":S.mode==="pro"?"pro":"chef"}
+function motifsFor(S){const r=rank(S);return r==="pres"||r==="min"?["officiel","sommet","eco","prive","sante"]:r==="dg"?["eco","formation","prive","sante","tourisme"]:r==="elu"?["officiel","eco","prive","sante","tourisme"]:r==="pro"?["formation","prive","sante","tourisme"]:["officiel","prive","sante","tourisme"]}
+const officiel=(S,motif)=>["officiel","sommet","eco"].includes(motif)&&["pres","min","elu","dg"].includes(rank(S));
+function modesFor(S,d,motif){const r=rank(S),o=officiel(S,motif);const L=[{k:"avion",n:"Vol commercial (classe économique)"},{k:"avionB",n:"Vol commercial (classe affaires)"}];
+  if(r==="pres"&&o)L.unshift({k:"avionp",n:"Avion présidentiel"});if((r==="min"||r==="dg"||r==="pres")&&(o||r==="dg"))L.push({k:"jet",n:"Avion affrété (jet privé)"});
+  if(d.route)L.push({k:"route",n:"Par la route (via "+d.route+")"});return L}
+function plan(S,d,mk){const hub=d.km<1500?1:0;
+  if(mk==="route"){const hrs=d.rkm/55+2+(d.rkm>300?2:0);return{hrs,cost:Math.round(15000+d.rkm*90),mode:"voiture",road:true}}
+  const fly=d.km/800+(mk==="avionp"||mk==="jet"?.3:1.2)+(mk.startsWith("avion")&&mk!=="avionp"&&d.km>7000?3.5:0)+(hub?0:.5);
+  const base={avion:180000+d.km*55,avionB:520000+d.km*150,avionp:4e6+d.km*9000,jet:2.5e6+d.km*6500}[mk];
+  return{hrs:fly+2,cost:Math.round(base/1000)*1000,mode:mk==="avionB"?"avion":mk}}
+function payer(S,motif,mk){const r=rank(S);if(!officiel(S,motif)&&!(r==="dg"&&["eco","formation"].includes(motif)))return"personnel";return r==="pres"?"État":r==="min"?"ministère":r==="dg"?"entreprise":r==="elu"?(S.profil==="maire"?"commune":"personnel"):"personnel"}
+function pay(S,who,c){if(window.VOY&&VOY.pay)return VOY.pay(S,{who,cost:c});return true}
+function needVisa(S,d,motif){if(d.cemac)return false;if(officiel(S,motif))return false;const v=(S.visas||{})[d.pays];return!(v&&v>S.day)}
+
+/* ---------- préparer un voyage ---------- */
+INTL.open=function(pre,o){o=o||{};const S=G.S;if(!S||S.phase!=="play")return;if(S.loc&&S.loc.pays&&!pre)return INTL.askRetour(S,{reg:"CE",v:"Yaoundé"},{});
+  const st={d:pre||DEST.find(x=>x.v==="Paris"),motif:motifsFor(S)[0],mk:null,watch:true};
+  const draw=el=>{const d=st.d;const Ms=modesFor(S,d,st.motif);if(!st.mk||!Ms.some(m=>m.k===st.mk))st.mk=Ms[0].k;const p=plan(S,d,st.mk);const who=payer(S,st.motif,st.mk);const vis=needVisa(S,d,st.motif);const vreq=(S.visaReq||[]).find(x=>x.pays===d.pays&&!x.ok);
+    const here=window.VOY?VOY.here(S):{v:"Yaoundé"};const apt=st.mk==="route"?null:(here.v==="Douala"?"Douala":"Yaoundé");const pre1=apt&&here.v!==apt&&window.VOY?VOY.plan(S,here,{reg:apt==="Douala"?"LT":"CE",v:apt},VOY.defaultMode(S,here,{reg:apt==="Douala"?"LT":"CE",v:apt})):null;
+    const tot={hrs:p.hrs+(pre1&&pre1.ok?pre1.hrs+1:0),cost:p.cost+(pre1&&pre1.ok?pre1.cost:0)};
+    const zones=[...new Set(DEST.map(x=>x.z))];
+    el.querySelector("#inBody").innerHTML=
+     '<label class="f" for="inD">Destination<select id="inD">'+zones.map(z=>'<optgroup label="'+esc(z)+'">'+DEST.filter(x=>x.z===z).map(x=>'<option value="'+DEST.indexOf(x)+'"'+(x===d?" selected":"")+'>'+esc(x.v+" ("+x.pays+")")+'</option>').join("")+'</optgroup>').join("")+'</select></label>'+
+     '<label class="f" for="inM">Motif du voyage<select id="inM">'+motifsFor(S).map(k=>'<option value="'+k+'"'+(k===st.motif?" selected":"")+'>'+esc(MOTIFS[k])+'</option>').join("")+'</select></label>'+
+     '<span class="eyebrow">Moyen de transport</span><div class="choices">'+Ms.map(m=>{const q=plan(S,d,m.k);return'<button class="choice" data-im="'+m.k+'" aria-pressed="'+(m.k===st.mk)+'" style="'+(m.k===st.mk?"border-color:var(--y)":"")+'"><span class="t">'+(m.k==="route"?"🚗 ":"✈️ ")+esc(m.n)+'</span><span class="small muted">'+dur(q.hrs)+" · "+F(q.cost)+'</span></button>'}).join("")+'</div>'+
+     '<div class="card" style="gap:4px"><b>'+esc(here.v)+" → "+esc(d.v)+" ("+esc(d.pays)+")"+'</b>'+(pre1&&pre1.ok?'<span class="small">Trajet jusqu\'à l\'aéroport de '+esc(apt)+" : "+dur(pre1.hrs)+" · "+F(pre1.cost)+'</span>':"")+
+      '<span class="small">Total : '+dur(tot.hrs)+" · "+F(tot.cost)+" (payé par : "+(who==="personnel"?"vous-même":who)+')</span>'+
+      '<span class="small" style="color:'+(vis?"var(--warn,#f0a93a)":"var(--ok,#43c47c)")+'">'+(d.cemac?"Zone CEMAC : pas de visa nécessaire.":officiel(S,st.motif)?"Mission officielle : passeport diplomatique, pas de visa à demander.":vis?(vreq?"Visa en cours d'instruction : prêt le "+G.dayLabel(vreq.ready)+".":"Visa obligatoire pour ce voyage privé."):"Visa valide.")+'</span></div>'+
+     (vis&&!vreq?'<button class="btn" id="inVisa">Demander un visa ('+F(VISA[d.z][0])+', délai environ '+VISA[d.z][1]+' jours)</button>':"")+
+     '<label class="row small" style="gap:8px"><input type="checkbox" id="inW"'+(st.watch?" checked":"")+'> Regarder la vidéo du voyage</label>'+
+     '<div class="row"><button class="btn primary" id="inGo"'+(vis?" disabled":"")+'>Partir</button><button class="btn ghost" id="inNo">Annuler</button></div>';
+    el.querySelector("#inD").onchange=e=>{st.d=DEST[+e.target.value];st.mk=null;draw(el)};
+    el.querySelector("#inM").onchange=e=>{st.motif=e.target.value;st.mk=null;draw(el)};
+    el.querySelectorAll("[data-im]").forEach(b=>b.onclick=()=>{st.mk=b.dataset.im;draw(el)});
+    el.querySelector("#inW").onchange=e=>{st.watch=e.target.checked};
+    el.querySelector("#inNo").onclick=()=>el.remove();
+    const vb=el.querySelector("#inVisa");if(vb)vb.onclick=()=>{const [c,j]=VISA[d.z];if(!pay(S,"personnel",c))return G.toast("Fonds insuffisants pour les frais de visa.");S.visaReq=S.visaReq||[];S.visaReq.push({pays:d.pays,ready:S.day+j,ok:false});
+      window.SYS.inbox(S,{from:"Ambassade de "+d.pays,t:"Demande de visa déposée",b:"Frais payés : "+F(c)+". Délai d'instruction : environ "+j+" jours.",k:"info",read:true});G.toast("Demande de visa déposée : réponse dans environ "+j+" jours.");draw(el)};
+    el.querySelector("#inGo").onclick=()=>{const who2=payer(S,st.motif,st.mk);if(!pay(S,who2,tot.cost))return G.toast("Fonds insuffisants pour ce voyage.");el.remove();
+      depart(S,{d,motif:st.motif,mk:st.mk,p,hrs:tot.hrs,cost:tot.cost,who:who2,from:here},st.watch,o.cb)}};
+  G.sheet('<span class="eyebrow">Voyage à l\'étranger</span><h3 class="h2">Où voulez-vous aller ?</h3><div id="inBody"></div>',el=>{el.setAttribute("data-noinstr","");draw(el)})};
+
+/* ---------- départ, vidéo, arrivée ---------- */
+function film(S,from,dest,mode,label,onEnd){if(!S3||!S3.ok){onEnd();return}const RA=CM.REG[from.reg]||CM.REG.CE;
+  const el=document.createElement("div");el.className="film";el.innerHTML='<div class="fview" id="fview"></div><div class="lb top"></div><div class="lb bot"></div><div class="fhud"><span class="rec" style="color:#fde047">● EN ROUTE</span><span class="src">'+esc(label)+'</span></div>'+
+   '<div class="lower"><span class="k">'+esc(from.v)+' → '+esc(dest.v)+'</span><b>'+esc(dest.v+(dest.pays?" ("+dest.pays+")":""))+'</b></div><div class="fbar"><i id="fprog"></i></div><div class="fctl"><button class="btn small primary" id="inSkip">Passer la vidéo et arriver</button></div>';
+  document.body.appendChild(el);document.body.classList.add("travel");if(window.VOY){VOY.inTrip=true;VOY.tripTo=dest.v}
+  S3.attach($("fview"));if(window.VID&&VID.filmOn)VID.filmOn($("fview"));
+  try{S3.travel({mode,local:false,seed:Math.floor(S.day),from:{land:RA.land,pop:2e6,profile:"autre",name:from.v,apt:"Aéroport"},to:{land:dest.land||"ville",pop:2e6,profile:"autre",apt:"Aéroport",name:dest.v},road:null,insec:false,onProgress:q=>{const b=$("fprog");if(b)b.style.width=(q*100).toFixed(1)+"%"},onEnd:()=>setTimeout(close,700)})}catch(e){setTimeout(close,50)}
+  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();if(window.VID&&VID.filmOff)VID.filmOff();el.remove();document.body.classList.remove("travel");if(window.VOY)VOY.inTrip=false;onEnd()}
+  $("inSkip").onclick=close}
+function depart(S,t,watch,cb){const lab=t.mk==="route"?"Par la route":t.mk==="avionp"?"Avion présidentiel":t.mk==="jet"?"Jet privé":"Vol commercial";
+  const arrive=()=>{const d=t.d;const lieu=d.lieu&&["sommet","officiel"].includes(t.motif)?d.lieu:t.motif==="officiel"||t.motif==="eco"?"Ambassade du Cameroun":t.motif==="sante"?"Hôpital":t.motif==="formation"?"Centre de congrès":"Hôtel";
+    S.loc={reg:t.from.reg||"CE",v:d.v,pays:d.pays,lieu,abroad:true};S.abroad={since:S.day,pays:d.pays,v:d.v,motif:t.motif,fait:[],d:DEST.indexOf(d)};
+    G.advanceDays(t.hrs/24,false);
+    window.SYS.inbox(S,{from:"Votre agenda",t:"Arrivé à "+d.v+" ("+d.pays+")",b:lab+" · "+dur(t.hrs)+" · "+F(t.cost)+(t.who!=="personnel"?" (payé par : "+t.who+")":"")+". Motif : "+MOTIFS[t.motif]+".",k:"info",read:true});
+    if(S.mode==="pres"&&t.motif!=="prive")window.SYS.cause(S,"CE","Le président en déplacement à "+d.v,t.motif==="sommet"?.5:-.3,"voyage");
+    G.toast("Arrivé à "+d.v+" ("+d.pays+")");G.render();setTimeout(()=>INTL.sheet(S),600);if(cb)cb()};
+  if(watch)film(S,t.from,t.d,t.mk==="route"?"voiture":t.p.mode,lab,arrive);else arrive()}
+
+/* ---------- sur place ---------- */
+INTL.sheet=function(S){const a=S.abroad;if(!a||!S.loc||!S.loc.pays)return;const d=DEST[a.d]||{};const r=rank(S);const days=Math.max(0,Math.round(S.day-a.since));
+  const acts=[["amb","🏳️ Rencontrer l'ambassadeur du Cameroun"],
+   ...(r==="pres"||r==="min"||r==="elu"?[["off","🤝 Rencontrer des officiels "+(d.pays?"("+d.pays+")":"")],["dias","👥 Rencontrer la diaspora camerounaise"]]:[["dias","👥 Rencontrer la diaspora camerounaise"]]),
+   ...(r==="pres"||r==="min"||r==="dg"?[["inv","💼 Rencontrer des investisseurs"]]:[]),
+   ...(d.lieu&&/Union africaine|Nations|européenne/.test(d.lieu)?[["conf","🎙️ Participer aux travaux ("+d.lieu+")"]]:[]),
+   ...(r==="pro"||a.motif==="formation"?[["form","🎓 Suivre la formation ou le congrès"]]:[]),
+   ["visite","📷 Visiter la ville"]].filter(([k])=>!a.fait.includes(k));
+  G.sheet('<span class="eyebrow">À l\'étranger · '+esc(a.v)+' ('+esc(a.pays)+')</span><h3 class="h2">Que voulez-vous faire ?</h3><p class="small muted">Sur place depuis '+(days?days+" jour"+(days>1?"s":""):"aujourd'hui")+' · motif : '+esc(MOTIFS[a.motif])+'. Vous pouvez aussi travailler à distance (courrier, assistant, appels).</p>'+
+   '<div class="choices">'+acts.map(([k,l])=>'<button class="choice" data-ia="'+k+'"><span class="t">'+esc(l)+'</span></button>').join("")+'<button class="choice" data-ia="retour"><span class="t">🛬 Rentrer au Cameroun</span></button></div>',el=>{
+    el.querySelectorAll("[data-ia]").forEach(b=>b.onclick=()=>{const k=b.dataset.ia;el.remove();act(S,k)})})};
+function act(S,k){const a=S.abroad;const d=DEST[a.d]||{};const st=S.st||{};let msg="";
+  if(k==="retour")return INTL.askRetour(S,{reg:"CE",v:"Yaoundé"},{});
+  a.fait.push(k);
+  if(k==="amb"){if(window.RENC)return RENC.open(S,{kind:"officiel",n:window.SYS.nom("CE"),lab:"ambassadeur du Cameroun en "+a.pays,reg:"CE",ville:a.v,lieu:"l'ambassade du Cameroun",sujet:"point sur les relations avec "+a.pays,bonjour:"Bienvenue à "+a.v+". L'ambassade est à votre disposition."});msg="Entretien avec l'ambassadeur."}
+  else if(k==="off"){if(st.int!=null)st.int=clamp(st.int+2,0,100);msg="Entretiens bilatéraux avec les autorités "+(a.pays?"de "+a.pays:"")+" : communiqué commun sur la coopération.";if(window.RENC)setTimeout(()=>RENC.open(S,{kind:"officiel",n:window.SYS.nom("CE"),lab:"représentant du gouvernement ("+a.pays+")",reg:"CE",ville:a.v,lieu:"le ministère des Affaires étrangères",sujet:"coopération bilatérale",bonjour:"Welcome, soyez le bienvenu. Parlons de notre coopération."}),600)}
+  else if(k==="dias"){if(st.pop!=null)st.pop=clamp(st.pop+1,0,100);if(S.opp)S.opp.noto=clamp(S.opp.noto+2,0,100);msg="Rencontre chaleureuse avec la diaspora ; ses attentes : visas, investissement au pays, sécurité dans le NOSO.";if(window.RENC)setTimeout(()=>RENC.open(S,{kind:"habitant",lab:"membre de la diaspora camerounaise",reg:"CE",ville:a.v,lieu:"la salle de la communauté",sujet:"la diaspora et le pays"}),600)}
+  else if(k==="inv"){const ok=Math.random()<.45+(st.eco||50)/300;if(ok){const md=Math.round(G.rnd(20,250));if(st.eco!=null)st.eco=clamp(st.eco+1.5,0,100);msg="Protocole d'accord signé : projet d'investissement de "+md+" milliards de FCFA au Cameroun.";window.SYS.inbox(S,{from:"Mission économique",t:"Protocole d'accord signé à "+a.v,b:msg+" Sa concrétisation dépendra du climat des affaires.",k:"rapport"})}else msg="Les investisseurs restent prudents : ils demandent plus de garanties juridiques et fiscales."}
+  else if(k==="conf"){if(st.int!=null)st.int=clamp(st.int+1.5,0,100);msg="Votre intervention aux travaux ("+d.lieu+") est remarquée ; le Cameroun obtient le soutien de plusieurs délégations."}
+  else if(k==="form"){if(S.pro)S.pro.rep=clamp(S.pro.rep+3,0,100),S.pro.xp=(S.pro.xp||0)+2;if(S.ent)S.ent.rep=clamp((S.ent.rep||50)+2,0,100);msg="Formation suivie : vos compétences et votre réputation progressent."}
+  else if(k==="visite"){msg="Vous visitez "+a.v+"."}
+  G.advanceDays(.25,false);if(msg){say(msg);G.toast(msg.slice(0,110));window.SYS.inbox(S,{from:"Carnet de voyage",t:a.v+" : "+msg.slice(0,60),b:msg,k:"info",read:true})}
+  if(k!=="amb"&&k!=="off"&&k!=="dias")setTimeout(()=>INTL.sheet(S),700)}
+
+/* ---------- retour au pays (puis, si besoin, trajet intérieur) ---------- */
+INTL.askRetour=function(S,to,o){o=o||{};const a=S.abroad;const d=a?DEST[a.d]:null;if(!d){if(S.loc)delete S.loc.pays;return}
+  const st={mk:null,apt:to&&to.v==="Douala"?"Douala":"Yaoundé",watch:true};
+  const draw=el=>{const Ms=modesFor(S,d,a.motif);if(!st.mk||!Ms.some(m=>m.k===st.mk))st.mk=Ms[0].k;const p=plan(S,d,st.mk);const who=payer(S,a.motif,st.mk);
+    el.querySelector("#irBody").innerHTML='<p class="small">Vous êtes à '+esc(d.v)+' ('+esc(d.pays)+').'+(to&&to.v!==st.apt&&st.mk!=="route"?" Destination finale : "+esc(to.v)+" (trajet intérieur ensuite).":"")+'</p>'+
+     (st.mk!=="route"?'<label class="f" for="irA">Aéroport d\'arrivée<select id="irA"><option'+(st.apt==="Yaoundé"?" selected":"")+'>Yaoundé</option><option'+(st.apt==="Douala"?" selected":"")+'>Douala</option></select></label>':"")+
+     '<div class="choices">'+Ms.map(m=>{const q=plan(S,d,m.k);return'<button class="choice" data-rm="'+m.k+'" style="'+(m.k===st.mk?"border-color:var(--y)":"")+'"><span class="t">'+(m.k==="route"?"🚗 ":"✈️ ")+esc(m.n)+'</span><span class="small muted">'+dur(q.hrs)+" · "+F(q.cost)+'</span></button>'}).join("")+'</div>'+
+     '<div class="card"><span class="small">Retour : '+dur(p.hrs)+" · "+F(p.cost)+" (payé par : "+(who==="personnel"?"vous-même":who)+')</span></div><label class="row small" style="gap:8px"><input type="checkbox" id="irW"'+(st.watch?" checked":"")+'> Regarder la vidéo du voyage</label><div class="row"><button class="btn primary" id="irGo">Rentrer</button><button class="btn ghost" id="irNo">Rester</button></div>';
+    const sa=el.querySelector("#irA");if(sa)sa.onchange=e=>{st.apt=e.target.value;draw(el)};
+    el.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{st.mk=b.dataset.rm;draw(el)});el.querySelector("#irW").onchange=e=>{st.watch=e.target.checked};
+    el.querySelector("#irNo").onclick=()=>{el.remove();if(o.cancel)o.cancel()};
+    el.querySelector("#irGo").onclick=()=>{if(!pay(S,who,p.cost))return G.toast("Fonds insuffisants pour le retour.");el.remove();
+      const land=st.mk==="route"?(d.route||"Yaoundé"):st.apt;const c=window.VOY?VOY.city(land):null;const dest={reg:c?c.reg:"CE",v:land};
+      const done=()=>{const days=Math.round(S.day-a.since);S.loc={reg:dest.reg,v:dest.v,lieu:null};S.abroad=null;G.advanceDays(p.hrs/24,false);window.SYS.inbox(S,{from:"Votre agenda",t:"De retour au Cameroun ("+dest.v+")",b:"Retour de "+d.v+" après "+Math.max(1,days)+" jour"+(days>1?"s":"")+" à l'étranger. "+dur(p.hrs)+" · "+F(p.cost)+".",k:"info",read:true});G.toast("De retour au Cameroun : "+dest.v);G.render();
+        if(to&&to.v&&to.v!==dest.v&&window.VOY)setTimeout(()=>VOY.ask(S,to,o),700);else if(o.cb)o.cb()};
+      if(st.watch)film(S,{reg:"CE",v:d.v},{v:dest.v,land:CM.REG[dest.reg].land},st.mk==="route"?"voiture":p.mode,"Retour au pays",done);else done()}};
+  G.sheet('<span class="eyebrow">Retour</span><h3 class="h2">Rentrer au Cameroun</h3><div id="irBody"></div>',el=>{el.setAttribute("data-noinstr","");draw(el)})};
+
+/* ---------- chaque jour : visas prêts, effets de l'absence ---------- */
+INTL.tick=function(S){if(!S)return;for(const v of S.visaReq||[])if(!v.ok&&S.day>=v.ready){v.ok=true;S.visas=S.visas||{};S.visas[v.pays]=S.day+180;window.SYS.inbox(S,{from:"Ambassade de "+v.pays,t:"Visa accordé",b:"Votre visa pour "+v.pays+" est prêt, valable six mois.",k:"info"})}
+  const a=S.abroad;if(!a)return;const days=S.day-a.since;
+  if(S.mode==="pres"&&days>7&&!a.warn){a.warn=1;window.SYS.inbox(S,{from:"Revue de presse",t:"Polémique : le président à l'étranger depuis une semaine",b:"L'opposition dénonce un pouvoir « gouverné à distance » ; les réseaux sociaux s'interrogent sur votre retour.",k:"alerte"})}
+  if(S.mode==="pres"&&days>7&&S.st)S.st.pop=clamp(S.st.pop-.05,0,100);if(S.mode==="min"&&days>10&&S.minis)S.minis.perf=clamp(S.minis.perf-.05,0,100)};
 })();
 
 </script>
@@ -5847,11 +6009,17 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
   if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)&&!/s appelle/.test(t)){if(/\bbanque\b/.test(t)&&!(S.org&&findEnt(S,t)))return reply("Quelle banque ? Je suis : Afriland First Bank, BICEC, Société Générale (SGC), UBA, Ecobank, CCA Bank, BGFIBank et SCB. Dites par exemple : « convoque le DG d'Afriland demain à 10 h ».");
     const P=findPerson(S,t)||(/\b(convoque|convoquez|fais|faites|recois|recevez) (le|la)\b|\b(le|la) (convoquer|recevoir|faire venir)\b/.test(t)&&window.QA&&QA._last)||null;if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
     const w=parseWhen(S,t)||{at:S.day+.1,label:"dans environ deux heures"};const obj=(t.match(/pour (parler de|discuter de|le point sur|evoquer) (.+)$/)||[])[2];
+    if(S.loc&&S.loc.pays&&w.at-S.day<3){closeP();reply("Vous êtes à "+S.loc.v+" ("+S.loc.pays+") : l'audience ne pourra se tenir qu'à votre retour. Je vous propose de "+(P.sexe==="f"?"l'":"l'")+"appeler, ou de fixer l'audience après votre retour.");if(window.CAB)CAB.unavailable(S,Object.assign({},P),{ok:false,txt:"ne peut pas vous rejoindre à l'étranger",back:S.day+3,base:"Yaoundé"},{objet:obj||"point de situation",when:w.label});return}
     if(window.CAB){const st=CAB.status(S,P,w.at);if(st&&!st.ok){log("Jeu : "+(P.n?P.n+", ":"")+P.lab+" "+st.txt+(st.back&&!st.soft?", retour prévu le "+G.dayLabel(st.back):"")+".");closeP();CAB.unavailable(S,P,st,{objet:obj||"point de situation",when:w.label});return}}
     const can=S.mode==="pres"||(S.mode==="min"&&(P.min===S.minis.id||["prefet","police","gouverneur","hop","ent"].includes(P.k)&&P.min===S.minis.id));
     if(!can&&S.mode!=="pres"){const ok=Math.random()<(S.mode==="min"?.8:.35);if(!ok)return reply("Votre demande d'audience auprès "+deL(P.lab)+" a été enregistrée, mais son cabinet ne vous a pas encore proposé de créneau.");}
     agenda(S).push({id:nid(),type:"meet",at:w.at,who:P,objet:obj||"point de situation",lab:(can?"Audience : ":"Rendez-vous avec ")+(P.n?P.n+", ":"")+P.lab});G.render();
     return reply((can?"Très bien. ":"Votre demande est acceptée. ")+(P.n?P.n+", "+P.lab+", ":P.lab.charAt(0).toUpperCase()+P.lab.slice(1)+" ")+(can?"est convoqué"+(P.sexe==="f"?"e ":" "):"vous recevra ")+w.label+(S.mode==="pres"?" au palais d'Etoudi.":"."))}
+  // à l'étranger
+  if(window.INTL){const abroad=S.loc&&S.loc.pays;
+    if(abroad&&/\b(rentrer|rentre|rentrons|retour|retourner|ramene|ramenez|revenir)\b/.test(t)&&(/cameroun|pays|maison|yaounde|douala/.test(t)||!INTL.find(t))){const c=findCity(t);reply("Je prépare votre retour au Cameroun.");closeP();INTL.askRetour(S,c?{reg:c.reg,v:c.n}:{reg:"CE",v:"Yaoundé"},{});return}
+    if(abroad&&/\b(que faire|activites|programme sur place|sur place)\b/.test(t)){closeP();INTL.sheet(S);return}
+    const dst=INTL.find(t);if(dst&&/\b(aller|va|vais|voyage|voyager|partir|pars|rendre|visite|visiter|deplacer|mission|sommet|conference|envole|emmene|conduis)\b/.test(t)){reply("Je prépare votre voyage à "+dst.v+" ("+dst.pays+").");closeP();INTL.open(dst);return}}
   // déplacement / visite
   if(/\b(aller|va|vais|rendre|deplacer|deplace|visite|visiter|partir|pars|conduis|conduisez|conduire|emmene|emmenez|emmener|voyage|voyager|ramene|ramenez|ramener|rentrer|rentre|rentrons|retourner|retourne|retour|amene|amenez|amener|transporte|transportez|filer|file|direction|rejoindre|rejoins|gagner)\b/.test(t)){if(!window.VOY)return reply("Les déplacements ne sont pas disponibles.");
     let to=null,visitInfo=null;const here=VOY.here(S);
@@ -6355,7 +6523,7 @@ QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return f
   // où est / que fait un responsable
   if(/\b(ou est|ou se trouve|ou se trouvent|que fait|il est ou|elle est ou|ou sont|ou est ce que se trouve|joignable)\b/.test(t)&&window.VOIX&&VOIX.findPerson&&window.CAB){const P=VOIX.findPerson(S,raw);if(P&&P.n&&!/^le /.test(P.n)){const w=CAB.where(S,P);if(w){const f=P.sexe==="f";const rdv=(S.agenda||[]).some(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===P.n);if(rdv){reply(w);QA._last=P;return true}reply(w+" Voulez-vous "+(f?"la":"le")+" convoquer ? Dites par exemple : « convoque-"+(f?"la":"le")+" demain à 9 h ».");QA._last=P;return true}}}
   // où suis-je
-  if(/(ou (je suis|suis je|je me trouve|me trouve je|sommes nous|est ce que je suis)|dans quelle ville|quelle ville|ma position|ou suis|si je suis|suis je (au|dans|a)|je suis (au|dans) (le |la )?(palais|rue|bureau)|au palais ou dans la rue|dans la rue ou au palais)/.test(t)){const h=window.VOY?VOY.here(S):null;if(h){
+  if(/(ou (je suis|suis je|je me trouve|me trouve je|sommes nous|est ce que je suis)|dans quelle ville|quelle ville|ma position|ou suis|si je suis|suis je (au|dans|a)|je suis (au|dans) (le |la )?(palais|rue|bureau)|au palais ou dans la rue|dans la rue ou au palais)/.test(t)){const h=window.VOY?VOY.here(S):null;if(h&&h.pays){reply("Vous êtes à l'étranger : "+h.v+" ("+h.pays+")"+(h.lieu?", "+h.lieu.charAt(0).toLowerCase()+h.lieu.slice(1):"")+".");return true}if(h){
     const rue=(window.Ultra&&Ultra.inStreet&&Ultra.inStreet())||(window.Scene3D&&Scene3D.inStreet&&Scene3D.inStreet());const au=l=>/^palais/i.test(l)?"au "+l.charAt(0).toLowerCase()+l.slice(1):/^(hôpital|h[oô]pital|immeuble|stade|port|march[eé]|aéroport|a[eé]roport)/i.test(l)?(/^[aeiouhéô]/i.test(l)?"à l'":"au ")+l.charAt(0).toLowerCase()+l.slice(1):"à "+l;
     const bureau=S.mode==="pres"&&h.v==="Yaoundé"&&!h.lieu?"au palais d'Etoudi":S.mode==="pres"&&h.lieu?au(h.lieu):S.mode==="min"&&h.v==="Yaoundé"&&!h.lieu?"à votre ministère":h.lieu||"en ville";
     reply("Vous êtes "+(rue?"dans la rue, à pied, à "+h.v:(h.lieu&&S.mode!=="pres"?au(h.lieu)+", à "+h.v:bureau+(bureau.includes(h.v)?"":", à "+h.v)))+", région "+(/^[AEIOUÉ]/.test(CM.REG[h.reg].n)?"de l'":"du ")+CM.REG[h.reg].n+"."+(rue?" Pour revenir, touchez « Quitter la rue ».":""));return true}}
@@ -6868,7 +7036,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
   const d=document.createElement("div");d.className="instr";
   d.innerHTML='<span class="eyebrow">Autre instruction</span><div class="row" style="gap:6px;flex-wrap:nowrap;align-items:flex-end"><textarea data-grow rows="1" placeholder="Écrivez votre propre consigne…" aria-label="Autre instruction" style="flex:1;min-width:0"></textarea>'+
    (SR?'<button class="btn" data-imic aria-label="Dicter la consigne" title="Dicter la consigne">🎙</button>':'')+'<button class="btn primary" data-igo>OK</button></div><p class="small muted" data-ihint></p>';
-  box.insertBefore(d,close||null);
+  box.appendChild(d);
   const inp=d.querySelector("textarea"),hint=t=>{d.querySelector("[data-ihint]").textContent=t||""};
   if(window.VOY&&VOY.driving){inp.disabled=true;inp.placeholder="Au volant : dictez votre consigne avec 🎙";const g=d.querySelector("[data-igo]");if(g)g.disabled=true}
   const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";inp.style.height="";await INSTR.run(el,v,hint)};

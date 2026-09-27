@@ -46,7 +46,7 @@ VOY.cityInfo=n=>{const c=city(n);return c?{n:c.n,pop:c.pop}:null};
 VOY.whereLabel=function(S){if(!S||S.phase!=="play")return"";const h=VOY.here(S);const c=city(h.v);
   if(VOY.inTrip)return"🚗 En route vers "+(VOY.tripTo||"votre destination");
   const rue=(window.Ultra&&Ultra.inStreet&&Ultra.inStreet())||(S3&&S3.inStreet&&S3.inStreet());if(rue)return"🚶 Dans la rue, à pied · "+h.v;
-  if(h.pays)return"🌍 "+(h.lieu?h.lieu+", ":"")+h.pays;
+  if(h.pays)return"🌍 "+(h.lieu?h.lieu+" · ":"")+h.v+" ("+h.pays+")";
   const clean=l=>{l=String(l).replace(/^(sa|son|ses|le|la|les)\s+/i,"").replace(/^l'/i,"");return l.charAt(0).toUpperCase()+l.slice(1)};
   if(h.lieu){const L=h.lieu,ic=/h[oô]pital|clinique|centre de sant/i.test(L)?"🏥":/palais|pr[eé]sidence/i.test(L)?"🏛️":/ambassade|consulat/i.test(L)?"🏳️":/march[eé]/i.test(L)?"🛒":/cacao|plantation|champ|bananeraie/i.test(L)?"🌳":/d[eé]barcad|port\b/i.test(L)?"⚓":/chefferie/i.test(L)?"🛖":/si[eè]ge|entreprise|soci[eé]t[eé]|usine/i.test(L)?"🏢":/quartier|domicile/i.test(L)?"🏘️":/[eé]cole|campus|universit/i.test(L)?"🎓":"📍";return ic+" "+clean(L)+", "+h.v}
   const home=S.mode==="pres"?"Yaoundé":S.mode==="min"?"Yaoundé":S.opp&&S.opp.commune?S.opp.commune.ville:S.ent?CM.REG[S.ent.reg].chef:S.pro?CM.REG[S.pro.reg].chef:S.opp?CM.REG[S.opp.home].chef:null;
@@ -114,7 +114,7 @@ VOY.defaultMode=function(S,from,to){const N=VOY.norme(S);const p=VOY.plan(S,from
 
 /* ---------- écran de déplacement ---------- */
 VOY.open=function(preReg,preCity){
-  const S=G.S;if(!S||S.phase!=="play")return;const here=VOY.here(S);const N=VOY.norme(S);
+  const S=G.S;if(!S||S.phase!=="play")return;if(S.loc&&S.loc.pays&&window.INTL)return INTL.sheet(S);const here=VOY.here(S);const N=VOY.norme(S);
   let reg=preReg||here.reg,v=preCity||(preReg?CM.REG[preReg].chef:here.v),lieu=null,mode=null,watch=true;
   const draw=el=>{const to={reg,v};const dm=VOY.defaultMode(S,here,to);if(!mode||!N.ok.includes(mode))mode=dm;
     const cities=VOY.CITIES.filter(c=>c.reg===reg).sort((a,b)=>b.pop-a.pop);const lieux=LIEUX[v]||[];
@@ -125,10 +125,11 @@ VOY.open=function(preReg,preCity){
      '<label class="f" for="vyV">Ville<select id="vyV">'+cities.map(c=>'<option'+(c.n===v?" selected":"")+'>'+esc(c.n)+'</option>').join("")+'</select></label>'+
      (lieux.length?'<label class="f" for="vyL">Lieu précis<select id="vyL"><option value="">Centre-ville</option>'+lieux.map(l=>'<option'+(l===lieu?" selected":"")+'>'+esc(l)+'</option>').join("")+'</select></label>':"")+
      '<p class="small muted">'+esc(v)+' : environ '+fmt(Math.round(city(v).pop/1000))+' 000 habitants'+(AIR[v]?" · "+esc(AIR[v]):"")+(GARES.includes(v)?" · gare Camrail":"")+'.</p>'+
-     '<button class="btn primary" id="vyNext">Choisir le moyen de transport ▸</button>';
+     '<button class="btn" id="vyIntl">🌍 Voyager à l\'étranger</button><button class="btn primary" id="vyNext">Choisir le moyen de transport ▸</button>';
     el.querySelector("#vyR").onchange=e=>{reg=e.target.value;v=CM.REG[reg].chef;lieu=null;mode=null;draw(el)};
     el.querySelector("#vyV").onchange=e=>{v=e.target.value;lieu=null;mode=null;draw(el)};
     const sl=el.querySelector("#vyL");if(sl)sl.onchange=e=>{lieu=e.target.value||null};
+    el.querySelector("#vyIntl").onclick=()=>{el.remove();if(window.INTL)INTL.open()};
     el.querySelector("#vyNext").onclick=()=>{if(v===here.v&&!lieu&&here.lieu==null)return G.toast("Vous êtes déjà à "+v+" : choisissez un lieu précis ou une autre ville.");el.remove();VOY.ask(S,{reg,v,lieu},{})};
   };
   G.sheet('<h3 class="h2">Se déplacer</h3><div id="vyBody"></div>',el=>draw(el));
@@ -191,10 +192,10 @@ function arrival(S,from,to,p,horsNorme){
 }
 /* ---------- agglomérations (pour la carte) ---------- */
 /* déplacement lancé par programme (commandes vocales) : renvoie un message d'erreur ou null */
-VOY.goTo=function(S,to,mode,watch,cb,cancel){const here=VOY.here(S);const dm=VOY.defaultMode(S,here,to);const p=VOY.plan(S,here,to,dm);if(!p.ok&&!VOY.plan(S,here,to,"voiture").ok&&!VOY.plan(S,here,to,"avion").ok)return p.why;
+VOY.goTo=function(S,to,mode,watch,cb,cancel){if(S.loc&&S.loc.pays&&window.INTL){INTL.askRetour(S,to,{cb,cancel});return null}const here=VOY.here(S);const dm=VOY.defaultMode(S,here,to);const p=VOY.plan(S,here,to,dm);if(!p.ok&&!VOY.plan(S,here,to,"voiture").ok&&!VOY.plan(S,here,to,"avion").ok)return p.why;
   VOY.ask(S,to,{mode,watch,cb,cancel});return null};
 /* départ immédiat sans fenêtre (tests, automatismes) */
-VOY.goNow=function(S,to,mode,watch,cb,o){o=o||{};const here=VOY.here(S);const N=VOY.norme(S);const dm=VOY.defaultMode(S,here,to);let m=mode&&N.ok.includes(mode)?mode:dm;let p=VOY.plan(S,here,to,m);
+VOY.goNow=function(S,to,mode,watch,cb,o){if(S.loc&&S.loc.pays)return"vous êtes à l'étranger";o=o||{};const here=VOY.here(S);const N=VOY.norme(S);const dm=VOY.defaultMode(S,here,to);let m=mode&&N.ok.includes(mode)?mode:dm;let p=VOY.plan(S,here,to,m);
   if(!p.ok){m=dm;p=VOY.plan(S,here,to,m)}if(!p.ok)return p.why;p.typ=o.typ||"officiel";p.self=m==="voiture";if(!pay(S,p))return"fonds insuffisants pour ce trajet";go(S,here,to,p,watch!==false,m!==dm,cb);return null};
 
 /* ---------- fenêtre de départ : moyen, type, cortège, chauffeur, vidéo ---------- */
@@ -210,7 +211,7 @@ VOY.recruit=function(S){if(S.chauffeur)return S.chauffeur;const sal=salDriver(S)
   window.SYS.inbox(S,{from:"Ressources humaines",t:"Chauffeur recruté : "+S.chauffeur.n,b:"Salaire : "+F(sal)+" par mois (premier mois payé), à la charge "+(payer==="entreprise"?"de l'entreprise":"de vos finances personnelles")+".",k:"info",read:true});return S.chauffeur};
 VOY.monthTick=function(S){const c=S.chauffeur;if(!c)return;let ok=true;if(c.payer==="entreprise"&&S.ent){if(S.ent.fonds<c.sal/1e6)ok=false;else S.ent.fonds-=c.sal/1e6}else if(window.EMP){if(EMP.wallet(S)<c.sal)ok=false;else EMP.credit(S,-c.sal)}
   if(!ok){window.SYS.inbox(S,{from:"Ressources humaines",t:"Votre chauffeur démissionne",b:c.n+" n'a pas été payé ce mois-ci et quitte votre service.",k:"alerte"});S.chauffeur=null}};
-VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.here(S);const N=VOY.norme(S);const r=rank(S);const dm=VOY.defaultMode(S,here,to);
+VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;if(S.loc&&S.loc.pays&&window.INTL)return INTL.askRetour(S,to,o);const here=VOY.here(S);const N=VOY.norme(S);const r=rank(S);const dm=VOY.defaultMode(S,here,to);
   const fromMode=m=>{if(["cortege","convoi"].includes(m))return{moy:"vehicule",esc:"complet",drv:true};if(m==="cortegeR")return{moy:"vehicule",esc:"reduit",drv:true};if(m==="restreint")return{moy:"vehicule",esc:"restreint",drv:true};if(m==="chauffeur")return{moy:"vehicule",esc:"sans",drv:true};if(m==="voiture")return{moy:"vehicule",esc:"sans",drv:false};return{moy:m,esc:"sans",drv:false}};
   let pre=o.mode;if(pre==="rapide"){let best=null,bh=1e9;for(const k of N.ok){const q=VOY.plan(S,here,to,k);if(q.ok&&q.hrs<bh){bh=q.hrs;best=k}}pre=best}
   const st=Object.assign({typ:OFFICIEL.includes(r)?"officiel":"prive",watch:o.watch!==false},fromMode(pre&&N.ok.includes(pre)?pre:dm));let gone=false;
@@ -277,7 +278,7 @@ VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.h
     el.querySelector("#vaNo").onclick=()=>{el.remove();if(!gone&&o.cancel)o.cancel()};
     el.querySelector("#vaGo").onclick=()=>{const m2=modeOf();const q=VOY.plan(S,here,to,m2);if(!q.ok)return G.toast(q.why);q.typ=st.typ;q.self=self;if(st.typ!=="officiel")q.who="personnel";if(!pay(S,q))return G.toast("Fonds insuffisants pour ce trajet.");gone=true;el.remove();go(S,here,to,q,st.watch,m2!==dm,o.cb)}};
   G.sheet('<span class="eyebrow">Déplacement</span><h3 class="h2">Comment voulez-vous y aller ?</h3><div id="vaBody"></div>',el=>{el.setAttribute("data-noinstr","");draw(el);el.addEventListener("click",e=>{if((e.target===el||e.target.hasAttribute("data-close"))&&!gone&&o.cancel)o.cancel()})})};
-VOY.city=n=>city(n);VOY.LIEUX=LIEUX;VOY.dur=dur;
+VOY.city=n=>city(n);VOY.LIEUX=LIEUX;VOY.dur=dur;VOY.pay=pay;
 VOY.agglosHTML=function(){const top=VOY.CITIES.slice().sort((a,b)=>b.pop-a.pop).slice(0,16);const max=top[0].pop;
   return'<div class="card"><span class="eyebrow">Grandes agglomérations (estimations 2025)</span>'+top.map(c=>'<div class="row" style="justify-content:space-between;gap:8px"><span class="small" style="min-width:110px"><b>'+esc(c.n)+'</b> <span class="muted">'+esc(CM.REG[c.reg].n)+'</span></span><span style="flex:1;height:8px;background:var(--panel3);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:'+Math.max(2,c.pop/max*100)+'%;background:var(--y)"></i></span><span class="small" style="font-family:var(--mono);min-width:64px;text-align:right">'+(c.pop>=1e6?(c.pop/1e6).toFixed(1)+" M":Math.round(c.pop/1000)+" k")+'</span><button class="btn small" data-goto="'+esc(c.n)+'" data-gr="'+c.reg+'">Y aller</button></div>').join("")+'</div>'};
 VOY.bind=function(root){root.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>VOY.open(b.dataset.gr,b.dataset.goto))};
