@@ -186,6 +186,13 @@ VIE.audCard=function(S){
   if(!S.org)return"";const L=S.org.aud.filter(a=>!a.done);if(!L.length)return"";
   return'<div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">Audiences demandées</span>'+pill(L.length+" en attente","warn")+'</div>'+L.slice(0,3).map(a=>'<div class="card" style="gap:6px;background:var(--panel3)"><b>'+esc(a.qui)+'</b><span class="small muted">'+esc(a.objet)+' Reçu le '+esc(G.dayLabel(a.day))+', à recevoir avant le '+esc(G.dayLabel(a.exp))+'.</span><div class="choices">'+a.c.map((c,i)=>'<button class="choice" data-aud="'+a.id+'" data-i="'+i+'" style="padding:8px 10px"><span class="t" style="font-weight:600">'+esc(c[0])+'</span></button>').join("")+'</div></div>').join("")+'</div>';
 };
+/* répondre à une demande d'audience (depuis l'agenda ou au rendez-vous fixé) */
+VIE.audChoice=function(S,id,i){const a=S.org.aud.find(x=>x.id===id);if(!a||a.done)return;const c=a.c[+i];a.done=1;a.held=S.day;a.rep=c[0];applyAud(S,a,c[1]);
+  G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":S.mode==="min"?"Cabinet du ministre":S.profil==="maire"?"Hôtel de ville":"Bureau","Audience");
+  G.toast("Audience : "+lcP(c[0]));window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Audience accordée : "+a.qui,b:"Objet : "+a.objet+" Suite donnée : « "+c[0]+" ».",k:"info",read:true});G.render()};
+VIE.audSheet=function(S,id){const a=S.org&&S.org.aud.find(x=>x.id===id);if(!a||a.done)return G.toast("Cette demande d'audience n'est plus d'actualité.");
+  G.sheet('<span class="eyebrow">Audience · '+esc(G.dayLabel(S.day))+'</span><h3 class="h2">'+esc(a.qui)+'</h3><p>'+esc(a.objet)+'</p><div class="choices">'+a.c.map((c,i)=>'<button class="choice" data-audc="'+i+'"><span class="t">'+esc(c[0])+'</span></button>').join("")+'</div>',el=>{
+    el.querySelectorAll("[data-audc]").forEach(b=>b.onclick=()=>{el.remove();VIE.audChoice(S,id,b.dataset.audc)})})};
 VIE.bindAud=function(S){
   const qc=$("quotCard");if(qc)qc.ontoggle=()=>{S.org.quotOpen=qc.open};
   document.querySelectorAll("[data-aud]").forEach(b=>b.onclick=()=>{const a=S.org.aud.find(x=>x.id===b.dataset.aud);const c=a.c[+b.dataset.i];a.done=1;applyAud(S,a,c[1]);
@@ -234,7 +241,7 @@ function quotTick(S){
 VIE.dayTick=function(S){
   if(!S.org)VIE.init(S);const O=S.org;
   if(!O.quot||Math.floor(S.day)>O.quot.day)quotTick(S);
-  if(S.day>=O.nextAud){O.nextAud=S.day+rnd(3,6);if(S.profil!=="depute"){newAud(S);G.toast("Nouvelle demande d'audience")}}
+  if(S.day>=O.nextAud){O.nextAud=S.day+rnd(3,6);if(S.profil!=="depute"){newAud(S);const na=S.org.aud[0];window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Demande d'audience : "+na.qui,b:na.qui+" "+na.objet+"\nÀ recevoir avant le "+G.dayLabel(na.exp)+". Répondez depuis votre agenda (📅) : recevoir maintenant, fixer un rendez-vous ou refuser.",k:"info"});G.toast("📅 Nouvelle demande d'audience : "+na.qui+" — voir l'agenda",()=>window.AG&&AG.sheet(S))}}
   for(const a of O.aud)if(!a.done&&S.day>a.exp){a.done=1;const e={};if(S.mode==="pres")S.st.pop=clamp(S.st.pop-.5,0,100);if(S.minis)S.minis.perf=clamp(S.minis.perf-1.5,0,100);if(S.opp&&S.opp.commune)S.opp.commune.mood=clamp(S.opp.commune.mood-1.5,0,100);window.SYS.cause(S,a.reg,"Audience refusée faute de temps : "+lcP(a.qui),-1,"")}
   if(S.day>=O.nextPl){O.nextPl=S.day+rnd(2,5);plainteTick(S)}
 };

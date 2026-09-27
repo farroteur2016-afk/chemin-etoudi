@@ -19,8 +19,8 @@ const BASE=("essence gasoil gazole carburant carburants pétrole lampant structu
  "victimes victime familles famille aide subvention subventions réduire baisser augmenter diminuer recruter délégation ambassadeurs ambassadeur ambassade conférence budget dette déficit inflation "+
  "population habitants emploi chômage jeunes jeunesse séparatistes terrorisme armée militaires police gendarmerie douane douanes impôts taxes taxe fiscalité exonération investissement "+
  "infrastructure infrastructures barrage barrages centrale réseau médicaments épidémie choléra paludisme vaccination maternité écoles collège lycée étudiants bourse bourses "+
- "ramener ramenez rentrer retourner conduire emmener déplacement voyage aéroport gare port chemin fer raffinerie contrebande fraude marge marges distributeurs stockage importation").split(/\s+/);
-const TYPO={parket:"parquet",gazoil:"gasoil",gazole:"gasoil",petrol:"pétrole",prisonier:"prisonnier",prisoniers:"prisonniers",cacerale:"carcérale",carcerale:"carcérale",eesence:"essence",esence:"essence",
+ "ramener ramenez rentrer retourner conduire emmener déplacement voyage aéroport gare port chemin fer raffinerie contrebande fraude marge marges distributeurs stockage importation solaire solaires forage forages alimentation réfugiés réfugié déplacés revalorisation hommes tenue gendarmes policiers policier militaire armée prestataire prestataires vidéosurveillance surveillance caméras train vie missions").split(/\s+/);
+const TYPO={alimentaion:"alimentation",revaloration:"revalorisation",refugies:"réfugiés",gazoil:"gasoil",parket:"parquet",gazoil:"gasoil",gazole:"gasoil",petrol:"pétrole",prisonier:"prisonnier",prisoniers:"prisonniers",cacerale:"carcérale",carcerale:"carcérale",eesence:"essence",esence:"essence",
   ministe:"ministre",minstre:"ministre",gouvernemnt:"gouvernement",gouvernment:"gouvernement",convoqe:"convoque",convoc:"convoque",hopitale:"hôpital",hopitaux:"hôpitaux",universite:"université",
   parite:"parité",securite:"sécurité",sante:"santé",electricite:"électricité",delestage:"délestage",situaton:"situation",situtation:"situation",propostion:"proposition",propostions:"propositions",
   directve:"directive",directeu:"directeur",telphone:"téléphone",telephon:"téléphone",apelle:"appelle",apeler:"appeler",apel:"appel",prefe:"préfet",reduir:"réduire",structuraton:"structuration"};
@@ -39,7 +39,7 @@ const KEEP=new Set("affaire affaires dossier dossiers appeliez appelle appeler t
 DICO.fix=function(raw){if(!raw)return raw;if(!LEX)build();let changed=false;
   const out=String(raw).replace(/[A-Za-zÀ-ÿ'-]+/g,w=>{const parts=w.split(/(['-])/);return parts.map(x=>{if(x.length<4||/['-]/.test(x))return x;const k=nf(x);if(TYPO[k]){changed=true;return TYPO[k]}if(SET.has(k)||KEEP.has(k)||k.length<5)return x;
     const max=k.length>=9?2:1;let best=null,bd=max+1,tie=false;for(const c of SET){if(Math.abs(c.length-k.length)>max||c[0]!==k[0]&&k.length<7)continue;const d=dist(k,c,max);if(d<bd){bd=d;best=c;tie=false}else if(d===bd&&best&&LEX.get(c)!==LEX.get(best))tie=true}
-    if(best&&bd<=max&&!tie&&best+"s"!==k&&k+"s"!==best&&best+"x"!==k&&k+"x"!==best&&!/(iez|ions|ez|ent|ait|ais)$/.test(k)){changed=true;const v=LEX.get(best);return x===x.toLowerCase()&&v!==v.toUpperCase()?v.toLowerCase():v}return x}).join("")});
+    if(best&&bd<=max&&!tie&&!(k.length>=7&&best.slice(0,6)===k.slice(0,6))&&best+"s"!==k&&k+"s"!==best&&best+"x"!==k&&k+"x"!==best&&!/(iez|ions|ez|ent|ait|ais)$/.test(k)){changed=true;const v=LEX.get(best);return x===x.toLowerCase()&&v!==v.toUpperCase()?v.toLowerCase():v}return x}).join("")});
   DICO.last=changed?out:null;return out};
 DICO.rebuild=()=>{LEX=null};
 })();

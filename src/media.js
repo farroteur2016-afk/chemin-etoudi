@@ -72,7 +72,7 @@ function micStart(area,btn,status){
   if(!SR){status.textContent="La dictée vocale n'est pas disponible dans ce navigateur. Utilisez Chrome, ou écrivez votre texte.";return null}
   const r=new SR();r.lang="fr-FR";r.continuous=true;r.interimResults=true;let base=area.value?area.value+" ":"";
   r.onresult=e=>{let fin="",tmp="";for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)fin+=x[0].transcript+" ";else tmp+=x[0].transcript}base+=fin;area.value=base+tmp};
-  r.onerror=e=>{status.textContent=e.error==="not-allowed"||e.error==="service-not-allowed"?"Micro refusé. Dans la page Claude, le micro est bloqué : ouvrez le fichier hors ligne dans Chrome, ou écrivez votre texte.":e.error==="network"?"La dictée demande une connexion Internet.":"Micro : "+e.error;btn.textContent="Parler au micro";btn.dataset.on=""};
+  r.onerror=e=>{status.textContent=e.error==="not-allowed"||e.error==="service-not-allowed"?"Micro refusé. Dans la page Claude, le micro est bloqué : ouvrez le jeu (lien GitHub) dans Chrome, ou écrivez votre texte.":e.error==="network"?"La dictée demande une connexion Internet.":"Micro : "+e.error;btn.textContent="Parler au micro";btn.dataset.on=""};
   r.onend=()=>{btn.textContent="Parler au micro";btn.dataset.on="";status.textContent=status.textContent.startsWith("Micro")?status.textContent:"Enregistrement terminé."};
   try{r.start();status.textContent="Je vous écoute… parlez normalement, puis touchez « Arrêter ».";btn.textContent="Arrêter";btn.dataset.on="1"}catch(e){status.textContent="Impossible de démarrer le micro."}
   return r;

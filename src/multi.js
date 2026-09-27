@@ -73,7 +73,7 @@ function shell(){$("gauges").innerHTML="";$("tabs").innerHTML="";$("hudDate").in
 MULTI.setup=function(){
   M=null;shell();G.setView({land:"ville",overlay:"meeting",color:"#f6c945",banner:"ENTRE AMIS",sub:"Qui ira à Etoudi ?"},"Yaoundé","Entre amis");
   $("panel").innerHTML='<div><span class="eyebrow">Entre amis · 2 à 6 joueurs</span><h2 class="h2">Qui gagnera l\'élection ?</h2></div><p>Chaque joueur dirige un parti. À chaque tour, choisissez une action de campagne et une région. À la fin, les Camerounais votent selon les règles du Code électoral.</p>'+
-   '<div class="grid2"><button class="opt" id="mLocal"><b>Sur ce téléphone</b><span>On se passe l\'appareil à tour de rôle. Marche partout, même hors ligne.</span></button><button class="opt" id="mOnline"><b>En ligne</b><span>Chacun sur son téléphone, avec un code de partie.</span></button></div>'+
+   '<div class="grid2"><button class="opt" id="mLocal"><b>Sur ce téléphone</b><span>On se passe l\'appareil à tour de rôle. Chacun joue à son tour sur le même appareil.</span></button><button class="opt" id="mOnline"><b>En ligne</b><span>Chacun sur son téléphone, avec un code de partie.</span></button></div>'+
    '<button class="btn ghost" id="back">Retour</button>';
   $("back").onclick=G.home;$("mLocal").onclick=localSetup;$("mOnline").onclick=onlineSetup;
 };

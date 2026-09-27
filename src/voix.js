@@ -73,21 +73,22 @@ function agenda(S){S.agenda=S.agenda||[];return S.agenda}
 VOIX.findPerson=(S,t)=>findPerson(S,norm(t));
 VOIX.agendaCard=function(S){const L=agenda(S).filter(a=>!a.done).sort((a,b)=>a.at-b.at);if(!L.length)return"";
   return'<div class="card"><span class="eyebrow">Agenda</span>'+L.slice(0,5).map(a=>'<div class="row" style="justify-content:space-between"><span class="small"><b>'+esc(G.dayLabel(a.at))+' · '+hh(hourNow({day:a.at}))+'</b> — '+esc(a.lab)+'</span><button class="btn small ghost" data-agx="'+a.id+'">Annuler</button></div>').join("")+'</div>'};
-VOIX.bindAgenda=function(S,root){(root||document).querySelectorAll("[data-agx]").forEach(b=>b.onclick=()=>{const a=agenda(S).find(x=>x.id===b.dataset.agx);if(a){a.done=1;G.toast("Rendez-vous annulé");G.render()}})};
+VOIX.bindAgenda=function(S,root){(root||document).querySelectorAll("[data-agx]").forEach(b=>b.onclick=()=>{const a=agenda(S).find(x=>x.id===b.dataset.agx);if(a){a.done=1;a.cancel=1;if(a.rapport&&window.DIR){DIR.deliver(S,a.rapport);G.toast("Rendez-vous annulé : le compte rendu vous est envoyé par écrit.")}else G.toast("Rendez-vous annulé");G.render()}})};
 let busy=false;
 VOIX.tick=function(S){if(!S||busy||S.phase!=="play")return;const due=agenda(S).filter(a=>!a.done&&S.day>=a.at).sort((a,b)=>a.at-b.at)[0];if(!due)return;due.done=1;busy=true;setTimeout(()=>{run(S,due);},200)};
 function closeP(){const e=$("vxPanel");if(e)e.remove()}
 function run(S,a){closeP();const end=()=>{busy=false;G.render();setTimeout(()=>VOIX.tick(G.S),400)};
   if(a.type==="trip"){const err=VOY.goTo(S,a.to,a.mode,true,()=>{if(a.visit)visit(S,a.visit);end()},end);if(err){say("Le déplacement prévu n'a pas pu avoir lieu : "+err+".");end()}return}
   if(a.type==="meet")return meeting(S,a,end);
+  if(a.type==="aud"){end();if(window.VIE&&VIE.audSheet)setTimeout(()=>VIE.audSheet(S,a.aud),300);return}
   if(a.type==="renc"){const here=VOY.here(S);if(here.v===a.to.v){end();RENC.open(S,a.renc);return}const err=VOY.goTo(S,a.to,a.mode,true,()=>{end();setTimeout(()=>RENC.open(G.S,a.renc),700)});if(err){say("Le déplacement prévu n'a pas pu avoir lieu : "+err+".");end()}return}
   end()}
 function meeting(S,a,end){const P=a.who;if(P&&P.n&&!P.sexe&&window.SYS)P.sexe=window.SYS.sexe(P.n);
-  if(window.CAB&&!a.force){const st=CAB.status(S,P,S.day);if(st&&!st.ok){CAB.unavailable(S,P,st,{objet:a.objet,when:"à l'heure prévue"});end();return}}const who=(P.n?P.n+", ":"")+P.lab;G.toast("Audience : "+who);say("Votre rendez-vous est arrivé : "+who+" est là.");
+  if(window.CAB&&!a.force){const st=CAB.status(S,P,S.day);if(st&&!st.ok){CAB.unavailable(S,P,st,{objet:a.objet,when:"à l'heure prévue"});end();return}}const who=(P.n?P.n+", ":"")+P.lab;G.toast("Audience : "+who);const cr=a.rapport&&window.DIR?DIR.deliver(S,a.rapport):"";a.held=1;say("Votre rendez-vous est arrivé : "+who+" est là."+(cr?" "+(P.sexe==="f"?"Elle":"Il")+" vous présente son compte rendu : "+cr:""));
   G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":"Bureau","Audience");
   const g=P.k==="min"&&S.gov?S.gov.min[P.id]:null;const opts=[["Faire le point de la situation","point"],["Donner des instructions fermes","ordre"],["Le féliciter et l'encourager","bravo"]];
   if(S.mode==="pres"&&(P.k==="min"||P.k==="pm"))opts.push(["Mettre fin à ses fonctions et nommer une femme","limoger_f"],["Mettre fin à ses fonctions et nommer un homme","limoger_m"]);if(P.org)opts.push(["Ouvrir sa fiche (mesures possibles)","fiche"]);if(window.RENC)opts.unshift(["💬 S'entretenir librement (voix, texte ou choix)","libre"]);
-  G.sheet('<span class="eyebrow">Audience · '+esc(G.dayLabel(S.day))+'</span><h3 class="h2">'+esc(who.charAt(0).toUpperCase()+who.slice(1))+'</h3><p class="small muted">Objet : '+esc(a.objet||"point de situation")+'</p><div class="choices">'+opts.map(([l,k])=>'<button class="choice" data-mk="'+k+'"><span class="t">'+esc(l)+'</span></button>').join("")+'</div>',el=>{
+  G.sheet('<span class="eyebrow">Audience · '+esc(G.dayLabel(S.day))+'</span><h3 class="h2">'+esc(who.charAt(0).toUpperCase()+who.slice(1))+'</h3><p class="small muted">Objet : '+esc(a.objet||"point de situation")+'</p>'+(cr?'<div class="card" style="gap:6px;background:var(--panel3)"><b>📄 Compte rendu présenté de vive voix</b><span class="small">'+esc(cr)+'</span><span class="small muted">Le rapport écrit est aussi dans votre courrier.</span></div>':"")+'<div class="choices">'+opts.map(([l,k])=>'<button class="choice" data-mk="'+k+'"><span class="t">'+esc(l)+'</span></button>').join("")+'</div>',el=>{
     el.querySelectorAll("[data-mk]").forEach(b=>b.onclick=()=>{const k=b.dataset.mk;el.remove();let txt="";const comp=g?g.comp:60;
       if(k==="point"){const sec=P.min?(E.MINISTERES.find(m=>m.id===P.min)||{}).s:null;const v=sec&&S.st&&S.st[sec]!=null?Math.round(S.st[sec]):null;txt=who+" vous présente la situation"+(v!=null?" : l'indicateur de son secteur est à "+v+" sur 100":"")+". "+(comp>65?"Son rapport est précis et convaincant.":"Son rapport est approximatif.");window.SYS.inbox(S,{from:P.lab,t:"Compte rendu d'audience",b:txt,k:"rapport",reg:P.reg})}
       else if(k==="ordre"){const tb=window.CAB&&P.n?CAB.traitBonus(P.n):0;const tr=window.CAB&&P.n?CAB.trait(P.n):"";if(tr==="tetu"&&Math.random()<.5){txt=(P.n||"Votre interlocuteur")+" conteste vos instructions et demande du temps. Il faudra le relancer.";say(txt);G.toast(txt.slice(0,90));window.SYS.inbox(S,{from:"Cabinet",t:"Audience : "+(P.n||P.lab),b:txt,k:"info",read:true});end();return}
@@ -106,6 +107,9 @@ function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name
 VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0);const raw=window.DICO?DICO.fix(raw0):raw0;const t=norm(raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
+  if(window.SAV&&SAV.handle(S,raw,reply))return;
+  if(window.AG&&AG.isAsk(t)){closeP();AG.sheet(S);reply(AG.summary(S));return}
+  if(window.PB&&PB.voice(S,t,reply,closeP))return;
   // appel téléphonique immédiat
   if(/\b(telephone|un appel|coup de fil|en ligne|joindre|appelez le|appelez la|appelle le|appelle la|l appeliez|l appeler|l appelle|appeler le|appeler la|le joindre|la joindre|passe moi|passez moi|lancez un appel|lance un appel)\b/.test(t)&&!/\b(demain|apres demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|\d{1,2} ?h)\b/.test(t)&&window.RENC){
     const P=findPerson(S,t)||(window.QA&&QA._last)||null;if(!P||!P.n)return reply("Qui voulez-vous appeler ? Par exemple : « appelle le ministre de la Défense ».");
@@ -130,7 +134,7 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
   if(/situation|resume|bilan|comment va le pays|point sur/.test(t)&&!/convoqu|recevoir/.test(t)){const al=S.inbox.filter(i=>!i.read&&i.k==="alerte").length;const moods=S.mood?Object.values(S.mood).map(x=>x.v):[];const avg=moods.length?Math.round(moods.reduce((a,b)=>a+b,0)/moods.length):50;
     const worst=S.mood?CM.REGIONS.slice().sort((a,b)=>S.mood[a.id].v-S.mood[b.id].v)[0]:null;return reply("Nous sommes le "+G.dayLabel(S.day)+". L'humeur du pays est à "+avg+" sur 100"+(worst?", la région la plus tendue est "+worst.n:"")+". Vous avez "+al+" alerte"+(al>1?"s":"")+" non lue"+(al>1?"s":"")+(S.st?". Popularité "+Math.round(S.st.pop)+", sécurité "+Math.round(S.st.sec):"")+".")}
   // vidéo
-  if(/video|montre moi les images|filme/.test(t)&&window.VID){VID.play({text:raw});return reply("Voici les images.")}
+  if(/video|montre moi les images|filme/.test(t)&&!/surveillance|prestataire|camera|fournisseur/.test(t)&&window.VID){VID.play({text:raw});return reply("Voici les images.")}
   // marcher
   if(/(je veux|allons|on va|laisse moi|fais moi|descend|descends|descendre)?.*\b(marcher|me promener|promenade|descendre dans la rue|dans la rue a pied)\b/.test(t)&&!/\?|^(suis je|est ce que|ou |si je)|je suis (au|dans)/.test(raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))&&window.VID){VID.walk();return reply("Vous descendez dans la rue.")}
   // onglets

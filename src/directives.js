@@ -29,7 +29,7 @@ const CAT=[
  {id:"prix",re:/baisse|vie chere|prix des?|carburant|subvention|pouvoir d achat|panier de la menagere/,titre:"Mesures contre la vie chère",fx:{pop:3,soc:1,eco:-1},delai:20,cout:60},
  {id:"arrieres",re:/arriere|primes?|salaires?|rappels?|dette interieure|dette academique|payer (les |leurs )?/,titre:"Apurement des arriérés et des primes",fx:{soc:3,pop:1},delai:30,cout:40},
  {id:"emploi",re:/recrut|emploi des jeunes|chomage|jeunes diplomes|insertion/,titre:"Programme spécial d'emploi des jeunes",fx:{pop:2,soc:1},delai:90,cout:50},
- {id:"construire",re:/constru|batir|bitum|rehabilit|refaire la route|route|pont|hopital|ecole|forage|universite|stade|barrage|logements?/,titre:"Grands travaux",fx:{infra:3,pop:1},delai:180,cout:80},
+ {id:"construire",re:/constru|batir|bitum|rehabilit|refaire (la|les|des) (route|pont)|refection|edifier|amenager (un|une|des)|forages?/,titre:"Grands travaux",fx:{infra:3,pop:1},delai:180,cout:80},
  {id:"securite",re:/renfort|securis|armee|militaire|\bbir\b|patrouille|gendarmerie|police|terroris|boko|separatist/,titre:"Renforcement du dispositif de sécurité",fx:{sec:3,pop:.5},delai:21,cout:25},
  {id:"dialogue",re:/dialogue|negoci|paix|reconcili|concertation|table ronde|syndicats?/,titre:"Ouverture d'un dialogue",fx:{soc:3,sec:1,pop:1},delai:30,cout:3},
  {id:"liberer",re:/liber|grace|amnistie|prisonniers?|detenus?/,titre:"Mesures de grâce et de libération",fx:{soc:2,int:1,pop:1,sec:-.5},delai:10,cout:0},
@@ -71,6 +71,9 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
   if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
   // le titre, ce sont VOS mots ; le domaine est indiqué à part ; le délai que vous donnez est respecté
   d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(raw),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
+  // coût selon l'étendue : une ville ou une région coûte bien moins qu'une mesure nationale
+  if(d.reg&&d.cout>5&&!opt.cout){const town=window.VOY&&VOY.CITIES.some(c=>new RegExp("\\b"+norm(c.n)+"\\b").test(t)&&c.n!==CM.REG[d.reg].n);d.cout=Math.max(.3,Math.round(d.cout*(town?.06:.2)*10)/10)}
+  if(/en audience|venir me (presenter|rendre compte)|me (le )?presenter en personne|rendre compte de vive voix/.test(t))d.cr="audience";else if(/par ecrit|rapport ecrit|m envoyer (le|un) rapport/.test(t))d.cr="ecrit";
   if(opt.ctx){d.dossier=String(opt.ctx).slice(0,140);if(window.ACTU){const a=ACTU.all().find(x=>x.titre===opt.ctx||x.titre.startsWith(opt.ctx.slice(0,70)));if(a){S.actuFait=S.actuFait||{};(S.actuFait[a.id]=S.actuFait[a.id]||[]).push("directive");d.reg=d.reg||a.reg}}}
   if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
     "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
@@ -79,6 +82,14 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
     if(j&&j.titre){d.domaine=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");if(!d.delaiDonne)d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
       d.fx={};for(const k of ["pop","eco","soc","sec","infra","int"])d.fx[k]=clamp(+((j.effets||{})[k])||0,-5,5)}}catch(e){if(e&&e.code==="not_granted")refused=true}}
   if(c.base)d.base=c.base;
+  if(opt.cout!=null&&opt.cout>0)d.cout=opt.cout;
+  // validation avant exécution : impact national, ou coût au-delà des marges de l'exécutant
+  const gate=DIR.gate(S,d,opt);
+  if(gate.need){d.why=gate.why;d.execJ=Math.max(.25,d.due-S.day);d.phase=gate.need==="pres"?"plan":"presid";const pj=planDays(S,d);d.planDue=S.day+pj;d.due=d.planDue+d.execJ;
+    S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);const R=DIR.resp(S,d);
+    const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». Comme elle a un "+gate.why+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation. Coût estimé à ce stade : "+(d.cout||"moins de 1")+" milliard"+(d.cout>=2?"s":"")+" de FCFA."
+      :"Votre décision « "+d.titre+" » a un "+gate.why+" : elle est transmise à la Présidence de la République pour approbation avant exécution. Réponse attendue vers le "+G.dayLabel(d.planDue)+".";
+    window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+raw+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
   // coût (en milliards : État, ministère ou commune)
   if(d.cout){if(S.mode==="pres")S.nums.dette+=d.cout*.25;else if(S.mode==="min"){const M=d.cout*.25*1000;if(S.minis.fonds<M){reply("Les crédits de votre ministère ne suffisent pas pour cette mesure ("+Math.round(M)+" M FCFA). Demandez une rallonge au Premier ministre.");return true}S.minis.fonds-=M}
     else if(sc.local&&S.opp&&S.opp.commune){const M=Math.min(S.opp.commune.fonds,d.cout*5);S.opp.commune.fonds-=M}}
@@ -88,15 +99,66 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
   S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);
   const when=G.dayLabel(d.due);
   const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : « "+d.titre+" »"+(c.id==="patrimoine"?", pour "+cb.lab:"")+". Domaine : "+d.domaine.toLowerCase()+"."+(d.dossier?" Dossier : "+d.dossier+".":"")+(d.base?" Base légale : "+d.base+".":"")+
-    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+d.cout+" milliards de FCFA.":"");
+    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":"")+(d.cr==="audience"?" "+DIR.resp(S,d).n+" viendra vous présenter le compte rendu en audience.":" Compte rendu par écrit ; vous pouvez choisir de recevoir le responsable en audience dans « Vos directives » ou votre agenda.");
   window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+raw+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
   reply(txt);G.render();return true};
 
+/* ---------- circuit de validation ---------- */
+const capOf=id=>{const m=id&&E.MINISTERES.find(x=>x.id===id);return m?Math.max(1,Math.round(m.b*.05*10)/10):5};
+DIR.cap=capOf;
+DIR.gate=function(S,d,opt){opt=opt||{};if(d.cat==="patrimoine"||opt.direct)return{};
+  const nat=opt.nat!=null?!!opt.nat:(!d.reg&&!d.ville);
+  if(S.mode==="pres"){const cap=capOf(d.resp);const over=(d.cout||0)>cap;if(!nat&&!over)return{};
+    return{need:"pres",why:[nat?"impact national":"",over?"coût ("+String(d.cout).replace(".",",")+" milliards) au-delà de ce que "+(d.resp?"le ministère":"les services")+" peut gérer seul ("+String(cap).replace(".",",")+" milliards)":""].filter(Boolean).join(" et un ")}}
+  if(S.mode==="min"&&S.minis){const cap=capOf(S.minis.id);const over=(d.cout||0)>cap;if(!nat&&!over)return{};
+    return{need:"presidence",why:[nat?"impact national":"",over?"coût ("+String(d.cout).replace(".",",")+" milliards) au-delà des marges de votre ministère ("+String(cap).replace(".",",")+" milliards)":""].filter(Boolean).join(" et un ")}}
+  return{}};
+function planDays(S,d){const R=DIR.resp(S,d);const tr=window.CAB&&R.n?CAB.trait(R.n):"cooperatif";let j={zele:2,cooperatif:3,prudent:5,ambitieux:3,tetu:6,negligent:7}[tr]||3;
+  if(d.phase==="presid")j=2+Math.round(Math.random()*3);if(d.execJ<3)j=Math.max(.25,Math.min(j,d.execJ/2));return j}
+function commit(S,d){if(d.cout){if(S.mode==="pres")S.nums.dette+=d.cout*.25;else if(S.mode==="min"){const M=d.cout*.25*1000;S.minis.fonds=Math.max(0,S.minis.fonds-Math.min(M,capOf(S.minis.id)*250))}}apply(S,d,1/3)}
+const STEPS={construire:["études techniques et choix des sites","appel d'offres et attribution des marchés","travaux et réception des ouvrages"],justice:["saisine du parquet compétent","enquête et auditions","poursuites et suivi des procédures"],
+  audit:["désignation des équipes d'inspection","contrôles sur pièces et sur place","rapport, sanctions et recouvrement"]};
+function sendPlan(S,d){const R=DIR.resp(S,d);const tr=window.CAB&&R.n?CAB.trait(R.n):"cooperatif";if(tr==="ambitieux")d.cout=Math.round((d.cout||1)*1.2*10)/10;
+  const st=STEPS[d.cat]||["cadrage, textes d'application et désignation des responsables","mobilisation des crédits et des moyens","mise en œuvre sur le terrain et suivi"];
+  const ej=Math.round(d.execJ*10)/10;d.plan="1) "+st[0]+" ; 2) "+st[1]+" ; 3) "+st[2]+". Délai d'exécution après votre accord : "+(ej<1?Math.round(ej*24)+" heures":ej+" jours")+". Coût : "+(d.cout||"moins de 1")+" milliard"+(d.cout>=2?"s":"")+" de FCFA"+(d.cout>capOf(d.resp)?", avec un financement complémentaire du budget de l'État":"")+".";
+  window.SYS.inbox(S,{from:R.n+", "+R.lab,t:"Plan d'exécution à valider : "+d.titre.slice(0,70),b:"Instruction : « "+d.texte+" »\nMotif de la validation : "+d.why+".\nPlan proposé : "+d.plan+(tr==="negligent"?"\nLe dossier est peu détaillé.":tr==="prudent"?"\nLes risques juridiques et budgétaires sont analysés en annexe.":""),k:"alerte",dir:d.id,valid:true});
+  G.toast("Plan d'exécution à valider : "+d.titre.slice(0,60));try{A.speak(R.n+" vous soumet le plan d'exécution de votre instruction, pour validation.",{voix:"f"})}catch(e){}}
+DIR.approve=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.phase!=="valid")return;commit(S,d);d.phase="exec";d.start=S.day;d.due=S.day+d.execJ;
+  const m="Plan approuvé : « "+d.titre+" ». Exécution lancée, compte rendu le "+G.dayLabel(d.due)+".";window.SYS.inbox(S,{from:"Secrétariat général",t:"Exécution lancée : "+d.titre.slice(0,70),b:m,k:"info",read:true,reg:d.reg});G.toast(m.slice(0,120));try{A.speak(m,{voix:"f"})}catch(e){}G.render()};
+DIR.reject=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d)return;d.phase=null;d.done=true;d.res="Plan rejeté le "+G.dayLabel(S.day);G.toast("Plan rejeté : rien n'est exécuté.");G.render()};
+DIR.econ=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d)return;d.cout=Math.round((d.cout||1)*.8*10)/10;d.phase="plan";d.planSent=0;d.planDue=S.day+2;d.due=d.planDue+d.execJ;G.toast("Nouvelle version du plan demandée, 20 % moins chère : retour le "+G.dayLabel(d.planDue)+".");G.render()};
+function decidePres(S,d){const conf=S.minis?S.minis.conf:60;const ok=Math.random()<.4+conf/200-((d.cout||0)>capOf(S.minis&&S.minis.id)*3?.15:0);
+  if(ok){commit(S,d);d.phase="exec";d.start=S.day;d.due=S.day+d.execJ;window.SYS.inbox(S,{from:"Secrétariat général de la Présidence",t:"Approuvé : "+d.titre.slice(0,70),b:"Le président de la République a approuvé votre décision « "+d.titre+" ». Vous pouvez l'exécuter ; compte rendu attendu le "+G.dayLabel(d.due)+".",k:"bonne",reg:d.reg});G.toast("La Présidence approuve : « "+d.titre.slice(0,60)+" »")}
+  else{d.phase=null;d.done=true;d.res="Non approuvée par la Présidence";window.SYS.inbox(S,{from:"Secrétariat général de la Présidence",t:"Non approuvé : "+d.titre.slice(0,70),b:"La Présidence n'a pas approuvé votre décision « "+d.titre+" » ("+pick(["contraintes budgétaires","la mesure doit être examinée en Conseil des ministres","le Premier ministre demande une concertation préalable"])+"). Vous pouvez la reformuler.",k:"alerte",reg:d.reg});G.toast("La Présidence n'approuve pas « "+d.titre.slice(0,50)+" »")}}
 function apply(S,d,part){if(!S.st)return;for(const k in d.fx)if(S.st[k]!=null)S.st[k]=clamp(S.st[k]+d.fx[k]*part,0,100);
   if(d.reg)window.SYS.cause(S,d.reg,d.titre,(d.fx.pop||0)*part*2,"directive");if(S.minis)S.minis.perf=clamp(S.minis.perf+part*2,0,100)}
 
 /* ---------- échéance et compte rendu ---------- */
-DIR.tick=function(S){if(!S||!S.directives)return;for(const d of S.directives)if(!d.done&&S.day>=d.due){d.done=true;report(S,d)}};
+DIR.tick=function(S){if(!S||!S.directives)return;for(const d of S.directives){if(d.done)continue;
+    if(d.phase==="plan"){if(S.day>=d.planDue){d.phase="valid";sendPlan(S,d)}continue}
+    if(d.phase==="valid")continue;
+    if(d.phase==="presid"){if(S.day>=d.planDue)decidePres(S,d);continue}
+    // la veille : demander comment recevoir le compte rendu
+    if(!d.crAsk&&!d.cr&&d.due-S.day<=1&&d.due-S.day>0&&d.due-d.start>1.5){d.crAsk=1;const R=DIR.resp(S,d);window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Compte rendu attendu le "+G.dayLabel(d.due)+" : "+d.titre.slice(0,70),b:"Le compte rendu de votre instruction « "+d.titre+" » est attendu le "+G.dayLabel(d.due)+".\nVoulez-vous recevoir "+R.n+" ("+R.lab+") en audience pour qu'il vous le présente, ou qu'il vous l'envoie par écrit pour exploitation ?",k:"info",dir:d.id,crAsk:true});G.toast("Compte rendu attendu : écrit ou audience ? (voir votre courrier ou votre agenda)")}
+    if(S.day<d.due)continue;
+    if(d.cr==="audience"&&!d.audProg){d.audProg=S.day;DIR.audience(S,d,"compte rendu : "+d.titre,true);continue}
+    if(d.cr==="audience"&&d.audProg&&S.day<d.due+3)continue;
+    d.done=true;report(S,d)}};
+/* le responsable qui rend compte */
+DIR.resp=function(S,d){if(d.resp&&S.gov&&S.gov.min&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];const m=E.MINISTERES.find(x=>x.id===d.resp);const sx=window.SYS.sexe(g.n);return{k:"min",id:d.resp,min:d.resp,n:g.n,sexe:sx,lab:window.SYS.accord("le ministre "+window.SYS.deM(m?m.n:d.resp)+(m?m.n:d.resp),sx)}}
+  if(!d.rn)d.rn=window.SYS.nom("CE");const sx=window.SYS.sexe(d.rn);
+  const lab=S.mode==="pres"?"le secrétaire général de la Présidence":S.mode==="min"?"le secrétaire général du ministère":S.mode==="ing"?"le directeur technique":S.profil==="maire"?"le secrétaire général de la mairie":S.opp?"le secrétaire général du parti":"votre collaborateur";
+  if(S.mode==="pres"&&S.gov&&S.gov.sg)return{k:"sg",n:S.gov.sg.n,sexe:window.SYS.sexe(S.gov.sg.n),lab:window.SYS.accord(lab,window.SYS.sexe(S.gov.sg.n))};
+  return{k:"collab",n:d.rn,sexe:sx,lab:window.SYS.accord(lab,sx)}};
+/* prochain créneau de travail : dans l'heure en journée, sinon le lendemain à 9 h */
+DIR.slot=function(S,R){const wd=d=>(new Date(2026,9,1).getDay()+Math.floor(d+1/3))%7;const h=((S.day%1)*24+8)%24;const C=[];if(h>=8&&h<16.5)C.push(S.day+1/24);for(let k=1;k<10;k++)C.push(Math.floor(S.day)+k+1/24);
+  for(const at of C){if(wd(at)===0||wd(at)===6)continue;if(R&&window.CAB&&R.k==="min"){const st=CAB.status(S,R,at);if(st&&!st.ok)continue}return at}return C[C.length-1]};
+DIR.audience=function(S,d,objet,rapport){const R=DIR.resp(S,d);const at=DIR.slot(S,R);S.agenda=S.agenda||[];
+  S.agenda.push({id:"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),type:"meet",at,who:R,objet,lab:"Audience : "+R.n+" — "+objet.slice(0,70),rapport:rapport?d.id:null,force:R.k!=="min",conf:true});
+  G.toast("Audience programmée : "+R.n+", "+G.dayLabel(at)+" à "+Math.floor(((at%1)*24+8)%24)+" h");G.render()};
+/* compte rendu remis (par écrit ou en audience) : renvoie le résumé */
+DIR.deliver=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d)return"";if(!d.done){d.done=true;report(S,d)}
+  const it=(S.inbox||[]).find(i=>i.dir===d.id&&/^Compte rendu|Déclaration/.test(i.t));return(d.res||"")+(it?" — "+String(it.b).split("\n").slice(-1)[0]:"")};
 function report(S,d){const pm=S.gov&&S.gov.pm?S.gov.pm.comp:60;
   if(d.cat==="patrimoine"&&d.liste&&S.gov){const ok=[],ko=[];for(const id of d.liste){const g=S.gov.min[id];if(!g)continue;const p=.35+g.loy/160+(S.st?S.st.int/400:0)+(window.CAB?CAB.traitBonus(g.n):0);(Math.random()<p?ok:ko).push(id)}
     d.ko=ko;d.res=ok.length+" déclarations reçues, "+ko.length+" manquantes";const r=ok.length/(ok.length+ko.length||1);apply(S,d,r*.67);
@@ -110,11 +172,18 @@ function report(S,d){const pm=S.gov&&S.gov.pm?S.gov.pm.comp:60;
     k:q>.45?"rapport":"alerte",reg:d.reg,dir:d.id})}
 
 /* ---------- suites possibles depuis le courrier ---------- */
-DIR.mailActs=function(S,it){const d=it.dir&&(S.directives||[]).find(x=>x.id===it.dir);if(!d||S.mode!=="pres"&&S.mode!=="min")return"";const f=d.fait||[];
+DIR.mailActs=function(S,it){const d=it.dir&&(S.directives||[]).find(x=>x.id===it.dir);if(!d)return"";const f=d.fait||[];
+  if(it.valid){if(d.phase!=="valid")return'<p class="small muted">'+(d.done?"Décision prise : "+esc(d.res||""):"Plan déjà validé : exécution en cours.")+'</p>';return '<button class="btn primary" data-dx="vok">✅ Approuver et lancer l\'exécution</button><button class="btn" data-dx="vmod">✏️ Modifier l\'instruction</button><button class="btn" data-dx="veco">💰 Demander une version moins chère</button><button class="btn ghost" data-dx="vno">❌ Rejeter</button>'}
+  if(it.crAsk){if(d.done)return'<p class="small muted">Le compte rendu a déjà été remis.</p>';return '<button class="btn primary" data-dx="craud">🤝 Le recevoir en audience pour le compte rendu</button><button class="btn" data-dx="crecr">📄 Rapport écrit pour exploitation</button>'+(d.cr?'<p class="small muted">Choix actuel : '+(d.cr==="audience"?"audience":"rapport écrit")+'</p>':"")}
+  if(S.mode!=="pres"&&S.mode!=="min")return /rapport|alerte/.test(it.k)?'<button class="btn" data-dx="discuter">🤝 Recevoir le responsable pour en discuter</button>':"";
   if(d.cat==="patrimoine"&&d.ko&&d.ko.length)return [["delai","Accorder 15 jours de délai supplémentaire"],["publier","Publier la liste au Journal officiel"],["limoger","Limoger les retardataires"],["tcs","Saisir la justice (Tribunal criminel spécial)"]].filter(([k])=>!f.includes(k)).map(([k,l])=>'<button class="btn" data-dx="'+k+'">'+esc(l)+'</button>').join("");
-  if(!/rapport|alerte/.test(it.k))return"";return [["relance","Relancer les services"],["sanction","Sanctionner les responsables"]].filter(([k])=>!f.includes(k)).map(([k,l])=>'<button class="btn" data-dx="'+k+'">'+esc(l)+'</button>').join("")};
+  if(!/rapport|alerte/.test(it.k))return"";return [["discuter","🤝 Recevoir le responsable pour en discuter"],["relance","Relancer les services"],["sanction","Sanctionner les responsables"]].filter(([k])=>!f.includes(k)).map(([k,l])=>'<button class="btn" data-dx="'+k+'">'+esc(l)+'</button>').join("")};
 DIR.mailBind=function(S,it,el){const d=it.dir&&(S.directives||[]).find(x=>x.id===it.dir);if(!d)return;
-  el.querySelectorAll("[data-dx]").forEach(b=>b.onclick=()=>{const k=b.dataset.dx;d.fait=d.fait||[];d.fait.push(k);let msg="";
+  el.querySelectorAll("[data-dx]").forEach(b=>b.onclick=()=>{const k=b.dataset.dx;
+    if(k==="vok"){el.remove();DIR.approve(S,d.id);return}if(k==="vno"){el.remove();DIR.reject(S,d.id);return}if(k==="veco"){el.remove();DIR.econ(S,d.id);return}if(k==="vmod"){el.remove();DIR.edit(S,d.id);return}
+    if(k==="craud"||k==="crecr"){d.cr=k==="craud"?"audience":"ecrit";const R=DIR.resp(S,d);const m=d.cr==="audience"?R.n+" vous présentera le compte rendu en audience, le "+G.dayLabel(d.due)+".":R.n+" vous enverra le compte rendu par écrit pour exploitation.";el.remove();G.toast(m);say(m);G.render();return}
+    if(k==="discuter"){if(!(d.fait||[]).includes("discuter")){d.fait=d.fait||[];d.fait.push(k)}el.remove();DIR.audience(S,d,"suite du compte rendu : "+d.titre,false);return}
+    d.fait=d.fait||[];d.fait.push(k);let msg="";
     if(k==="delai"){d.done=false;d.due=S.day+15;d.liste=d.ko.slice();msg="Un délai de 15 jours est accordé aux retardataires."}
     else if(k==="publier"){if(S.st){S.st.int=clamp(S.st.int+2,0,100);S.st.pop=clamp(S.st.pop+1,0,100)}for(const id of d.ko)if(S.gov.min[id])S.gov.min[id].loy=clamp(S.gov.min[id].loy-6,0,100);msg="La liste est publiée au Journal officiel. L'opinion applaudit ; les ministres visés sont fragilisés."}
     else if(k==="limoger"){let n=0;for(const id of d.ko){const r=pick(CM.REGIONS).id;S.gov.min[id]={n:window.SYS.nom(r),reg:r,comp:Math.round(G.rnd(50,80)),loy:80};n++}if(S.st){S.st.int=clamp(S.st.int+3,0,100);S.st.pop=clamp(S.st.pop+2,0,100)}msg=n+" ministre"+(n>1?"s":"")+" limogé"+(n>1?"s":"")+" et remplacé"+(n>1?"s":"")+" par décret."}
@@ -145,19 +214,26 @@ DIR.edit=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.d
 const tDir=d=>d.titre==="Directive"?(d.texte||"Directive").slice(0,80):d.titre;
 DIR.card=function(S){const all=S.directives||[];const L=all.filter(d=>!d.done);if(!all.length)return"";
   return '<div class="card" data-dirall role="button" tabindex="0" style="cursor:pointer"><div class="row" style="justify-content:space-between"><b>📜 Directives en cours ('+L.length+')</b><span class="small muted">Détails ▸</span></div>'+
-   (L.length?L.slice(-5).reverse().map(d=>'<div class="small">• '+esc(tDir(d))+' — <span class="muted">rapport le '+esc(G.dayLabel(d.due))+'</span></div>').join(""):'<div class="small muted">Aucune en cours · '+all.length+' terminée'+(all.length>1?"s":"")+'</div>')+'</div>'};
+   (L.length?L.slice(-5).reverse().map(d=>'<div class="small">• '+esc(tDir(d))+' — <span class="muted">'+(d.phase==="plan"?"plan attendu le "+esc(G.dayLabel(d.planDue)):d.phase==="valid"?"<b>à valider</b>":d.phase==="presid"?"en attente de la Présidence":"rapport le "+esc(G.dayLabel(d.due)))+'</span></div>').join(""):'<div class="small muted">Aucune en cours · '+all.length+' terminée'+(all.length>1?"s":"")+'</div>')+'</div>'};
 DIR.bindCard=function(S,root){(root||document).querySelectorAll("[data-dirall]").forEach(c=>{c.onclick=()=>DIR.sheet(S);c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();DIR.sheet(S)}}})};
 DIR.sheet=function(S){const all=(S.directives||[]).slice().reverse();const on=all.filter(d=>!d.done),off=all.filter(d=>d.done);
   const item=d=>{const tot=Math.max(1,d.due-d.start),pct=Math.max(0,Math.min(100,Math.round((S.day-d.start)*100/tot)));
     return '<div class="card" style="gap:6px"><b>'+esc(tDir(d))+'</b>'+(d.texte&&tDir(d)!==d.texte?'<span class="small">Votre instruction : « '+esc(d.texte)+' »</span>':"")+
      '<div class="kv small">'+(d.domaine?'<span>Domaine</span><b>'+esc(d.domaine)+'</b>':"")+(d.dossier?'<span>Dossier</span><b>'+esc(d.dossier)+'</b>':"")+'<span>Donnée par</span><b>'+esc(d.qui||"")+'</b><span>Concerne</span><b>'+esc(d.cat==="patrimoine"?d.cible.lab:d.reg?CM.REG[d.reg].n:"Tout le pays")+'</b>'+
      (d.base?'<span>Base légale</span><b>'+esc(d.base)+'</b>':"")+'<span>Lancée le</span><b>'+esc(G.dayLabel(d.start))+'</b><span>Échéance</span><b>'+esc(G.dayLabel(d.due))+(d.done?"":d.due-S.day<2?" ("+Math.max(1,Math.round((d.due-S.day)*24))+" h)":" ("+Math.max(0,Math.round(d.due-S.day))+" j)")+'</b>'+
-     (d.cout?'<span>Coût estimé</span><b>'+d.cout+' Md FCFA</b>':"")+'<span>Statut</span><b>'+(d.done?esc(d.res||"Terminée : compte rendu au courrier"):"En cours d'exécution")+'</b></div>'+
-     (d.done&&/^Annulée/.test(d.res||"")?'<div class="row"><button class="btn small primary" data-dreact="'+d.id+'">↩️ Réactiver la directive</button></div>':"")+(d.done?"":'<div class="bar"><i style="width:'+pct+'%"></i></div><div class="row"><button class="btn small primary" data-dedit="'+d.id+'">✏️ Modifier</button><button class="btn small" data-dacc="'+d.id+'">Accélérer (+50 % du coût, délai réduit d\'un tiers)</button><button class="btn small ghost" data-dann="'+d.id+'">Annuler la directive</button></div>')+'</div>'};
+     (d.cout?'<span>Coût estimé</span><b>'+d.cout+' Md FCFA</b>':"")+'<span>Statut</span><b>'+(d.done?esc(d.res||"Terminée : compte rendu au courrier"):d.phase==="plan"?"Plan d'exécution en préparation (retour le "+esc(G.dayLabel(d.planDue))+")":d.phase==="valid"?"⏳ En attente de votre validation":d.phase==="presid"?"En attente de l'approbation de la Présidence":"En cours d'exécution")+'</b>'+(d.why&&!d.done?'<span>Validation requise</span><b>'+esc(d.why)+'</b>':"")+(d.plan&&!d.done?'<span>Plan proposé</span><b>'+esc(d.plan)+'</b>':"")+'</div>'+
+     (d.phase==="valid"&&!d.done?'<div class="row"><button class="btn small primary" data-dvok="'+d.id+'">✅ Approuver et lancer</button><button class="btn small" data-dveco="'+d.id+'">💰 Version moins chère</button><button class="btn small ghost" data-dvno="'+d.id+'">❌ Rejeter</button></div>':"")+
+     (d.done?'':'<div class="row small" style="gap:6px;align-items:center"><span>Compte rendu :</span><button class="btn small'+(d.cr!=="audience"?" primary":"")+'" data-dcr="ecrit" data-id="'+d.id+'" aria-pressed="'+(d.cr!=="audience")+'">📄 Par écrit</button><button class="btn small'+(d.cr==="audience"?" primary":"")+'" data-dcr="audience" data-id="'+d.id+'" aria-pressed="'+(d.cr==="audience")+'">🤝 En audience ('+esc(DIR.resp(S,d).n)+')</button></div>')+
+     (d.done?'<div class="row"><button class="btn small primary" data-dreact="'+d.id+'">↩️ Réactiver la directive</button><button class="btn small ghost" data-ddel="'+d.id+'">🗑️ Supprimer définitivement</button></div>':"")+(d.done?"":'<div class="bar"><i style="width:'+pct+'%"></i></div><div class="row"><button class="btn small primary" data-dedit="'+d.id+'">✏️ Modifier</button><button class="btn small" data-dacc="'+d.id+'">Accélérer (+50 % du coût, délai réduit d\'un tiers)</button><button class="btn small ghost" data-dann="'+d.id+'">Annuler la directive</button><button class="btn small ghost" data-ddel="'+d.id+'">🗑️ Supprimer</button></div>')+'</div>'};
   G.sheet('<span class="eyebrow">Suivi</span><h3 class="h2">Vos directives</h3>'+(on.length?'<span class="eyebrow">En cours ('+on.length+')</span>'+on.map(item).join(""):'<p class="small muted">Aucune directive en cours.</p>')+
    (off.length?'<span class="eyebrow">Terminées ('+off.length+')</span>'+off.map(item).join(""):""),el=>{el.setAttribute("data-noinstr","");
     el.querySelectorAll("[data-dedit]").forEach(b=>b.onclick=()=>{el.remove();DIR.edit(S,b.dataset.dedit)});
-    el.querySelectorAll("[data-dreact]").forEach(b=>b.onclick=()=>{const d=S.directives.find(x=>x.id===b.dataset.dreact);if(!d)return;d.done=false;d.res="";d.due=S.day+Math.max(1,d.restant||7);if(S.st)S.st.int=clamp(S.st.int+.5,0,100);const m="Directive réactivée : « "+d.titre+" ». Nouvelle échéance : "+G.dayLabel(d.due)+".";G.toast(m.slice(0,110));try{A.speak(m,{voix:"f"})}catch(e){}window.SYS.inbox(S,{from:d.qui||"Cabinet",t:"Réactivation : "+d.titre.slice(0,70),b:m,k:"info",read:true});el.remove();DIR.sheet(S);G.render()});
+    el.querySelectorAll("[data-dreact]").forEach(b=>b.onclick=()=>{const d=S.directives.find(x=>x.id===b.dataset.dreact);if(!d)return;const was=d.res||"";d.done=false;d.res="";d.audProg=null;d.crAsk=0;d.start=S.day;d.due=S.day+Math.max(1,/^Annulée/.test(was)?(d.restant||7):30);if(S.st)S.st.int=clamp(S.st.int+.5,0,100);const m="Directive réactivée : « "+d.titre+" ». Nouvelle échéance : "+G.dayLabel(d.due)+".";G.toast(m.slice(0,110));try{A.speak(m,{voix:"f"})}catch(e){}window.SYS.inbox(S,{from:d.qui||"Cabinet",t:"Réactivation : "+d.titre.slice(0,70),b:m,k:"info",read:true});el.remove();DIR.sheet(S);G.render()});
+    el.querySelectorAll("[data-dvok]").forEach(b=>b.onclick=()=>{DIR.approve(S,b.dataset.dvok);el.remove();DIR.sheet(S)});el.querySelectorAll("[data-dveco]").forEach(b=>b.onclick=()=>{DIR.econ(S,b.dataset.dveco);el.remove();DIR.sheet(S)});el.querySelectorAll("[data-dvno]").forEach(b=>b.onclick=()=>{DIR.reject(S,b.dataset.dvno);el.remove();DIR.sheet(S)});
+    el.querySelectorAll("[data-dcr]").forEach(b=>b.onclick=()=>{const d=S.directives.find(x=>x.id===b.dataset.id);if(!d)return;d.cr=b.dataset.dcr;const R=DIR.resp(S,d);G.toast(d.cr==="audience"?R.n+" vous présentera le compte rendu en audience.":"Compte rendu par écrit, pour exploitation.");el.remove();DIR.sheet(S)});
+    el.querySelectorAll("[data-ddel]").forEach(b=>b.onclick=()=>{const id=b.dataset.ddel;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="⚠️ Confirmer la suppression définitive";b.classList.add("primary");return}
+      S.directives=S.directives.filter(x=>x.id!==id);S.agenda=(S.agenda||[]).filter(a=>a.rapport!==id);if(S.doss&&S.doss.L)S.doss.L.forEach(x=>{if(x.dir===id)x.dir=null});if(S.cab&&S.cab.props)S.cab.props=S.cab.props.filter(p=>!(p.x&&p.x.id===id));
+      G.toast("Directive supprimée définitivement.");el.remove();DIR.sheet(S);G.render()});
     el.querySelectorAll("[data-dacc]").forEach(b=>b.onclick=()=>{const d=S.directives.find(x=>x.id===b.dataset.dacc);if(!d)return;const extra=(d.cout||2)*.5*.25;
       if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min"){const M=extra*1000;if(S.minis.fonds<M)return G.toast("Crédits insuffisants.");S.minis.fonds-=M}
       d.due=Math.max(S.day+1,d.due-(d.due-S.day)/3);d.cout=Math.round((d.cout||2)*1.5);G.toast("Exécution accélérée : rapport le "+G.dayLabel(d.due));el.remove();DIR.sheet(S);G.render()});

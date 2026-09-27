@@ -21,7 +21,7 @@ let S=null,tab="bureau",ui={};
 const GAME={};window.GAME=GAME;
 
 /* ---------- utilitaires d'interface ---------- */
-function toast(msg){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function toast(msg,onClick){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;if(onClick){t.style.cursor="pointer";t.style.pointerEvents="auto";t.setAttribute("role","button");t.tabIndex=0;t.onclick=()=>{t.remove();onClick()}}document.body.appendChild(t);setTimeout(()=>t.remove(),onClick?6000:2600)}
 /* zones de saisie : retour à la ligne automatique, hauteur ajustée, Entrée pour valider (Maj+Entrée : nouvelle ligne) */
 document.addEventListener("input",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea[data-grow]")){t.style.height="auto";t.style.height=Math.min(220,t.scrollHeight)+"px"}});
 function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in"><button class="sheet-x" data-close aria-label="Fermer la fenêtre" title="Fermer">✕</button>'+html+'</div>';
@@ -67,7 +67,7 @@ function bindAudio(){
   try{const p=JSON.parse(localStorage.getItem("etoudi-audio")||"{}");if(p.v===false)A.voiceOn=false;if(p.a===false)A.ambOn=false;if(p.auto===false)A.auto=false}catch(e){}
   const sync=()=>{bv.setAttribute("aria-pressed",A.voiceOn);ba.setAttribute("aria-pressed",A.ambOn);try{localStorage.setItem("etoudi-audio",JSON.stringify({v:A.voiceOn,a:A.ambOn,auto:A.auto}))}catch(e){}};
   const bgfx=$("bGfx");if(bgfx)bgfx.onclick=()=>{if(window.VID)VID.gfxSheet()};
-  const bvox=$("bVox");if(bvox)bvox.onclick=()=>{A.unlock();if(window.VOIX)VOIX.open()};const bwalk=$("bWalk");if(bwalk)bwalk.onclick=()=>{A.unlock();if(window.VID)VID.walk()};
+  const bag=$("bAg");if(bag)bag.onclick=()=>{A.unlock();if(window.AG&&S&&S.phase==="play")AG.sheet(S)};const bvox=$("bVox");if(bvox)bvox.onclick=()=>{A.unlock();if(window.VOIX)VOIX.open()};const bwalk=$("bWalk");if(bwalk)bwalk.onclick=()=>{A.unlock();if(window.VID)VID.walk()};
   const btrip=$("bTrip");if(btrip)btrip.onclick=()=>{A.unlock();if(window.VOY)VOY.open()};
   const bvid=$("bVid");if(bvid)bvid.onclick=()=>{A.unlock();if(window.VID)VID.picker()};
   bv.onclick=()=>{A.voiceOn=!A.voiceOn;if(!A.voiceOn)A.stop();sync();toast(A.voiceOn?"Voix off activée":"Voix off coupée")};
@@ -409,7 +409,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
