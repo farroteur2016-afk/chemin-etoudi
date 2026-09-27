@@ -408,6 +408,7 @@ SYS.openMail=function(S,id){
   if(window.PRO)acts+=PRO.mailActs(S,it);
   if(window.EMP)acts+=EMP.mailActs(S,it);
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
+  if(window.DIR)acts+=DIR.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
   if(it.reg)acts+='<button class="btn" id="mSee">Voir la région</button>';
   if(window.VID&&!it.actu&&(it.reg||it.k==="alerte"||it.k==="rapport"))acts+=VID.btn(it.t+". "+it.b,it.reg||null,"Voir la vidéo");
@@ -417,6 +418,7 @@ SYS.openMail=function(S,id){
     if(window.PRO)PRO.mailBind(S,it,el);
     if(window.EMP)EMP.mailBind(S,it,el);
     if(window.ACTU)ACTU.mailBind(S,it,el);
+    if(window.DIR)DIR.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
     if(q("#mFollow"))q("#mFollow").onclick=()=>{const who=S.mode==="pres"?"Cabinet du ministre de la Justice":(S.opp.experts.find(e=>e.dom==="droit")||{n:"Juriste"}).n+", juriste du parti";S.tasks.push({id:nid(),who,sujet:"suivi",caseId:c.id,due:S.m+1+Math.round(Math.random()),skill:70});el.remove();G.toast("Dossier confié. Compte rendu d'ici un à deux mois.");rerender()};
     if(q("#mGrace"))q("#mGrace").onclick=()=>{c.verdict=(c.verdict||"")+" Grâce présidentielle accordée.";SYS.cause(S,c.reg,"Grâce présidentielle pour les condamnés de "+c.ville,3,"");S.st.int=clamp(S.st.int+1,0,100);el.remove();G.toast("Grâce accordée.");rerender()};

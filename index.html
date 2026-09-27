@@ -1952,6 +1952,7 @@ function advanceDays(d,auto){
   save();hud();gauges();
   if(refresh&&(!auto||!inputBusy()))render();
   if(window.RENC)RENC.tick(S);
+  if(window.DIR)DIR.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }
 GAME.advanceDays=advanceDays;
@@ -2259,7 +2260,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
@@ -3111,6 +3112,7 @@ SYS.openMail=function(S,id){
   if(window.PRO)acts+=PRO.mailActs(S,it);
   if(window.EMP)acts+=EMP.mailActs(S,it);
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
+  if(window.DIR)acts+=DIR.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
   if(it.reg)acts+='<button class="btn" id="mSee">Voir la région</button>';
   if(window.VID&&!it.actu&&(it.reg||it.k==="alerte"||it.k==="rapport"))acts+=VID.btn(it.t+". "+it.b,it.reg||null,"Voir la vidéo");
@@ -3120,6 +3122,7 @@ SYS.openMail=function(S,id){
     if(window.PRO)PRO.mailBind(S,it,el);
     if(window.EMP)EMP.mailBind(S,it,el);
     if(window.ACTU)ACTU.mailBind(S,it,el);
+    if(window.DIR)DIR.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
     if(q("#mFollow"))q("#mFollow").onclick=()=>{const who=S.mode==="pres"?"Cabinet du ministre de la Justice":(S.opp.experts.find(e=>e.dom==="droit")||{n:"Juriste"}).n+", juriste du parti";S.tasks.push({id:nid(),who,sujet:"suivi",caseId:c.id,due:S.m+1+Math.round(Math.random()),skill:70});el.remove();G.toast("Dossier confié. Compte rendu d'ici un à deux mois.");rerender()};
     if(q("#mGrace"))q("#mGrace").onclick=()=>{c.verdict=(c.verdict||"")+" Grâce présidentielle accordée.";SYS.cause(S,c.reg,"Grâce présidentielle pour les condamnés de "+c.ville,3,"");S.st.int=clamp(S.st.int+1,0,100);el.remove();G.toast("Grâce accordée.");rerender()};
@@ -5647,6 +5650,8 @@ function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name
 VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous : "+raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
+  // directive politique claire (« je veux que… », « j'ordonne… »)
+  if(window.DIR&&/^(je veux qu|j exige qu|j ordonne|ordonne|je decide|il faut qu|que tous|que toutes|je demande (a|aux|que))/.test(t)&&!/^je veux (aller|visiter|voir|rencontrer|parler)/.test(t)){DIR.handle(S,raw,reply);return}
   // qui est… / nom du…
   if(/\b(qui est|qui sont|nom d|comment s appelle|c est qui)/.test(t)&&!/convoqu|recevoir|audience/.test(t)){const P=findPerson(S,t);if(P){const L=P.lab.charAt(0).toUpperCase()+P.lab.slice(1);return reply(P.n&&!/^le /.test(P.n)?L+" s'appelle "+P.n+".":L+" n'a pas encore été nommé, ou son nom n'est pas connu.")}}
   // temps
@@ -5693,6 +5698,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     const w=parseWhen(S,t);const ml=mode&&N.ok.includes(mode)?VOY.MODES[mode].n.toLowerCase():"le moyen habituel pour votre rang";
     if(w&&w.at-S.day>.05){agenda(S).push({id:nid(),type:"trip",at:w.at,to,mode,visit:visitInfo,lab:"Déplacement : "+(to.lieu?to.lieu+", ":"")+to.v+" ("+ml+")"});G.render();return reply("C'est noté. Départ "+w.label+" pour "+(to.lieu||to.v)+", "+ml+"."+note)}
     reply("Je prépare votre déplacement vers "+(to.lieu||to.v)+", "+ml+"."+note);setTimeout(closeP,1500);const err=VOY.goTo(S,to,mode,true,()=>{if(visitInfo)visit(S,visitInfo)});if(err)reply("Impossible : "+err+".");return}
+  if(window.DIR&&DIR.matches(t)){DIR.handle(S,raw,reply);return}
   reply("Je n'ai pas compris. Essayez par exemple : « convoque le ministre de la Défense demain à 9 h », « je veux visiter l'hôpital de Maroua sans cortège », « avance d'une semaine », « montre-moi la vidéo de la route de Kribi », « fais le point sur la situation ».")};
 
 /* ---------- interface : micro et saisie ---------- */
@@ -6033,6 +6039,126 @@ RENC.bindOrg=function(S,el,k,o){const b=el.querySelector("[data-renc]");if(!b)re
 
 </script>
 <script>
+/* Chemin d'Etoudi — directives : toute décision politique donnée en clair (à la voix, par écrit, ou dans « Autre instruction »)
+   devient une directive officielle, exécutée par l'administration avec des effets réalistes et un compte rendu à échéance.
+   Ex. : « Je veux que tous les ministres déclarent leur patrimoine avec justificatifs » → article 66 de la Constitution,
+   loi n° 003/2006 : chaque ministre dépose (ou non) sa déclaration ; rapport nominatif ; sanctions possibles.
+   En ligne, Claude qualifie les directives libres ; ailleurs, un catalogue intégré. */
+(function(){
+"use strict";
+const CM=window.CM,E=window.ETAT,G=window.GAME,A=window.Audio2;
+const esc=G.esc,clamp=G.clamp,pick=G.pick;
+const DIR={};window.DIR=DIR;
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'\-]/g," ").replace(/\s+/g," ").trim();
+let sample=null;(async()=>{try{if(window.claude&&claude.use)sample=await claude.use("sample")}catch(e){}})();let refused=false;
+const say=t=>{try{A.speak(t,{voix:"f"})}catch(e){}};
+const nid=()=>"d"+Date.now().toString(36)+Math.floor(Math.random()*1e4);
+
+/* cibles d'une directive */
+function cible(t){if(/mon ministere|mes collaborateurs|mes directeurs|de mes services/.test(t))return{k:"ministere",lab:"les responsables de votre ministère"};if(/ministres?|gouvernement|membres du gouvernement/.test(t))return{k:"ministres",lab:"tous les membres du gouvernement"};
+  if(/\bdg\b|directeurs? generaux|entreprises publiques|societes d etat/.test(t))return{k:"dg",lab:"les directeurs généraux des entreprises publiques"};
+  if(/magistrat|juges?/.test(t))return{k:"magistrats",lab:"les magistrats"};if(/gouverneurs?|prefets?/.test(t))return{k:"territoriaux",lab:"les gouverneurs et préfets"};
+  if(/maires?/.test(t))return{k:"maires",lab:"les maires"};if(/deputes?|senateurs?|parlementaires?/.test(t))return{k:"elus",lab:"les parlementaires"};return{k:"ministres",lab:"tous les membres du gouvernement"}}
+function region(t){for(const r of CM.REGIONS){const n=norm(r.n),c=norm(r.chef);if(t.includes(n)||t.includes(c))return r.id;for(const v of r.villes||[])if(t.includes(norm(v)))return r.id}return null}
+
+/* ---------- catalogue ---------- */
+const CAT=[
+ {id:"patrimoine",re:/patrimoine|declar\w* (de |des )?(leurs |ses )?biens|biens et avoirs|avoirs|declaration de fortune/,titre:"Déclaration des biens et avoirs",
+  base:"article 66 de la Constitution et loi n° 003/2006 du 25 avril 2006 relative à la déclaration des biens et avoirs",fx:{int:3,pop:2},loy:-3,delai:30,cout:0},
+ {id:"audit",re:/audit|corruption|detourn|conac|controle superieur|consupe|enquete sur|inspection generale|gestion des fonds/,titre:"Opération d'audit et de lutte contre la corruption",fx:{int:2,eco:.5,pop:1},loy:-2,delai:45,cout:2},
+ {id:"prix",re:/baisse|vie chere|prix des?|carburant|subvention|pouvoir d achat|panier de la menagere/,titre:"Mesures contre la vie chère",fx:{pop:3,soc:1,eco:-1},delai:20,cout:60},
+ {id:"arrieres",re:/arriere|primes?|salaires?|rappels?|dette interieure|dette academique|payer (les |leurs )?/,titre:"Apurement des arriérés et des primes",fx:{soc:3,pop:1},delai:30,cout:40},
+ {id:"emploi",re:/recrut|emploi des jeunes|chomage|jeunes diplomes|insertion/,titre:"Programme spécial d'emploi des jeunes",fx:{pop:2,soc:1},delai:90,cout:50},
+ {id:"construire",re:/constru|batir|bitum|rehabilit|refaire la route|route|pont|hopital|ecole|forage|universite|stade|barrage|logements?/,titre:"Grands travaux",fx:{infra:3,pop:1},delai:180,cout:80},
+ {id:"securite",re:/renfort|securis|armee|militaire|\bbir\b|patrouille|gendarmerie|police|terroris|boko|separatist/,titre:"Renforcement du dispositif de sécurité",fx:{sec:3,pop:.5},delai:21,cout:25},
+ {id:"dialogue",re:/dialogue|negoci|paix|reconcili|concertation|table ronde|syndicats?/,titre:"Ouverture d'un dialogue",fx:{soc:3,sec:1,pop:1},delai:30,cout:3},
+ {id:"liberer",re:/liber|grace|amnistie|prisonniers?|detenus?/,titre:"Mesures de grâce et de libération",fx:{soc:2,int:1,pop:1,sec:-.5},delai:10,cout:0},
+ {id:"gratuite",re:/gratuit/,titre:"Mesure de gratuité",fx:{pop:3,soc:2,eco:-1},delai:60,cout:70},
+ {id:"electricite",re:/electricit|delestage|eneo|courant/,titre:"Plan d'urgence contre les délestages",fx:{infra:1.5,pop:2,eco:.5},delai:60,cout:45},
+ {id:"eau",re:/\beau\b|camwater|potable/,titre:"Plan d'urgence pour l'eau potable",fx:{infra:1.5,pop:2},delai:60,cout:30},
+ {id:"sante",re:/sante|medicament|epidemie|cholera|paludisme|vaccin/,titre:"Plan d'urgence sanitaire",fx:{soc:2,pop:1.5},delai:30,cout:25},
+ {id:"education",re:/enseign|education|eleves|etudiants|tables bancs|salles de classe/,titre:"Plan d'urgence pour l'éducation",fx:{soc:2,pop:1},delai:60,cout:30},
+ {id:"agriculture",re:/agricult|cacao|cafe|coton|engrais|paysans|producteurs|elevage|peche/,titre:"Soutien au monde rural",fx:{eco:1,pop:1.5},delai:60,cout:25},
+ {id:"transparence",re:/transparen|publier|rendre public|journal officiel|open data|budget citoyen/,titre:"Mesure de transparence",fx:{int:2,pop:1},delai:20,cout:0},
+ {id:"interdire",re:/interdi|suspend|fermer|bannir|proscri/,titre:"Mesure d'interdiction",fx:{sec:.5,pop:-.5,int:-.3},delai:7,cout:0},
+];
+const GENERIC={id:"generique",titre:"Directive",fx:{pop:.5},delai:30,cout:5};
+const IMPER=/je veux|j exige|j ordonne|ordonne|exige|il faut|faites|demande[zr]? (a|aux|que)|je demande|qu on|que (tous|toutes|les|le|la)|instruis|instruction|decret|decide|je decide|mettez|lancez|prenez/;
+
+DIR.matches=t=>{t=norm(t);return CAT.some(c=>c.re.test(t))||IMPER.test(t)};
+
+/* ---------- compétence ---------- */
+function scope(S,c,t){if(S.mode==="pres")return{ok:true,qui:"Présidence de la République"};
+  if(S.mode==="min"){const m=E.MINISTERES.find(x=>x.id===S.minis.id);const mine=c.id==="patrimoine"?/mon ministere|mes (collaborateurs|directeurs)|de mon/.test(t):true;
+    if(c.k==="ministres"&&!mine)return{ok:false,msg:"Seul le président de la République peut imposer cela à tout le gouvernement. Je transmets votre proposition à la Présidence ; vous pouvez l'appliquer dans votre propre ministère."};return{ok:true,qui:"Ministère "+(m?m.n:"")}}
+  if(S.profil==="maire")return{ok:true,qui:"Mairie",local:true};
+  if(S.opp)return{ok:false,msg:"Vous n'êtes pas au pouvoir : votre parti en fait une proposition publique et interpelle le gouvernement.",opp:true};
+  return{ok:false,msg:"Cette décision relève des autorités. Votre demande est transmise sous forme de pétition.",pet:true}}
+
+/* ---------- lancement ---------- */
+DIR.handle=async function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
+  let c=CAT.find(x=>x.re.test(t))||GENERIC;const cb=cible(t);const sc=scope(S,{...c,k:cb.k},t);
+  if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+raw.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
+  let d={id:nid(),cat:c.id,titre:c.titre,texte:raw,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
+  if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
+  if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
+    "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
+    "Qualifie-la de façon réaliste. Réponds uniquement en JSON : {\"titre\": \"titre officiel court\", \"base_legale\": \"texte camerounais applicable ou chaîne vide\", \"delai_jours\": 7-365, \"cout_milliards_fcfa\": 0-500, "+
+    "\"effets\": {\"pop\":-5..5,\"eco\":-5..5,\"soc\":-5..5,\"sec\":-5..5,\"infra\":-5..5,\"int\":-5..5}, \"reaction\": \"une phrase : réaction de l'opinion et de la presse\"}",{modelTier:"quick",cache:false});
+    if(j&&j.titre){d.titre=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
+      d.fx={};for(const k of ["pop","eco","soc","sec","infra","int"])d.fx[k]=clamp(+((j.effets||{})[k])||0,-5,5)}}catch(e){if(e&&e.code==="not_granted")refused=true}}
+  if(c.base)d.base=c.base;
+  // coût (en milliards : État, ministère ou commune)
+  if(d.cout){if(S.mode==="pres")S.nums.dette+=d.cout*.25;else if(S.mode==="min"){const M=d.cout*.25*1000;if(S.minis.fonds<M){reply("Les crédits de votre ministère ne suffisent pas pour cette mesure ("+Math.round(M)+" M FCFA). Demandez une rallonge au Premier ministre.");return true}S.minis.fonds-=M}
+    else if(sc.local&&S.opp&&S.opp.commune){const M=Math.min(S.opp.commune.fonds,d.cout*5);S.opp.commune.fonds-=M}}
+  // effet d'annonce immédiat (le tiers), le reste à l'exécution
+  apply(S,d,1/3);
+  if(c.id==="patrimoine"&&S.gov&&cb.k==="ministres"&&S.mode==="pres"){d.liste=Object.keys(S.gov.min);for(const id of d.liste){const g=S.gov.min[id];g.loy=clamp(g.loy+d.loy,0,100)}}
+  S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);
+  const when=G.dayLabel(d.due);
+  const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : "+d.titre.charAt(0).toLowerCase()+d.titre.slice(1)+(c.id==="patrimoine"?", pour "+cb.lab:"")+"."+(d.base?" Base légale : "+d.base+".":"")+
+    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Premier rapport attendu le "+when+"."+(d.cout?" Coût estimé : "+d.cout+" milliards de FCFA.":"");
+  window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+raw+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
+  reply(txt);G.render();return true};
+
+function apply(S,d,part){if(!S.st)return;for(const k in d.fx)if(S.st[k]!=null)S.st[k]=clamp(S.st[k]+d.fx[k]*part,0,100);
+  if(d.reg)window.SYS.cause(S,d.reg,d.titre,(d.fx.pop||0)*part*2,"directive");if(S.minis)S.minis.perf=clamp(S.minis.perf+part*2,0,100)}
+
+/* ---------- échéance et compte rendu ---------- */
+DIR.tick=function(S){if(!S||!S.directives)return;for(const d of S.directives)if(!d.done&&S.day>=d.due){d.done=true;report(S,d)}};
+function report(S,d){const pm=S.gov&&S.gov.pm?S.gov.pm.comp:60;
+  if(d.cat==="patrimoine"&&d.liste&&S.gov){const ok=[],ko=[];for(const id of d.liste){const g=S.gov.min[id];if(!g)continue;const p=.35+g.loy/160+(S.st?S.st.int/400:0);(Math.random()<p?ok:ko).push(id)}
+    d.ko=ko;const r=ok.length/(ok.length+ko.length||1);apply(S,d,r*.67);
+    const nm=id=>{const m=E.MINISTERES.find(x=>x.id===id);return (S.gov.min[id].n||"?")+" ("+(m?m.n:id)+")"};
+    window.SYS.inbox(S,{from:"Commission de déclaration des biens et avoirs",t:"Déclaration des biens : "+ok.length+" déclarations reçues, "+ko.length+" manquantes",
+      b:ok.length+" membres du gouvernement ont déposé leur déclaration avec les justificatifs.\n"+(ko.length?"N'ont pas déclaré dans le délai : "+ko.slice(0,8).map(nm).join(", ")+(ko.length>8?" et "+(ko.length-8)+" autres":"")+".":"Tous ont déclaré : c'est une première.")+
+      "\nLes déclarations sont transmises à la Commission ; en cas de fausse déclaration ou d'enrichissement illicite, le dossier peut être porté devant le Tribunal criminel spécial.",k:ko.length?"alerte":"rapport",dir:d.id});
+    if(ko.length)say("Rapport sur la déclaration des biens : "+ko.length+" membres du gouvernement ne se sont pas exécutés.");return}
+  const q=clamp(.35+pm/200+(d.cout>100?-.1:0)+Math.random()*.35,0,1);const res=q>.7?"réussie":q>.45?"partielle":"en échec";apply(S,d,q*.67);
+  window.SYS.inbox(S,{from:d.qui,t:"Compte rendu : "+d.titre,b:"Mise en œuvre "+res+" de votre instruction : « "+d.texte+" ».\n"+(q>.7?"Les services ont exécuté la mesure dans les délais ; les premiers effets sont visibles sur le terrain.":q>.45?"Une partie seulement a été réalisée : lenteurs administratives et retards de décaissement.":"Blocages dans l'administration : la mesure n'a presque pas été appliquée. Il faut relancer ou sanctionner les responsables."),
+    k:q>.45?"rapport":"alerte",reg:d.reg,dir:d.id})}
+
+/* ---------- suites possibles depuis le courrier ---------- */
+DIR.mailActs=function(S,it){const d=it.dir&&(S.directives||[]).find(x=>x.id===it.dir);if(!d||S.mode!=="pres"&&S.mode!=="min")return"";const f=d.fait||[];
+  if(d.cat==="patrimoine"&&d.ko&&d.ko.length)return [["delai","Accorder 15 jours de délai supplémentaire"],["publier","Publier la liste au Journal officiel"],["limoger","Limoger les retardataires"],["tcs","Saisir la justice (Tribunal criminel spécial)"]].filter(([k])=>!f.includes(k)).map(([k,l])=>'<button class="btn" data-dx="'+k+'">'+esc(l)+'</button>').join("");
+  if(!/rapport|alerte/.test(it.k))return"";return [["relance","Relancer les services"],["sanction","Sanctionner les responsables"]].filter(([k])=>!f.includes(k)).map(([k,l])=>'<button class="btn" data-dx="'+k+'">'+esc(l)+'</button>').join("")};
+DIR.mailBind=function(S,it,el){const d=it.dir&&(S.directives||[]).find(x=>x.id===it.dir);if(!d)return;
+  el.querySelectorAll("[data-dx]").forEach(b=>b.onclick=()=>{const k=b.dataset.dx;d.fait=d.fait||[];d.fait.push(k);let msg="";
+    if(k==="delai"){d.done=false;d.due=S.day+15;d.liste=d.ko.slice();msg="Un délai de 15 jours est accordé aux retardataires."}
+    else if(k==="publier"){if(S.st){S.st.int=clamp(S.st.int+2,0,100);S.st.pop=clamp(S.st.pop+1,0,100)}for(const id of d.ko)if(S.gov.min[id])S.gov.min[id].loy=clamp(S.gov.min[id].loy-6,0,100);msg="La liste est publiée au Journal officiel. L'opinion applaudit ; les ministres visés sont fragilisés."}
+    else if(k==="limoger"){let n=0;for(const id of d.ko){const r=pick(CM.REGIONS).id;S.gov.min[id]={n:window.SYS.nom(r),reg:r,comp:Math.round(G.rnd(50,80)),loy:80};n++}if(S.st){S.st.int=clamp(S.st.int+3,0,100);S.st.pop=clamp(S.st.pop+2,0,100)}msg=n+" ministre"+(n>1?"s":"")+" limogé"+(n>1?"s":"")+" et remplacé"+(n>1?"s":"")+" par décret."}
+    else if(k==="tcs"){window.SYS.newCase(S,"corruption","CE",Math.min(4,d.ko.length),"Yaoundé");if(S.st)S.st.int=clamp(S.st.int+2,0,100);msg="Le Tribunal criminel spécial est saisi ; une enquête pour enrichissement illicite est ouverte."}
+    else if(k==="relance"){d.done=false;d.due=S.day+30;msg="Les services sont relancés ; nouveau rapport dans 30 jours."}
+    else if(k==="sanction"){if(S.st)S.st.int=clamp(S.st.int+1,0,100);if(S.gov&&S.gov.pm)S.gov.pm.loy=clamp(S.gov.pm.loy-2,0,100);d.done=false;d.due=S.day+30;msg="Des responsables sont relevés de leurs fonctions ; la mesure est relancée."}
+    el.remove();G.toast(msg);say(msg);window.SYS.inbox(S,{from:"Cabinet",t:"Suite : "+d.titre,b:msg,k:"info",read:true});G.render()})};
+
+/* carte de suivi */
+DIR.card=function(S){const L=(S.directives||[]).filter(d=>!d.done).slice(-4);if(!L.length)return"";
+  return '<div class="card"><b>📜 Directives en cours</b>'+L.map(d=>'<div class="small">'+esc(d.titre)+' — rapport le '+esc(G.dayLabel(d.due))+'</div>').join("")+'</div>'};
+})();
+
+</script>
+<script>
 /* Chemin d'Etoudi — « Autre instruction » : sous chaque fenêtre de décision, on peut écrire ou dicter sa propre consigne
    au lieu de choisir un bouton. Le jeu choisit l'action correspondante, exécute une commande (convoquer, se déplacer…)
    ou transmet la consigne à vos services. En ligne, Claude interprète les consignes libres ; ailleurs, un moteur intégré. */
@@ -6073,6 +6199,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
 INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
   const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
   const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
+  if(window.DIR&&DIR.matches(text)){el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
   if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");
     try{const j=await sample.json("Tu es le chef de cabinet du joueur dans un jeu de simulation politique réaliste au Cameroun. Situation affichée : « "+title+" ».\n"+body+"\n\nActions disponibles (index : libellé) :\n"+opts.map((o,i)=>i+" : "+o).join("\n")+
       "\n\nConsigne du joueur : « "+text+" ».\nSi une action disponible correspond à la consigne, choisis-la. Sinon, choix = -1 et résume en une phrase ce que tes services vont faire. Réponds uniquement en JSON : {\"choix\": nombre, \"reponse\": \"une phrase en français, à la 2e personne du pluriel\"}",{modelTier:"quick",cache:false});

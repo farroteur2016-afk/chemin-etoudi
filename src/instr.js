@@ -38,6 +38,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
 INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
   const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
   const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
+  if(window.DIR&&DIR.matches(text)){el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
   if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");
     try{const j=await sample.json("Tu es le chef de cabinet du joueur dans un jeu de simulation politique réaliste au Cameroun. Situation affichée : « "+title+" ».\n"+body+"\n\nActions disponibles (index : libellé) :\n"+opts.map((o,i)=>i+" : "+o).join("\n")+
       "\n\nConsigne du joueur : « "+text+" ».\nSi une action disponible correspond à la consigne, choisis-la. Sinon, choix = -1 et résume en une phrase ce que tes services vont faire. Réponds uniquement en JSON : {\"choix\": nombre, \"reponse\": \"une phrase en français, à la 2e personne du pluriel\"}",{modelTier:"quick",cache:false});

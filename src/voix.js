@@ -99,6 +99,8 @@ function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name
 VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous : "+raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
+  // directive politique claire (« je veux que… », « j'ordonne… »)
+  if(window.DIR&&/^(je veux qu|j exige qu|j ordonne|ordonne|je decide|il faut qu|que tous|que toutes|je demande (a|aux|que))/.test(t)&&!/^je veux (aller|visiter|voir|rencontrer|parler)/.test(t)){DIR.handle(S,raw,reply);return}
   // qui est… / nom du…
   if(/\b(qui est|qui sont|nom d|comment s appelle|c est qui)/.test(t)&&!/convoqu|recevoir|audience/.test(t)){const P=findPerson(S,t);if(P){const L=P.lab.charAt(0).toUpperCase()+P.lab.slice(1);return reply(P.n&&!/^le /.test(P.n)?L+" s'appelle "+P.n+".":L+" n'a pas encore été nommé, ou son nom n'est pas connu.")}}
   // temps
@@ -145,6 +147,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     const w=parseWhen(S,t);const ml=mode&&N.ok.includes(mode)?VOY.MODES[mode].n.toLowerCase():"le moyen habituel pour votre rang";
     if(w&&w.at-S.day>.05){agenda(S).push({id:nid(),type:"trip",at:w.at,to,mode,visit:visitInfo,lab:"Déplacement : "+(to.lieu?to.lieu+", ":"")+to.v+" ("+ml+")"});G.render();return reply("C'est noté. Départ "+w.label+" pour "+(to.lieu||to.v)+", "+ml+"."+note)}
     reply("Je prépare votre déplacement vers "+(to.lieu||to.v)+", "+ml+"."+note);setTimeout(closeP,1500);const err=VOY.goTo(S,to,mode,true,()=>{if(visitInfo)visit(S,visitInfo)});if(err)reply("Impossible : "+err+".");return}
+  if(window.DIR&&DIR.matches(t)){DIR.handle(S,raw,reply);return}
   reply("Je n'ai pas compris. Essayez par exemple : « convoque le ministre de la Défense demain à 9 h », « je veux visiter l'hôpital de Maroua sans cortège », « avance d'une semaine », « montre-moi la vidéo de la route de Kribi », « fais le point sur la situation ».")};
 
 /* ---------- interface : micro et saisie ---------- */
