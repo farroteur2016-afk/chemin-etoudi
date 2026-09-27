@@ -30,7 +30,7 @@ GENRE.bindCard=function(S,root){(root||document).querySelectorAll("[data-genre]"
 GENRE.sheet=function(S){const Gs=groups(S);const pres=S.mode==="pres";
   G.sheet('<span class="eyebrow">Parité</span><h3 class="h2">Équilibre femmes-hommes</h3><p class="small muted">Objectif de référence : au moins 30 % de femmes aux postes de décision (engagements de l\'Union africaine, protocole de Maputo). La parité est à 50 %.</p>'+
    Gs.map(g=>'<div><div class="row" style="justify-content:space-between"><span class="small"><b>'+esc(g.lab)+'</b></span><span class="small" style="color:'+pctC(g.pct)+'">'+g.f+' femmes sur '+g.t+' · '+g.pct+' %</span></div><div class="bar"><i style="width:'+g.pct+'%;background:'+pctC(g.pct)+'"></i></div></div>').join("")+
-   '<span class="eyebrow">Membres du gouvernement</span><div class="kv">'+Gs[0].L.map(x=>'<span>'+esc(x.poste)+'</span><b>'+(sx(x.n)==="f"?"♀ ":"♂ ")+esc(x.n)+'</b>').join("")+'</div>'+
+   '<span class="eyebrow">Membres du gouvernement</span><div class="kv">'+Gs[0].L.map(x=>'<span>'+esc(x.poste)+'</span><b>'+(sx(x.n)==="f"?"♀ ":"♂ ")+esc(x.n)+(window.CAB?' · <span class="muted">'+esc(CAB.traitLab(x.n))+'</span>':"")+'</b>').join("")+'</div>'+
    (pres?'<div class="row"><button class="btn primary" data-gpar="30">Remanier pour atteindre 30 % de femmes</button><button class="btn" data-gpar="50">Viser la parité (50 %)</button></div>':'<p class="small muted">Seul le président de la République nomme les membres du gouvernement.</p>'),el=>{
     el.querySelectorAll("[data-gpar]").forEach(b=>b.onclick=()=>{el.remove();GENRE.apply(S,"gouv",+b.dataset.gpar,m=>{say(m);G.toast(m.slice(0,120))})})})};
 

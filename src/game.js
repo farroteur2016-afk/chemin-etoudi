@@ -94,6 +94,7 @@ function advanceDays(d,auto){
   if(refresh&&(!auto||!inputBusy()))render();
   if(window.RENC)RENC.tick(S);
   if(window.DIR)DIR.tick(S);
+  if(window.CAB)CAB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }
 GAME.advanceDays=advanceDays;
@@ -401,7 +402,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.CAB?CAB.card(S):"")+(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
@@ -572,7 +573,7 @@ function endMonth(fromClock){
   // le parti au pouvoir
   for(const r of CM.REGIONS){const d=S.mode==="pres"?(S.st.pop-45)*.03:rnd(-.35,.3);shift(S.sup,r.id,S.power,d,S.power)}
   if(S.mode==="opp"){oppAI()}
-  SYS.tick(S);SYS.minesTick(S);if(window.PROF)PROF.monthTick(S);if(window.VIE){VIE.monthTick(S);VIE.ageTick(S)}if(window.PRO)PRO.monthTick(S);if(window.VOY&&VOY.monthTick)VOY.monthTick(S);if(window.EMP)EMP.monthTick(S);
+  SYS.tick(S);SYS.minesTick(S);if(window.PROF)PROF.monthTick(S);if(window.VIE){VIE.monthTick(S);VIE.ageTick(S)}if(window.PRO)PRO.monthTick(S);if(window.VOY&&VOY.monthTick)VOY.monthTick(S);if(window.CAB)CAB.monthTick(S);if(window.EMP)EMP.monthTick(S);
   // report d'élection ?
   for(const c of S.cal){if(!c.done&&(c.id==="leg"||c.id==="reg")&&c.m-S.m===2&&!(S.reportAsked&&S.reportAsked[c.id+c.m])){
     if(S.mode==="pres"){S.pendingReport=c.id}
