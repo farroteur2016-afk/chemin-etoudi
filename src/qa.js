@@ -30,7 +30,7 @@ function actuPoint(S,a){const fait=(S.actuFait||{})[a.id]||[];const lab={terrain
   return a.titre+". "+a.resume+(fait.length?" Vos décisions : "+fait.map(k=>lab[k]||k).join(", ")+".":" Vous n'avez encore pris aucune décision sur ce dossier : il est dans votre courrier.")+(r!=null?" L'humeur de la région "+CM.REG[a.reg].n+" est à "+r+" sur 100.":"")}
 function dirPoint(S,d){return d.titre+(d.titre.startsWith("Directive")?"":" — « "+d.texte+" »")+". "+(d.done?"Échéance passée : le compte rendu est dans votre courrier.":"Rapport attendu le "+G.dayLabel(d.due)+" ("+jours(d.due-S.day)+").")}
 
-QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);
+QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=window.DICO?DICO.n(raw):norm(raw);
   if(window.DOSS&&DOSS.isAsk(raw)){reply(DOSS.summary(S));return true}
   if(window.SAV&&SAV.handle(S,raw,reply))return true;
   if(window.AG&&AG.isAsk(t)){reply(AG.summary(S));return true}const pl=place(t);

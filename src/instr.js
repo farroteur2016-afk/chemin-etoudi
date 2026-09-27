@@ -37,10 +37,10 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
     MIC.bind({onText:t=>{inp.value=t;go()},onState:ui,alive:()=>d.isConnected&&!!d.offsetParent});
     mic.onclick=()=>{MIC.toggle();ui(MIC.state);if(MIC.want)hint("Micro activé : dictez votre consigne. Il reste ouvert jusqu'à ce que vous le coupiez.")}}};
 
-INSTR.run=async function(el,text,hint){if(window.DICO)text=DICO.fix(text);hint=hint||(()=>{});const S=G.S;
-  const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
+INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
+  const n=window.DICO?DICO.n(text):norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
   if(window.NOTE&&NOTE.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();NOTE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
-  const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
+  const b=best(el,window.DICO?DICO.fix(text):text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
   if(window.GENRE&&GENRE.matches(text)){el.remove();GENRE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
   if(window.DIR&&DIR.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
   if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");

@@ -13,7 +13,7 @@ let sample=null;(async()=>{try{if(window.claude&&claude.use)sample=await claude.
 const F=n=>Math.round(n).toLocaleString("fr-FR");
 
 const RE=/^(donne[rz]? moi|donnez moi|donner moi|fais moi|faites moi|je veux (un complement|une note|un rapport|des propositions|un point|une etude|connaitre|savoir|comprendre|la structure)|propose[rz]? moi|proposez|explique[rz]? moi|expliquez|j ai besoin (d une note|d un rapport|de propositions)|preparez|prepare moi|redigez|faites une etude|je voudrais (une note|des propositions|connaitre|savoir))|\b(structur\w* (du|des|de la) (cout|prix)|des propositions pour|note sur|rapport sur|etude sur)\b/;
-NOTE.matches=t=>RE.test(norm(t));
+NOTE.matches=t=>RE.test(window.DICO?DICO.n(t):norm(t));
 
 const TOPICS=[
  {id:"carburant",re:/essence|gasoil|gazoil|super\b|petrole lampant|carburant|pompe|hydrocarbure/,lab:"le prix des carburants",min:"MINCOMMERCE"},
@@ -49,7 +49,7 @@ function general(S,tp,raw,pct){const st=S.st||{};const k={carburant:"eco",electr
   return{titre:"Note sur "+tp.lab,analyse:"Votre demande : « "+raw+" ».\nÉtat des lieux (indicateurs du jeu) : "+(k?"indicateur du secteur à "+Math.round(st[k]||0)+" sur 100 ; ":"")+"popularité "+Math.round(st.pop||0)+", cohésion "+Math.round(st.soc||0)+"."+(pct?"\nL'objectif de "+pct+" % demandé est ambitieux : il suppose de combiner plusieurs des mesures ci-dessous.":""),props:P}}
 
 /* ---------- demande ---------- */
-NOTE.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);reply=reply||say;const tp=topicOf(t);const pct=(t.match(/(\d{1,2}) ?%/)||[])[1];
+NOTE.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=window.DICO?DICO.n(raw):norm(raw);reply=reply||say;const tp=topicOf(t);const pct=(t.match(/(\d{1,2}) ?%/)||[])[1];
   const au=auteur(S,tp);let dl=1;const m=t.match(/(?:dans|sous|d ici)\s+(\d+)\s*(h|heures?|jours?)/);if(m)dl=/^h/.test(m[2])?Math.max(+m[1]/24,.1):+m[1];
   S.notes=S.notes||[];const n={id:"n"+Date.now().toString(36),texte:raw,topic:tp.id,pct:pct?+pct:0,due:S.day+dl,au,done:false,ctx:opt.ctx||null};S.notes.push(n);
   window.SYS.inbox(S,{from:"Cabinet",t:"Demande de note : "+tp.lab,b:"Votre demande : « "+raw+" »\nTransmise à "+au.n+", "+au.lab+". Note attendue le "+G.dayLabel(n.due)+".",k:"info",read:true});

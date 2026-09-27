@@ -138,7 +138,7 @@ function plainteTick(S){
   for(let i=0;i<2;i++){const [k,o]=Math.random()<.6?pick(worst):pick(all);const bad=(100-o.integ)*.6+(100-o.perf)*.4;if(Math.random()*100>bad)continue;
     const why=pick(PL[k]);o.pl++;o.last=why;const lieu=o.ville||CM.REG[o.reg].chef;
     const who=k==="police"?o.n+" (commissariat central de "+lieu+")":k==="prefet"?"le préfet "+o.n+" ("+lieu+")":k==="gouverneur"?"le gouverneur "+o.n+" (région "+deR(CM.REG[o.reg])+")":o.n+" (légion de gendarmerie de la région "+deR(CM.REG[o.reg])+")";
-    window.SYS.cause(S,o.reg,"Les habitants de "+lieu+" se plaignent de "+who+" : "+why,-2,k==="police"||k==="gendarmerie"?"securite":"corruption");
+    window.SYS.cause(S,o.reg,"Les habitants de "+lieu+" se plaignent "+(/^le /.test(who)?"du "+who.slice(3):/^les /.test(who)?"des "+who.slice(4):"de "+who)+" : "+why,-2,k==="police"||k==="gendarmerie"?"securite":"corruption");
     if(o.pl>=3){o.pl=0;inbox(S,{from:"Remontées de la population · "+lieu,t:"Plaintes répétées contre "+who,b:"Depuis plusieurs semaines, les habitants dénoncent : "+why+". Efficacité estimée : "+Math.round(o.perf)+"/100, intégrité : "+Math.round(o.integ)+"/100. Des mesures sont attendues.",k:"alerte",reg:o.reg,org:{k,id:o.id}});G.toast("Remous à "+lieu+" : plaintes contre "+who.split(" (")[0])}
   }
 }

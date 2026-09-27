@@ -64,19 +64,19 @@ function scope(S,c,t){if(S.mode==="pres")return{ok:true,qui:"Présidence de la R
   return{ok:false,msg:"Cette décision relève des autorités. Votre demande est transmise sous forme de pétition.",pet:true}}
 
 /* ---------- lancement ---------- */
-DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.fix(raw);if(!opt.force&&window.NOTE&&S&&NOTE.matches(raw))return NOTE.handle(S,raw,reply,opt);if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
+DIR.handle=async function(S,raw,reply,opt){opt=opt||{};const orig=String(raw);if(window.DICO)raw=DICO.fix(raw);if(!opt.force&&window.NOTE&&S&&NOTE.matches(raw))return NOTE.handle(S,orig,reply,opt);if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
   let c=CAT.find(x=>x.re.test(t))||GENERIC;const cb=cible(t);const sc=scope(S,{...c,k:cb.k},t);
-  if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+raw.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
-  let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:raw,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
+  if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+orig.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
+  let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:orig,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
   if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
   // le titre, ce sont VOS mots ; le domaine est indiqué à part ; le délai que vous donnez est respecté
-  d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(raw),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
+  d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(orig),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
   // coût selon l'étendue : une ville ou une région coûte bien moins qu'une mesure nationale
   if(d.reg&&d.cout>5&&!opt.cout){const town=window.VOY&&VOY.CITIES.some(c=>new RegExp("\\b"+norm(c.n)+"\\b").test(t)&&c.n!==CM.REG[d.reg].n);d.cout=Math.max(.3,Math.round(d.cout*(town?.06:.2)*10)/10)}
   if(/en audience|venir me (presenter|rendre compte)|me (le )?presenter en personne|rendre compte de vive voix/.test(t))d.cr="audience";else if(/par ecrit|rapport ecrit|m envoyer (le|un) rapport/.test(t))d.cr="ecrit";
   if(opt.ctx){d.dossier=String(opt.ctx).slice(0,140);if(window.ACTU){const a=ACTU.all().find(x=>x.titre===opt.ctx||x.titre.startsWith(opt.ctx.slice(0,70)));if(a){S.actuFait=S.actuFait||{};(S.actuFait[a.id]=S.actuFait[a.id]||[]).push("directive");d.reg=d.reg||a.reg}}}
   if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
-    "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
+    "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+orig+" ».\n"+
     "Qualifie-la de façon réaliste. Réponds uniquement en JSON : {\"titre\": \"titre officiel court\", \"base_legale\": \"texte camerounais applicable ou chaîne vide\", \"delai_jours\": 7-365, \"cout_milliards_fcfa\": 0-500, "+
     "\"effets\": {\"pop\":-5..5,\"eco\":-5..5,\"soc\":-5..5,\"sec\":-5..5,\"infra\":-5..5,\"int\":-5..5}, \"reaction\": \"une phrase : réaction de l'opinion et de la presse\"}",{modelTier:"quick",cache:false});
     if(j&&j.titre){d.domaine=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");if(!d.delaiDonne)d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
@@ -89,7 +89,7 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
     S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);const R=DIR.resp(S,d);
     const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». Comme elle a un "+gate.why+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation. Coût estimé à ce stade : "+(d.cout||"moins de 1")+" milliard"+(d.cout>=2?"s":"")+" de FCFA."
       :"Votre décision « "+d.titre+" » a un "+gate.why+" : elle est transmise à la Présidence de la République pour approbation avant exécution. Réponse attendue vers le "+G.dayLabel(d.planDue)+".";
-    window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+raw+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
+    window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+orig+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
   // coût (en milliards : État, ministère ou commune)
   if(d.cout){if(S.mode==="pres")S.nums.dette+=d.cout*.25;else if(S.mode==="min"){const M=d.cout*.25*1000;if(S.minis.fonds<M){reply("Les crédits de votre ministère ne suffisent pas pour cette mesure ("+Math.round(M)+" M FCFA). Demandez une rallonge au Premier ministre.");return true}S.minis.fonds-=M}
     else if(sc.local&&S.opp&&S.opp.commune){const M=Math.min(S.opp.commune.fonds,d.cout*5);S.opp.commune.fonds-=M}}
@@ -100,7 +100,7 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
   const when=G.dayLabel(d.due);
   const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : « "+d.titre+" »"+(c.id==="patrimoine"?", pour "+cb.lab:"")+". Domaine : "+d.domaine.toLowerCase()+"."+(d.dossier?" Dossier : "+d.dossier+".":"")+(d.base?" Base légale : "+d.base+".":"")+
     (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":"")+(d.cr==="audience"?" "+DIR.resp(S,d).n+" viendra vous présenter le compte rendu en audience.":" Compte rendu par écrit ; vous pouvez choisir de recevoir le responsable en audience dans « Vos directives » ou votre agenda.");
-  window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+raw+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
+  window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+orig+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
   reply(txt);G.render();return true};
 
 /* ---------- circuit de validation ---------- */

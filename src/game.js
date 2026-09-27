@@ -102,6 +102,8 @@ function advanceDays(d,auto){
   if(window.INTL)INTL.tick(S);
   if(window.CAB)CAB.tick(S);
   if(window.DOSS)DOSS.tick(S);
+  if(window.REC)REC.tick(S);
+  if(window.PB&&PB.tick)PB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }
 GAME.advanceDays=advanceDays;
@@ -409,7 +411,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.REC?REC.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"));if(window.REC)REC.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
@@ -469,8 +471,8 @@ function renderBureau(){
     '<button class="choice" data-rep="0"><span class="t">Tenir le scrutin à la date prévue</span><div class="hints"><span class="hint">Diplomatie</span><span class="hint">Popularité</span></div></button>'+
     '<button class="choice" data-rep="1"><span class="t">Reporter d\'un an par une loi de prorogation</span><div class="hints"><span class="hint big">Diplomatie</span><span class="hint big">Popularité</span><span class="hint loi">Vote au Parlement</span></div></button></div></div>'}
   else if(!d)dossier='<div class="card"><span class="eyebrow">Bureau</span><p>Aucun dossier urgent sur votre bureau. Prochain dossier attendu vers le '+esc(dayLabel(S.nextDossier||S.day))+'.</p><button class="btn" id="bNextD">Avancer jusqu\'au prochain dossier</button></div>';
-  else dossier='<div class="card"><div class="stamp"><span>'+esc(d.f)+'</span><button class="btn small ghost" id="bListen">Écouter</button></div><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.VID?'<div class="row">'+VID.btn(d.t+". "+d.x,d.lieu||null,"Voir la vidéo sur place")+'</div>':"")+'<div class="choices">'+
-    d.c.map((c,i)=>'<button class="choice" data-i="'+i+'"><span class="t">'+esc(c.t)+'</span>'+hintsHTML(c)+'</button>').join("")+'</div></div>';
+  else dossier='<div class="card"><div class="stamp"><span>'+esc(d.f)+'</span><button class="btn small ghost" id="bListen">Écouter</button></div><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.PB&&PB.advice?PB.adviceHTML(S,d):"")+(window.VID?'<div class="row">'+VID.btn(d.t+". "+d.x,d.lieu||null,"Voir la vidéo sur place")+'</div>':"")+'<div class="choices">'+
+    d.c.map((c,i)=>'<button class="choice" data-i="'+i+'"><span class="t">'+esc(c.t)+(window.PB&&PB.advice&&PB.advice(S,d).i===i?' <span class="pill ok" style="font-size:11px">recommandé par le ministre</span>':"")+'</span>'+hintsHTML(c)+'</button>').join("")+'</div></div>';
   const acts=presActions();
   $("panel").innerHTML=news+SYS.mailCard(S)+'<div class="row" style="justify-content:space-between"><span class="eyebrow">Dossiers · '+esc(dayLabel(S.day))+'</span>'+(next?'<span class="pill '+(next.m-S.m<=2?"warn":"ok")+'">'+esc(CM.CALENDRIER.find(c=>c.id===next.id).t)+' : '+esc(monthLabel(next.m))+'</span>':"")+'</div>'+dossier+
    '<div class="card"><span class="eyebrow">Action présidentielle (facultative, une par mois)</span><div class="grid2">'+acts.map(a=>'<button class="btn small" data-a="'+a.id+'"'+(a.dis?" disabled":"")+' title="'+esc(a.d)+'">'+esc(a.n)+'</button>').join("")+'</div>'+(S.used.m===S.m?'<span class="small muted">Action du mois effectuée.</span>':"")+'</div>';

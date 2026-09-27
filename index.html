@@ -2039,6 +2039,8 @@ function advanceDays(d,auto){
   if(window.INTL)INTL.tick(S);
   if(window.CAB)CAB.tick(S);
   if(window.DOSS)DOSS.tick(S);
+  if(window.REC)REC.tick(S);
+  if(window.PB&&PB.tick)PB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }
 GAME.advanceDays=advanceDays;
@@ -2346,7 +2348,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.REC?REC.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"));if(window.REC)REC.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
@@ -2406,8 +2408,8 @@ function renderBureau(){
     '<button class="choice" data-rep="0"><span class="t">Tenir le scrutin à la date prévue</span><div class="hints"><span class="hint">Diplomatie</span><span class="hint">Popularité</span></div></button>'+
     '<button class="choice" data-rep="1"><span class="t">Reporter d\'un an par une loi de prorogation</span><div class="hints"><span class="hint big">Diplomatie</span><span class="hint big">Popularité</span><span class="hint loi">Vote au Parlement</span></div></button></div></div>'}
   else if(!d)dossier='<div class="card"><span class="eyebrow">Bureau</span><p>Aucun dossier urgent sur votre bureau. Prochain dossier attendu vers le '+esc(dayLabel(S.nextDossier||S.day))+'.</p><button class="btn" id="bNextD">Avancer jusqu\'au prochain dossier</button></div>';
-  else dossier='<div class="card"><div class="stamp"><span>'+esc(d.f)+'</span><button class="btn small ghost" id="bListen">Écouter</button></div><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.VID?'<div class="row">'+VID.btn(d.t+". "+d.x,d.lieu||null,"Voir la vidéo sur place")+'</div>':"")+'<div class="choices">'+
-    d.c.map((c,i)=>'<button class="choice" data-i="'+i+'"><span class="t">'+esc(c.t)+'</span>'+hintsHTML(c)+'</button>').join("")+'</div></div>';
+  else dossier='<div class="card"><div class="stamp"><span>'+esc(d.f)+'</span><button class="btn small ghost" id="bListen">Écouter</button></div><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.PB&&PB.advice?PB.adviceHTML(S,d):"")+(window.VID?'<div class="row">'+VID.btn(d.t+". "+d.x,d.lieu||null,"Voir la vidéo sur place")+'</div>':"")+'<div class="choices">'+
+    d.c.map((c,i)=>'<button class="choice" data-i="'+i+'"><span class="t">'+esc(c.t)+(window.PB&&PB.advice&&PB.advice(S,d).i===i?' <span class="pill ok" style="font-size:11px">recommandé par le ministre</span>':"")+'</span>'+hintsHTML(c)+'</button>').join("")+'</div></div>';
   const acts=presActions();
   $("panel").innerHTML=news+SYS.mailCard(S)+'<div class="row" style="justify-content:space-between"><span class="eyebrow">Dossiers · '+esc(dayLabel(S.day))+'</span>'+(next?'<span class="pill '+(next.m-S.m<=2?"warn":"ok")+'">'+esc(CM.CALENDRIER.find(c=>c.id===next.id).t)+' : '+esc(monthLabel(next.m))+'</span>':"")+'</div>'+dossier+
    '<div class="card"><span class="eyebrow">Action présidentielle (facultative, une par mois)</span><div class="grid2">'+acts.map(a=>'<button class="btn small" data-a="'+a.id+'"'+(a.dis?" disabled":"")+' title="'+esc(a.d)+'">'+esc(a.n)+'</button>').join("")+'</div>'+(S.used.m===S.m?'<span class="small muted">Action du mois effectuée.</span>':"")+'</div>';
@@ -2814,7 +2816,7 @@ function accord(lab,s){if(s!=="f"||!lab)return lab;return String(lab).replace(/\
   .replace(/\ble secrétaire général\b/g,"la secrétaire générale").replace(/\ble Premier ministre\b/g,"la Première ministre").replace(/\ble vice-président\b/g,"la vice-présidente").replace(/\ble chef\b/g,"la cheffe").replace(/\ble responsable\b/g,"la responsable")}
 SYS.sexe=sexe;SYS.accord=accord;
 /* article devant un nom de ministère : du Commerce, de la Défense, de l'Eau, des Finances, des PME */
-SYS.deM=n=>/^(Commerce|Tourisme|Travail|Contrôle)/.test(n)?"du ":/^PME/.test(n)?"des ":/^[AEÉIOUHÉ]/.test(n)?"de l'":/^\S+s\b/.test(n)?"des ":"de la ";
+SYS.deM=n=>/^(Commerce|Tourisme|Travail|Contrôle)/.test(n)?"du ":/^PME/.test(n)?"des ":/^[AEÉIOUHÉ]/.test(n)?"de l'":/^\S+[sx]\b/.test(n)?"des ":"de la ";
 function regAlea(){const t=Math.random()*30.36;let a=0;for(const r of CM.REGIONS){a+=r.pop;if(t<=a)return r.id}return"CE"}
 SYS.nom=nom;
 
@@ -3210,6 +3212,8 @@ SYS.openMail=function(S,id){
   if(window.EMP)acts+=EMP.mailActs(S,it);
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
   if(window.DIR)acts+=DIR.mailActs(S,it);
+  if(window.REC)acts+=REC.mailActs(S,it);
+  if(window.PB&&PB.mailActs)acts+=PB.mailActs(S,it);
   if(window.NOTE)acts+=NOTE.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
   if(it.reg)acts+='<button class="btn" id="mSee">Voir la région</button>';
@@ -3221,6 +3225,8 @@ SYS.openMail=function(S,id){
     if(window.EMP)EMP.mailBind(S,it,el);
     if(window.ACTU)ACTU.mailBind(S,it,el);
     if(window.DIR)DIR.mailBind(S,it,el);
+    if(window.REC)REC.mailBind(S,it,el);
+    if(window.PB&&PB.mailBind)PB.mailBind(S,it,el);
     if(window.NOTE)NOTE.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
     if(q("#mFollow"))q("#mFollow").onclick=()=>{const who=S.mode==="pres"?"Cabinet du ministre de la Justice":(S.opp.experts.find(e=>e.dom==="droit")||{n:"Juriste"}).n+", juriste du parti";S.tasks.push({id:nid(),who,sujet:"suivi",caseId:c.id,due:S.m+1+Math.round(Math.random()),skill:70});el.remove();G.toast("Dossier confié. Compte rendu d'ici un à deux mois.");rerender()};
@@ -3861,7 +3867,7 @@ function plainteTick(S){
   for(let i=0;i<2;i++){const [k,o]=Math.random()<.6?pick(worst):pick(all);const bad=(100-o.integ)*.6+(100-o.perf)*.4;if(Math.random()*100>bad)continue;
     const why=pick(PL[k]);o.pl++;o.last=why;const lieu=o.ville||CM.REG[o.reg].chef;
     const who=k==="police"?o.n+" (commissariat central de "+lieu+")":k==="prefet"?"le préfet "+o.n+" ("+lieu+")":k==="gouverneur"?"le gouverneur "+o.n+" (région "+deR(CM.REG[o.reg])+")":o.n+" (légion de gendarmerie de la région "+deR(CM.REG[o.reg])+")";
-    window.SYS.cause(S,o.reg,"Les habitants de "+lieu+" se plaignent de "+who+" : "+why,-2,k==="police"||k==="gendarmerie"?"securite":"corruption");
+    window.SYS.cause(S,o.reg,"Les habitants de "+lieu+" se plaignent "+(/^le /.test(who)?"du "+who.slice(3):/^les /.test(who)?"des "+who.slice(4):"de "+who)+" : "+why,-2,k==="police"||k==="gendarmerie"?"securite":"corruption");
     if(o.pl>=3){o.pl=0;inbox(S,{from:"Remontées de la population · "+lieu,t:"Plaintes répétées contre "+who,b:"Depuis plusieurs semaines, les habitants dénoncent : "+why+". Efficacité estimée : "+Math.round(o.perf)+"/100, intégrité : "+Math.round(o.integ)+"/100. Des mesures sont attendues.",k:"alerte",reg:o.reg,org:{k,id:o.id}});G.toast("Remous à "+lieu+" : plaintes contre "+who.split(" (")[0])}
   }
 }
@@ -6040,7 +6046,7 @@ function meeting(S,a,end){const P=a.who;if(P&&P.n&&!P.sexe&&window.SYS)P.sexe=wi
 function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name)+". Voici la situation de l'établissement.");setTimeout(()=>{window.VIE.openOrg(S,{k:"hop",id:v.hop});if(window.VID)setTimeout(()=>{},0)},900);S.st&&(S.st.pop=clamp(S.st.pop+.5,0,100));window.SYS.cause(S,v.reg,"Visite surprise à "+lc(v.name),1.5,"sante")}}
 
 /* ---------- compréhension d'une consigne ---------- */
-VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0);const raw=window.DICO?DICO.fix(raw0):raw0;const t=norm(raw);
+VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0);const raw=raw0;const t=window.DICO?DICO.n(raw0):norm(raw0);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
   if(window.SAV&&SAV.handle(S,raw,reply))return;
@@ -6119,7 +6125,12 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
 
 /* ---------- interface : micro et saisie ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let unbind=null;
-function log(t){const l=$("vxLog");if(!l)return;const d=document.createElement("div");d.textContent=t;d.className=t.startsWith("Vous")?"me":"it";l.appendChild(d);l.scrollTop=l.scrollHeight}
+/* historique conservé dans la partie (et sur l'appareil hors partie) */
+function hist(){const S=G.S;if(S){S.vxHist=S.vxHist||[];return S.vxHist}try{return JSON.parse(localStorage.getItem("etoudi-vxhist")||"[]")}catch(e){return[]}}
+function keep(H){const S=G.S;const L=H.slice(-400);if(S)S.vxHist=L;else try{localStorage.setItem("etoudi-vxhist",JSON.stringify(L))}catch(e){}}
+VOIX.remember=function(t,j){const H=hist();H.push({t:String(t),j:j!=null?j:(G.S?G.S.day:null)});keep(H)};
+function line(t,j,sep){const l=$("vxLog");if(!l)return;if(sep){const s=document.createElement("div");s.className="small muted";s.style.cssText="text-align:center;margin:6px 0";s.textContent="— "+sep+" —";l.appendChild(s)}const d=document.createElement("div");d.textContent=t;d.className=/^Vous|\] Vous :/.test(t)?"me":"it";l.appendChild(d)}
+function log(t){VOIX.remember(t);line(t);const l=$("vxLog");if(l)l.scrollTop=l.scrollHeight}
 function micUi(st,x){const b=$("vxMic"),h=$("vxHint");if(b){b.textContent=MIC.want?"⏹ Couper le micro":"🎙 Activer le micro";b.setAttribute("aria-pressed",MIC.want?"true":"false");b.classList.toggle("micon",MIC.want)}
   if(h){if(st==="tmp")h.textContent=x;else if(st==="on"||st==="wait")h.textContent="Micro activé : parlez quand vous voulez. Il reste ouvert jusqu'à ce que vous le coupiez.";else if(st==="pause")h.textContent="Micro en pause pendant la réponse… il reprend tout seul.";
     else if(st==="blocked"||st==="err")h.textContent=window.VOY&&VOY.driving?"Micro indisponible : au volant, vous ne pouvez pas écrire. Autorisez le micro dans Chrome, ou passez la vidéo pour arriver.":MIC.msg(st);else if(st==="off")h.textContent=SR?"Micro coupé. Appuyez sur 🎙 pour le réactiver, ou tapez votre consigne.":MIC.msg("off")}}
@@ -6129,7 +6140,8 @@ VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.drivi
   el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="sheet-x" id="vxX" aria-label="Fermer" title="Fermer" style="margin:0;position:static">✕</button></div><div class="vxlog" id="vxLog"></div>'+
    '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Activer le micro</button><textarea data-grow rows="1" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"></textarea><button class="btn" id="vxGo">OK</button></div>'+
    '<span class="small muted" id="vxHint">'+(SR?"Activez le micro : il reste ouvert jusqu'à ce que vous le coupiez.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
-  document.body.appendChild(el);$("vxX").onclick=()=>{el.remove();if(unbind){unbind();unbind=null}};
+  document.body.appendChild(el);{let last=null;for(const h of hist()){const dl=h.j!=null&&G.dayLabel?G.dayLabel(h.j):"";line(h.t,h.j,dl&&dl!==last?dl:null);last=dl||last}const l=$("vxLog");if(l)l.scrollTop=l.scrollHeight}
+  $("vxX").onclick=()=>{el.remove();if(unbind){unbind();unbind=null}};
   unbind=MIC.bind({onText:t=>VOIX.handle(t),onState:micUi,alive:()=>el.isConnected});micUi(MIC.state);
   if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Le micro est ouvert : donnez vos consignes à la voix.";setTimeout(()=>{if(SR)MIC.start()},300)}
   const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";$("vxIn").style.height="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
@@ -6409,7 +6421,7 @@ function infin(raw){let x=String(raw).trim().replace(/^(alors|donc|bon|bien|mons
   .replace(/^(j'ai dit|j’ai dit|je dis|je répète|je repete)( ceci| cela| que)?\s*:?\s*/i,"")
   .replace(/^(je vous (demande|ordonne|charge|instruis|prie|donne l'ordre) (de |d'|d’)|je veux que vous |il faut que vous |il faut qu'on |il faut |il faudrait |nous devons |on doit |j'exige que vous |je souhaite que vous |je veux |je voudrais |veuillez )/i,"");
   x=x.replace(/^([a-zà-ÿ]+?)(iez|ez)\b/i,(m,r,e)=>{const w=m.toLowerCase();if(IRR[w])return IRR[w];return /[^aeiouyéè]iss$/.test(r)?r.replace(/iss$/,"ir"):r+"er"});return x}
-function reply(S,P,raw){const t=norm(raw),a=adr(S),Z=st(P),L=dossOf(S,P),off=isOff(P);Z.n++;const k=K[P.kind]||K.habitant;
+function reply(S,P,raw){const t=window.DICO?DICO.n(raw):norm(raw),a=adr(S),Z=st(P),L=dossOf(S,P),off=isOff(P);Z.n++;const k=K[P.kind]||K.habitant;
   const T=Z.topic;const R=(r,fx,id)=>({id:id||"libre",fx:fx||{m:.2},r:()=>r});
   if(/(au revoir|a bientot|bonne (journee|soiree|nuit|continuation)|on se reparle|je vous laisse|ce sera tout|c est tout pour|je raccroche|fin de l entretien)/.test(t))
     return R(off?pick(["Bien reçu, "+a+". Je vous tiens informé. Au revoir.","Merci, "+a+". Je me mets au travail. Au revoir."]):pick(["Merci pour votre visite. Revenez nous voir !","Merci. N'oubliez pas ce que vous avez vu ici.","Que Dieu vous bénisse. Bonne route."]),{m:.2},"fin");
@@ -6500,7 +6512,7 @@ RENC.open=function(S,o){if(!S||S.phase!=="play")return;const k=K[o.kind]||K.habi
    '<div class="row" role="tablist" style="gap:6px"><button class="btn small" data-rm="voix">🎙 Voix</button><button class="btn small" data-rm="texte">⌨ Texte</button><button class="btn small" data-rm="choix">☑ Choix</button></div>'+
    '<div class="vxlog" id="rnLog" style="flex:none;min-height:140px;max-height:38vh;margin:8px 0"></div><div id="rnIn"></div><p class="small muted" id="rnHint"></p>'+
    '<div class="row"><button class="btn ghost" id="rnEnd">Terminer l\'entretien</button></div>',el=>{
-    const log=(t,me)=>{const d=document.createElement("div");d.className=me?"me":"it";d.textContent=(me?"Vous : ":P.n+" : ")+t;$("rnLog").appendChild(d);$("rnLog").scrollTop=1e6;turns.push({me,t})};
+    const log=(t,me)=>{try{if(window.VOIX&&VOIX.remember)VOIX.remember((o.tel?"[📞 ":"[🤝 ")+P.n+"] "+(me?"Vous : ":"")+t)}catch(e){}const d=document.createElement("div");d.className=me?"me":"it";d.textContent=(me?"Vous : ":P.n+" : ")+t;$("rnLog").appendChild(d);$("rnLog").scrollTop=1e6;turns.push({me,t})};
     const hint=t=>{const h=$("rnHint");if(h)h.textContent=t||""};
     const speak=t=>{try{A.speak(t,{voix:P.sexe,rate:1,pitch:P.sexe==="f"?1.05:.9})}catch(e){}};
     const npc=(t,d)=>{log(t,false);speak(t);if(d)mood+=d};
@@ -6590,10 +6602,12 @@ function dist(a,b,max){if(Math.abs(a.length-b.length)>max)return max+1;const m=a
 const KEEP=new Set("affaire affaires dossier dossiers appeliez appelle appeler telephone telephoner discuter parler monsieur madame excellence avec dans pour vous nous elle elles leur leurs mais donc alors aussi tres tout tous toute toutes faire fais faites veux voudrais peux pouvez avoir etre suis sont etait sera quand comment combien pourquoi quelle quel quels quelles cette ceux celle celui ainsi apres avant depuis entre sans sous chez vers plus moins bien mieux encore toujours jamais deja donner donnez donne moi toi lui meme autre autres chose choses place temps jour jours annee annees point partie compte rende rendre discute discuter tout suite porte porter parle parler grand grande petit petite nouveau nouvelle premier premiere dernier derniere".split(" "));
 DICO.fix=function(raw){if(!raw)return raw;if(!LEX)build();let changed=false;
   const out=String(raw).replace(/[A-Za-zÀ-ÿ'-]+/g,w=>{const parts=w.split(/(['-])/);return parts.map(x=>{if(x.length<4||/['-]/.test(x))return x;const k=nf(x);if(TYPO[k]){changed=true;return TYPO[k]}if(SET.has(k)||KEEP.has(k)||k.length<5)return x;
-    const max=k.length>=9?2:1;let best=null,bd=max+1,tie=false;for(const c of SET){if(Math.abs(c.length-k.length)>max||c[0]!==k[0]&&k.length<7)continue;const d=dist(k,c,max);if(d<bd){bd=d;best=c;tie=false}else if(d===bd&&best&&LEX.get(c)!==LEX.get(best))tie=true}
+    if(k.length<6)return x;const max=1;let best=null,bd=max+1,tie=false;for(const c of SET){if(Math.abs(c.length-k.length)>max||c[0]!==k[0]&&k.length<7)continue;const d=dist(k,c,max);if(d<bd){bd=d;best=c;tie=false}else if(d===bd&&best&&LEX.get(c)!==LEX.get(best))tie=true}
     if(best&&bd<=max&&!tie&&!(k.length>=7&&best.slice(0,6)===k.slice(0,6))&&best+"s"!==k&&k+"s"!==best&&best+"x"!==k&&k+"x"!==best&&!/(iez|ions|ez|ent|ait|ais)$/.test(k)){changed=true;const v=LEX.get(best);return x===x.toLowerCase()&&v!==v.toUpperCase()?v.toLowerCase():v}return x}).join("")});
   DICO.last=changed?out:null;return out};
 DICO.rebuild=()=>{LEX=null};
+/* le texte du joueur n'est jamais modifié : la correction ne sert qu'à comprendre */
+DICO.n=raw=>{const c=DICO.fix(raw);return String(c||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’'\-]/g," ").replace(/\s+/g," ").trim()};
 })();
 
 </script>
@@ -6648,8 +6662,8 @@ GENRE.apply=function(S,k,cible,reply){const g=groups(S).find(x=>x.k===k);if(!g)r
 
 /* commandes : « combien de femmes au gouvernement ? », « je veux 30 % de femmes au gouvernement » */
 const RE=/(parite|equilibre (du |de |des )?genre|equilibre hommes? femmes|combien de femmes|nombre de femmes|pourcentage de femmes|femmes (au|dans le|du) gouvernement|plus de femmes|\d+ ?% de femmes|quota)/;
-GENRE.matches=t=>RE.test(norm(t));
-GENRE.handle=function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=norm(raw);if(!RE.test(t))return false;reply=reply||say;
+GENRE.matches=t=>RE.test(window.DICO?DICO.n(t):norm(t));
+GENRE.handle=function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=window.DICO?DICO.n(raw):norm(raw);if(!RE.test(t))return false;reply=reply||say;
   const k=/\bdg\b|directeurs? generaux|entreprises/.test(t)?"dg":/gouverneur/.test(t)?"gouverneurs":/prefet/.test(t)?"prefets":/hopita/.test(t)?"hop":/commissaire/.test(t)?"comm":"gouv";
   const imper=/je veux|j exige|j ordonne|ordonne|il faut|nommez|nommer|atteindre|remani|faites|que le gouvernement|que les/.test(t);
   if(!imper){const Gs=groups(S);const g=Gs.find(x=>x.k===k);reply(g.lab+" : "+g.f+" femmes sur "+g.t+", soit "+g.pct+" %."+(k==="gouv"?" "+Gs.slice(1,3).map(x=>x.lab+" : "+x.pct+" %").join(" ; ")+".":""));return true}
@@ -6691,7 +6705,7 @@ function actuPoint(S,a){const fait=(S.actuFait||{})[a.id]||[];const lab={terrain
   return a.titre+". "+a.resume+(fait.length?" Vos décisions : "+fait.map(k=>lab[k]||k).join(", ")+".":" Vous n'avez encore pris aucune décision sur ce dossier : il est dans votre courrier.")+(r!=null?" L'humeur de la région "+CM.REG[a.reg].n+" est à "+r+" sur 100.":"")}
 function dirPoint(S,d){return d.titre+(d.titre.startsWith("Directive")?"":" — « "+d.texte+" »")+". "+(d.done?"Échéance passée : le compte rendu est dans votre courrier.":"Rapport attendu le "+G.dayLabel(d.due)+" ("+jours(d.due-S.day)+").")}
 
-QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);
+QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=window.DICO?DICO.n(raw):norm(raw);
   if(window.DOSS&&DOSS.isAsk(raw)){reply(DOSS.summary(S));return true}
   if(window.SAV&&SAV.handle(S,raw,reply))return true;
   if(window.AG&&AG.isAsk(t)){reply(AG.summary(S));return true}const pl=place(t);
@@ -6837,7 +6851,7 @@ function prestataire(S,t){if(!/(prestataire|fournisseur|entreprise|societe|sous 
    (S&&(S.mode==="pres"||S.mode==="min")?" Pour un marché public, la règle est l'appel d'offres (Code des marchés publics, ministère des Marchés publics) ; dites par exemple « je veux un appel d'offres pour la vidéosurveillance de Yaoundé » pour en faire une directive.":"")}
 
 /* ---------- entrée ---------- */
-SAV.handle=function(S,raw,reply){const t=norm(raw);let r=null;
+SAV.handle=function(S,raw,reply){const t=window.DICO?DICO.n(raw):norm(raw);let r=null;
   if(window.NOTE&&NOTE.matches(raw)&&!/^(combien|quel|quelle)/.test(t))return false;
   if(SAV.last&&/^(oui|d accord|ok|vas y|allez y)?\s*,?\s*(fais|faites|fait|transforme|transformez)[- ]?(en|le|la|moi)? ?(une )?directive|^(oui|ok|d accord),? (lance|lancez|valide)/.test(t)&&window.DIR){const L=SAV.last;SAV.last=null;DIR.handle(S,"Je veux "+L.text.replace(/^je veux /i,""),reply,{force:true,cout:L.cout,nat:L.nat});return true}
   r=salaires(S,t)||effectifs(S,t)||prix(t)||couts(S,t,raw)||prestataire(S,t);
@@ -7110,19 +7124,19 @@ function scope(S,c,t){if(S.mode==="pres")return{ok:true,qui:"Présidence de la R
   return{ok:false,msg:"Cette décision relève des autorités. Votre demande est transmise sous forme de pétition.",pet:true}}
 
 /* ---------- lancement ---------- */
-DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.fix(raw);if(!opt.force&&window.NOTE&&S&&NOTE.matches(raw))return NOTE.handle(S,raw,reply,opt);if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
+DIR.handle=async function(S,raw,reply,opt){opt=opt||{};const orig=String(raw);if(window.DICO)raw=DICO.fix(raw);if(!opt.force&&window.NOTE&&S&&NOTE.matches(raw))return NOTE.handle(S,orig,reply,opt);if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
   let c=CAT.find(x=>x.re.test(t))||GENERIC;const cb=cible(t);const sc=scope(S,{...c,k:cb.k},t);
-  if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+raw.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
-  let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:raw,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
+  if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+orig.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
+  let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:orig,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
   if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
   // le titre, ce sont VOS mots ; le domaine est indiqué à part ; le délai que vous donnez est respecté
-  d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(raw),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
+  d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(orig),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
   // coût selon l'étendue : une ville ou une région coûte bien moins qu'une mesure nationale
   if(d.reg&&d.cout>5&&!opt.cout){const town=window.VOY&&VOY.CITIES.some(c=>new RegExp("\\b"+norm(c.n)+"\\b").test(t)&&c.n!==CM.REG[d.reg].n);d.cout=Math.max(.3,Math.round(d.cout*(town?.06:.2)*10)/10)}
   if(/en audience|venir me (presenter|rendre compte)|me (le )?presenter en personne|rendre compte de vive voix/.test(t))d.cr="audience";else if(/par ecrit|rapport ecrit|m envoyer (le|un) rapport/.test(t))d.cr="ecrit";
   if(opt.ctx){d.dossier=String(opt.ctx).slice(0,140);if(window.ACTU){const a=ACTU.all().find(x=>x.titre===opt.ctx||x.titre.startsWith(opt.ctx.slice(0,70)));if(a){S.actuFait=S.actuFait||{};(S.actuFait[a.id]=S.actuFait[a.id]||[]).push("directive");d.reg=d.reg||a.reg}}}
   if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
-    "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
+    "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+orig+" ».\n"+
     "Qualifie-la de façon réaliste. Réponds uniquement en JSON : {\"titre\": \"titre officiel court\", \"base_legale\": \"texte camerounais applicable ou chaîne vide\", \"delai_jours\": 7-365, \"cout_milliards_fcfa\": 0-500, "+
     "\"effets\": {\"pop\":-5..5,\"eco\":-5..5,\"soc\":-5..5,\"sec\":-5..5,\"infra\":-5..5,\"int\":-5..5}, \"reaction\": \"une phrase : réaction de l'opinion et de la presse\"}",{modelTier:"quick",cache:false});
     if(j&&j.titre){d.domaine=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");if(!d.delaiDonne)d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
@@ -7135,7 +7149,7 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
     S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);const R=DIR.resp(S,d);
     const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». Comme elle a un "+gate.why+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation. Coût estimé à ce stade : "+(d.cout||"moins de 1")+" milliard"+(d.cout>=2?"s":"")+" de FCFA."
       :"Votre décision « "+d.titre+" » a un "+gate.why+" : elle est transmise à la Présidence de la République pour approbation avant exécution. Réponse attendue vers le "+G.dayLabel(d.planDue)+".";
-    window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+raw+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
+    window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+orig+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
   // coût (en milliards : État, ministère ou commune)
   if(d.cout){if(S.mode==="pres")S.nums.dette+=d.cout*.25;else if(S.mode==="min"){const M=d.cout*.25*1000;if(S.minis.fonds<M){reply("Les crédits de votre ministère ne suffisent pas pour cette mesure ("+Math.round(M)+" M FCFA). Demandez une rallonge au Premier ministre.");return true}S.minis.fonds-=M}
     else if(sc.local&&S.opp&&S.opp.commune){const M=Math.min(S.opp.commune.fonds,d.cout*5);S.opp.commune.fonds-=M}}
@@ -7146,7 +7160,7 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(window.DICO)raw=DICO.f
   const when=G.dayLabel(d.due);
   const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : « "+d.titre+" »"+(c.id==="patrimoine"?", pour "+cb.lab:"")+". Domaine : "+d.domaine.toLowerCase()+"."+(d.dossier?" Dossier : "+d.dossier+".":"")+(d.base?" Base légale : "+d.base+".":"")+
     (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":"")+(d.cr==="audience"?" "+DIR.resp(S,d).n+" viendra vous présenter le compte rendu en audience.":" Compte rendu par écrit ; vous pouvez choisir de recevoir le responsable en audience dans « Vos directives » ou votre agenda.");
-  window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+raw+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
+  window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+orig+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
   reply(txt);G.render();return true};
 
 /* ---------- circuit de validation ---------- */
@@ -7303,7 +7317,7 @@ let sample=null;(async()=>{try{if(window.claude&&claude.use)sample=await claude.
 const F=n=>Math.round(n).toLocaleString("fr-FR");
 
 const RE=/^(donne[rz]? moi|donnez moi|donner moi|fais moi|faites moi|je veux (un complement|une note|un rapport|des propositions|un point|une etude|connaitre|savoir|comprendre|la structure)|propose[rz]? moi|proposez|explique[rz]? moi|expliquez|j ai besoin (d une note|d un rapport|de propositions)|preparez|prepare moi|redigez|faites une etude|je voudrais (une note|des propositions|connaitre|savoir))|\b(structur\w* (du|des|de la) (cout|prix)|des propositions pour|note sur|rapport sur|etude sur)\b/;
-NOTE.matches=t=>RE.test(norm(t));
+NOTE.matches=t=>RE.test(window.DICO?DICO.n(t):norm(t));
 
 const TOPICS=[
  {id:"carburant",re:/essence|gasoil|gazoil|super\b|petrole lampant|carburant|pompe|hydrocarbure/,lab:"le prix des carburants",min:"MINCOMMERCE"},
@@ -7339,7 +7353,7 @@ function general(S,tp,raw,pct){const st=S.st||{};const k={carburant:"eco",electr
   return{titre:"Note sur "+tp.lab,analyse:"Votre demande : « "+raw+" ».\nÉtat des lieux (indicateurs du jeu) : "+(k?"indicateur du secteur à "+Math.round(st[k]||0)+" sur 100 ; ":"")+"popularité "+Math.round(st.pop||0)+", cohésion "+Math.round(st.soc||0)+"."+(pct?"\nL'objectif de "+pct+" % demandé est ambitieux : il suppose de combiner plusieurs des mesures ci-dessous.":""),props:P}}
 
 /* ---------- demande ---------- */
-NOTE.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);reply=reply||say;const tp=topicOf(t);const pct=(t.match(/(\d{1,2}) ?%/)||[])[1];
+NOTE.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=window.DICO?DICO.n(raw):norm(raw);reply=reply||say;const tp=topicOf(t);const pct=(t.match(/(\d{1,2}) ?%/)||[])[1];
   const au=auteur(S,tp);let dl=1;const m=t.match(/(?:dans|sous|d ici)\s+(\d+)\s*(h|heures?|jours?)/);if(m)dl=/^h/.test(m[2])?Math.max(+m[1]/24,.1):+m[1];
   S.notes=S.notes||[];const n={id:"n"+Date.now().toString(36),texte:raw,topic:tp.id,pct:pct?+pct:0,due:S.day+dl,au,done:false,ctx:opt.ctx||null};S.notes.push(n);
   window.SYS.inbox(S,{from:"Cabinet",t:"Demande de note : "+tp.lab,b:"Votre demande : « "+raw+" »\nTransmise à "+au.n+", "+au.lab+". Note attendue le "+G.dayLabel(n.due)+".",k:"info",read:true});
@@ -7763,7 +7777,7 @@ PB.all=function(S){const L=[];const add=o=>{if(!o.t)return;const k=norm(o.t).sli
   if(window.DOSS)for(const d of DOSS.open(S))add({id:"d_"+d.id,t:d.t,d:d.d+(d.cause?" Blocage : "+d.cause+".":""),reg:d.reg||null,ville:null,src:"Mes dossiers",sev:d.urg||2,min:d.min||null,doss:d.id});
   // promesses de terrain
   for(const e of S.engagements||[])if(!e.done)add({id:"e_"+e.id,t:"Promesse : "+e.t,d:"Engagement pris à "+(e.ville||"?")+", à tenir avant le "+G.dayLabel(e.due)+".",reg:e.reg||null,ville:e.ville||null,src:"Engagement",sev:e.late?3:2});
-  return L};
+  return L.filter(p=>!(S.esc&&S.esc[p.id]&&S.esc[p.id].ok))};
 const regName=id=>id&&CM.REG[id]?CM.REG[id].n:"Tout le pays";
 const dot=s=>s>=3?"🔴":s===2?"🟠":"🟢";
 PB.card=function(S){if(!S||S.phase!=="play")return"";const L=PB.all(S);if(!L.length)return"";const by={};for(const p of L)if(p.reg)by[p.reg]=(by[p.reg]||0)+1;
@@ -7774,15 +7788,15 @@ PB.sheet=function(S,o){o=o||{};document.querySelectorAll(".sheet[data-pb]").forE
   const L=all.filter(p=>(!o.reg||p.reg===o.reg)&&(!o.ville||norm(p.ville||"")===norm(o.ville))&&(!q||norm(p.t+" "+p.d+" "+(p.ville||"")+" "+regName(p.reg)).includes(q)));
   const cnt={};for(const p of all)cnt[p.reg||"_"]=(cnt[p.reg||"_"]||0)+1;
   const chips='<div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn small'+(!o.reg?" primary":"")+'" data-pbr="">Tout le pays ('+all.length+')</button>'+CM.REGIONS.map(r=>'<button class="btn small'+(o.reg===r.id?" primary":"")+'" data-pbr="'+r.id+'" aria-pressed="'+(o.reg===r.id)+'">'+esc(r.n)+' ('+(cnt[r.id]||0)+')</button>').join("")+'</div>';
-  const item=p=>'<button class="choice" data-pbi="'+esc(p.id)+'"><span class="t">'+dot(p.sev)+' '+esc(p.t)+'</span><span class="d">'+esc(p.src)+(o.reg?"":" · "+esc(regName(p.reg)))+(p.ville?" · "+esc(p.ville):"")+'</span></button>';
+  const item=p=>'<button class="choice" data-pbi="'+esc(p.id)+'"><span class="t">'+dot(p.sev)+' '+esc(p.t)+'</span><span class="d">'+(own(p)&&PB.esc?(PB.esc(S,p).l>=4?"🔺 <b>À votre niveau</b> · ":"Géré par "+esc(authName(S,p,PB.esc(S,p).l))+" · "):"")+esc(p.src)+(o.reg?"":" · "+esc(regName(p.reg)))+(p.ville?" · "+esc(p.ville):"")+'</span></button>';
   let body="";
   if(o.reg){const r=CM.REG[o.reg];const groups={};for(const p of L){const k=p.ville||"";(groups[k]=groups[k]||[]).push(p)}
     const places=[""].concat((r.villes||[]).filter(v=>groups[v]),Object.keys(groups).filter(k=>k&&!(r.villes||[]).includes(k)));const seen=new Set();
     body='<p class="small muted">'+esc(r.desc||"")+'</p><button class="btn" data-pbc="'+o.reg+'|">✍️ Donner une instruction pour toute la région '+esc(r.n)+'</button>'+
      places.filter(k=>{if(seen.has(k))return false;seen.add(k);return true}).map(k=>{const g=groups[k]||[];if(!g.length&&k)return"";return '<span class="eyebrow">'+(k?"📍 "+esc(k):"Toute la région")+' ('+g.length+')</span>'+(k?'<button class="btn small" data-pbc="'+o.reg+'|'+esc(k)+'">✍️ Instruction pour '+esc(k)+'</button>':"")+'<div class="choices">'+g.sort((a,b)=>b.sev-a.sev).map(item).join("")+'</div>'}).join("")+
      '<span class="eyebrow">Autres villes et villages de la région</span><div class="row" style="gap:6px;flex-wrap:wrap">'+(r.villes||[]).filter(v=>!groups[v]).map(v=>'<button class="btn small ghost" data-pbc="'+o.reg+'|'+esc(v)+'">✍️ '+esc(v)+'</button>').join("")+'<button class="btn small ghost" data-pbcv="'+o.reg+'">✍️ Autre village…</button></div>'}
-  else{const nat=L.filter(p=>!p.reg);const loc=L.filter(p=>p.reg).sort((a,b)=>b.sev-a.sev);
-    body=(nat.length?'<span class="eyebrow">Au niveau national ('+nat.length+')</span><div class="choices">'+nat.map(item).join("")+'</div>':"")+'<span class="eyebrow">Dans les régions ('+loc.length+')</span><div class="choices">'+loc.slice(0,30).map(item).join("")+'</div>'+(loc.length>30?'<p class="small muted">Choisissez une région pour voir tous ses problèmes.</p>':"")+
+  else{const top=S.mode==="pres"?L.filter(p=>own(p)&&PB.esc(S,p).l>=4||p.bureau):[];const nat=L.filter(p=>!p.reg&&!top.includes(p));const loc=L.filter(p=>p.reg&&!top.includes(p)).sort((a,b)=>b.sev-a.sev);
+    body=(top.length?'<span class="eyebrow">🔺 Remontés à la Présidence ('+top.length+')</span><div class="choices">'+top.map(item).join("")+'</div>':"")+(nat.length?'<span class="eyebrow">Au niveau national ('+nat.length+')</span><div class="choices">'+nat.map(item).join("")+'</div>':"")+'<span class="eyebrow">Dans les régions ('+loc.length+')</span><div class="choices">'+loc.slice(0,30).map(item).join("")+'</div>'+(loc.length>30?'<p class="small muted">Choisissez une région pour voir tous ses problèmes.</p>':"")+
      '<button class="btn" data-pbc="|">✍️ Donner une instruction pour tout le pays</button>'}
   G.sheet('<span class="eyebrow">'+(o.reg?"Région "+esc(regName(o.reg)):"Carte des problèmes")+'</span><h3 class="h2">Problèmes et instructions</h3>'+
    '<input type="search" data-pbq placeholder="Rechercher : réfugiés, eau, Bertoua, route…" value="'+esc(o.q||"")+'" aria-label="Rechercher un problème" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit">'+chips+body,el=>{el.dataset.pb="1";el.setAttribute("data-noinstr","");
@@ -7797,13 +7811,16 @@ function authority(S,p){const A=[];if(S.mode!=="pres"&&S.mode!=="min")return A;
     if(p.ville){const pf=S.org.pref.find(x=>norm(x.ville)===norm(p.ville));if(pf){const sx=window.SYS.sexe(pf.n);A.push({k:"prefet",org:{k:"prefet",id:pf.id},n:pf.n,sexe:sx,reg:p.reg,lab:window.SYS.accord("le préfet de "+pf.ville,sx)})}}}
   return A}
 PB.item=function(S,p,back){const lieu=p.ville?p.ville+" ("+regName(p.reg)+")":p.reg?"région "+regName(p.reg):"tout le pays";const Au=authority(S,p);
-  const acts=[["dir","📜 Donner une instruction sur ce problème"],["note","📝 Demander une note chiffrée avec propositions"]].concat(Au.map((a,i)=>["call"+i,"📞 Appeler "+a.lab+" ("+a.n+")"]));
+  const lvl=own(p)?PB.esc(S,p):null;const P=PB.prop(S,p);const canDir=(S.mode==="pres"||S.mode==="min")&&!p.bureau;
+  const acts=(canDir?[["okp","✅ Approuver la proposition du ministre ("+String(P.cout).replace(".",",")+" Md)"]]:[]).concat(lvl&&lvl.l>=4&&S.mode==="pres"?[["backm","↩️ Renvoyer au ministre (qu'il règle à son niveau)"]]:[]).concat([["dir","📜 Donner une autre instruction"],["note","📝 Demander une note chiffrée avec propositions"]]).concat(Au.map((a,i)=>["call"+i,"📞 Appeler "+a.lab+" ("+a.n+")"]));
   if(p.reg&&window.VOY)acts.push(["go","🚗 Se rendre sur place ("+(p.ville||CM.REG[p.reg].chef)+")"]);
   if(p.actu)acts.push(["actu","📰 Ouvrir l'article et ses options"]);if(p.doss)acts.push(["doss","🗂️ Ouvrir le dossier"]);if(p.hop)acts.push(["hop","🏥 Ouvrir la fiche de l'hôpital"]);if(p.bureau)acts.push(["bur","🗂️ Voir les décisions proposées sur le bureau"]);
-  G.sheet('<span class="eyebrow">'+esc(p.src)+' · '+esc(lieu)+'</span><h3 class="h2">'+esc(p.t)+'</h3><p>'+esc(p.d)+'</p>'+(p.min?'<p class="small muted">Autorité compétente : ministère '+esc(window.SYS.deM((E.MINISTERES.find(m=>m.id===p.min)||{n:p.min}).n)+(E.MINISTERES.find(m=>m.id===p.min)||{n:p.min}).n)+'</p>':"")+
+  G.sheet('<span class="eyebrow">'+esc(p.src)+' · '+esc(lieu)+'</span><h3 class="h2">'+esc(p.t)+'</h3><p>'+esc(p.d)+'</p>'+(lvl?'<p class="small"><b>Niveau de traitement :</b> '+(lvl.l>=4?"🔺 remonté à la Présidence":esc(authName(S,p,lvl.l)))+' depuis le '+esc(G.dayLabel(lvl.t0))+(lvl.l<4?" ; s\'il n\'est pas réglé, il remontera au niveau supérieur.":"")+'</p>':"")+
+   (p.bureau&&S.cur!=null?PB.adviceHTML(S,CM.DOSSIERS[S.cur]):'<div class="card" style="gap:4px;background:var(--panel3)"><b>📋 Proposition du '+esc(P.lab)+'</b><span class="small">'+esc(P.n)+' propose '+(/^[aeéiouh]/i.test(P.text)?"d'":"de ")+esc(P.text)+'. Coût estimé : '+esc(mdS(P.cout))+' de FCFA.</span></div>')+(p.min?'<p class="small muted">Autorité compétente : ministère '+esc(window.SYS.deM((E.MINISTERES.find(m=>m.id===p.min)||{n:p.min}).n)+(E.MINISTERES.find(m=>m.id===p.min)||{n:p.min}).n)+'</p>':"")+
    '<div class="choices">'+acts.map(([k,l])=>'<button class="btn" data-pa="'+k+'">'+esc(l)+'</button>').join("")+'</div><button class="btn ghost" data-pback>← Retour à la liste</button>',el=>{el.dataset.pb="1";el.setAttribute("data-noinstr","");
     el.querySelector("[data-pback]").onclick=()=>{el.remove();PB.sheet(S,back||{reg:p.reg})};
     el.querySelectorAll("[data-pa]").forEach(b=>b.onclick=()=>{const k=b.dataset.pa;el.remove();const rep=m=>{say(m);G.toast(m.slice(0,120))};
+      if(k==="okp")return PB.approve(S,p);if(k==="backm")return PB.back(S,p);
       if(k==="dir")return PB.compose(S,{p,reg:p.reg,ville:p.ville,back});
       if(k==="note"&&window.NOTE)return NOTE.handle(S,"Je veux une note chiffrée avec des propositions sur : "+p.t+" ("+lieu+")",rep,{ctx:p.t});
       if(k.startsWith("call")){const a=Au[+k.slice(4)];if(window.CAB&&a.k==="min"){const st=CAB.status(S,a);if(st&&!st.ok)return CAB.unavailable(S,a,st,{objet:p.t,when:"maintenant"})}
@@ -7834,11 +7851,144 @@ PB.compose=function(S,o){const p=o.p;const lieu=o.ville?o.ville+" (région "+reg
       if(o.ville&&!norm(v).includes(norm(o.ville)))v+=" (à "+o.ville+")";else if(o.reg&&!o.ville&&!norm(v).includes(norm(regName(o.reg))))v+=" (région "+regName(o.reg)+")";
       const cr=el.querySelector("#pcCr").value;el.remove();const rep=m=>{say(m);G.toast(m.slice(0,140))};const n0=(S.directives||[]).length;
       await DIR.handle(S,v,rep,{force:true,ctx:p?p.t:"Instruction pour "+lieu,nat:!o.reg});const L=S.directives||[];if(L.length>n0){const d=L[L.length-1];if(o.reg)d.reg=o.reg;if(o.ville)d.ville=o.ville;d.cr=cr;if(p&&p.min&&S.mode==="pres"&&!d.resp)d.resp=p.min;G.render()}}})};
+
+/* ---------- remontée des problèmes : mairie → préfecture → gouverneur → ministre → Présidence ---------- */
+const mdS=v=>v<1?Math.round(v*1000)+" millions":String(Math.round(v*10)/10).replace(".",",")+" milliard"+(v>=2?"s":"");
+const LV=["la mairie","la sous-préfecture et la préfecture","le gouverneur de région","le ministre compétent","la Présidence"];
+PB.LV=LV;
+const PROP=[
+ [/(se plaignent|plainte|abus|racket|arbitraire|interdictions? de reunion)/,"diligenter une inspection, entendre les plaignants et sanctionner les responsables si les faits sont avérés",.05,"MINATD"],
+ [/(poignard|meurtre|assassin|homicide|\bviol\b|soupconne|suspect)/,"laisser la justice suivre son cours : enquête de police judiciaire, poursuites et soutien aux familles",.01,"MINJUSTICE"],
+ [/(attaque|embuscade|boko|enlev|separatist|insecurit|braquage|otage|ville morte|combat|tues? par|tirs?)/,"renforcer les patrouilles, installer un poste avancé et relancer les comités de vigilance",2,"MINDEF"],
+[/(refugi|deplace)/,"aménager des points d'eau, 30 salles de classe et un centre de santé pour les communes d'accueil, avec l'appui du HCR",1.8,"MINATD"],
+ [/(\beau\b|forage|potable|camwater|robinet)/,"réaliser 20 forages équipés et réparer les pompes en panne",.5,"MINEE"],
+ [/(medicament|rupture|hopital|sante|cholera|epidemi|paludisme)/,"envoyer d'urgence des médicaments et une équipe médicale, et régler les factures de la CENAME",.6,"MINSANTE"],
+ [/(piste|route|pont|axe|impraticable|nid)/,"réhabiliter les tronçons les plus dégradés (30 km) avec le génie militaire et des PME locales",3,"MINTP"],
+ [/(delestage|electricit|coupure|courant)/,"installer des groupes électrogènes et accélérer la réparation des lignes avec ENEO",1.5,"MINEE"],
+ [/(ecole|enseignant|classe|eleve)/,"construire 10 salles de classe et affecter des enseignants",.4,"MINEDUB"],
+ [/(prix|vie chere|carburant|penurie)/,"contrôler les prix et réapprovisionner les marchés",.2,"MINCOMMERCE"],
+ [/(accident|collision|\bbus\b|naufrage|pirogue|chauffard)/,"renforcer les contrôles, prendre en charge les victimes et enquêter sur les responsabilités",.1,"MINT"],
+ [/(feminicide|violence)/,"ouvrir un centre d'accueil des victimes, poursuivre systématiquement les auteurs et sensibiliser",.3,"MINPROFF"],
+ [/(bois|foret|grume|braconn)/,"mener des contrôles conjoints, saisir le bois illégal et appliquer les amendes",.1,"MINFOF"],
+ [/(\bor\b|mine|orpaill|carriere)/,"encadrer l'orpaillage, sécuriser les sites et ouvrir un comptoir d'achat de l'État",.3,"MINMIDT"],
+ [/(greve|syndicat|salaire|prime|arriere)/,"ouvrir le dialogue et proposer un calendrier de paiement écrit",.8,"MINTSS"],
+ [/(inondation|glissement|incendie|sinistr)/,"reloger les sinistrés, distribuer des vivres et curer les drains",.5,"MINATD"]];
+PB.prop=function(S,p){const t=norm(p.t+" "+p.d);const m=PROP.find(x=>x[0].test(t));const min=(m&&/inspection|justice suivre/.test(m[1]))?(/police|commissaire/.test(t)&&/inspection/.test(m[1])?"DGSN":m[3]):(p.min||(m?m[3]:"MINATD"));const me=E.MINISTERES.find(x=>x.id===min);
+  const g=S.gov&&S.gov.min&&S.gov.min[min];const n=g?g.n:"le ministre";const lieu=p.ville?" à "+p.ville:p.reg?" dans la région "+regName(p.reg):" dans tout le pays";
+  const cout=Math.round((m?m[2]:.2)*(p.reg?1:5)*10)/10;const act=m?m[1]:"envoyer une mission d'évaluation et présenter un plan d'action chiffré sous 15 jours";
+  return{min,n,lab:"ministre "+window.SYS.deM(me?me.n:min)+(me?me.n:min),act,lieu,cout,text:act+lieu}};
+const own=p=>!(p.doss||p.bureau||p.src==="Problème de fond"||String(p.id).startsWith("e_")||(p.actu&&p.sev<3));
+function lv0(p){if(p.bureau)return 4;if(!p.reg)return p.sev>=3?3:2;if(p.src==="Problème de fond"||p.hop)return 3;if(p.actu)return p.sev>=3?2:1;return p.sev>=3?1:0}
+PB.esc=function(S,p){S.esc=S.esc||{};return S.esc[p.id]||(S.esc[p.id]={l:lv0(p),t0:S.day,next:S.day+6+Math.random()*8})};
+function authPerf(S,p,l){if(!S.org)return 50;if(l===1&&p.ville){const x=S.org.pref.find(y=>norm(y.ville)===norm(p.ville))||S.org.pref.find(y=>y.reg===p.reg);return x?x.perf:50}if(l===2){const x=S.org.gouv.find(y=>y.reg===p.reg);return x?x.perf:50}return 55}
+function authName(S,p,l){if(!S.org)return LV[l];if(l===0)return"la mairie de "+(p.ville||(p.reg?CM.REG[p.reg].chef:"la commune"));if(l===1){const x=(p.ville&&S.org.pref.find(y=>norm(y.ville)===norm(p.ville)))||S.org.pref.find(y=>y.reg===p.reg);return x?"le préfet "+x.n+" ("+x.ville+")":LV[1]}
+  if(l===2){const x=S.org.gouv.find(y=>y.reg===p.reg);return x?"le gouverneur "+x.n:LV[2]}if(l===3){const P=PB.prop(S,p);return P.n+", "+P.lab}return"la Présidence"}
+PB.level=(S,p)=>{const e=PB.esc(S,p);return{l:e.l,by:authName(S,p,e.l),since:e.t0,ok:e.ok}};
+PB.tick=function(S){if(!S||S.phase!=="play"||!S.mood)return;S.esc=S.esc||{};for(const p of PB.all(S)){if(!own(p))continue;const e=PB.esc(S,p);if(e.ok||e.l>=4||S.day<e.next)continue;
+   const pr=[.6,.55,.5,.45][e.l]*Math.max(.4,Math.min(1.4,authPerf(S,p,e.l)/55));
+   if(Math.random()<pr){e.ok=S.day;e.by=authName(S,p,e.l);if(p.reg)window.SYS.cause(S,p.reg,"Réglé par "+e.by+" : "+p.t.slice(0,60),1.5,"local");continue}
+   e.l++;e.t0=S.day;e.next=S.day+8+Math.random()*8;
+   if(e.l===3&&S.mode==="min"&&S.minis&&PB.prop(S,p).min===S.minis.id){const P=PB.prop(S,p);window.SYS.inbox(S,{from:"Vos directeurs",t:"Problème remonté à votre ministère : "+p.t.slice(0,70),b:p.d+"\nLe gouverneur n'a pas pu le régler. Proposition de vos services : "+P.text+" (coût estimé : "+mdS(P.cout)+" de FCFA).",k:"alerte",pb:p.id,reg:p.reg})}
+   if(e.l===4&&S.mode==="pres"){const P=PB.prop(S,p);window.SYS.inbox(S,{from:P.n+", "+P.lab,t:"🔺 Remonté à la Présidence : "+p.t.slice(0,70),b:p.d+"\nCe problème n'a pas été réglé par "+LV.slice(0,3).join(", puis ")+", ni par le ministère.\nProposition du "+P.lab+" : "+P.text+". Coût estimé : "+mdS(P.cout)+" de FCFA.",k:"alerte",pb:p.id,reg:p.reg});G.toast("🔺 Remonté à la Présidence : "+p.t.slice(0,60),()=>PB.item(S,p))}}};
+/* approuver la proposition du ministre */
+PB.approve=async function(S,p){const P=PB.prop(S,p);if(!window.DIR)return;const n0=(S.directives||[]).length;const rep=m=>{say(m);G.toast(m.slice(0,140))};
+  await DIR.handle(S,"Je veux "+P.text,rep,{force:true,cout:P.cout,direct:S.mode==="pres",nat:!p.reg,ctx:p.t});const L=S.directives||[];if(L.length>n0){const d=L[L.length-1];if(p.reg)d.reg=p.reg;if(p.ville)d.ville=p.ville;if(S.mode==="pres")d.resp=P.min;const e=PB.esc(S,p);e.dir=d.id;G.render()}};
+PB.back=function(S,p){const e=PB.esc(S,p);e.l=3;e.next=S.day+7;e.t0=S.day;G.toast("Renvoyé au ministre : il doit régler ce problème à son niveau, sous 7 jours.");G.render()};
+PB.mailActs=function(S,it){if(!it.pb)return"";return'<button class="btn primary" data-pbx="ok">✅ Approuver la proposition du ministre</button><button class="btn" data-pbx="other">✍️ Donner une autre instruction</button>'+(S.mode==="pres"?'<button class="btn ghost" data-pbx="back">↩️ Renvoyer au ministre</button>':"")};
+PB.mailBind=function(S,it,el){el.querySelectorAll("[data-pbx]").forEach(b=>b.onclick=()=>{const p=PB.all(S).find(x=>x.id===it.pb);el.remove();if(!p)return G.toast("Ce problème est déjà réglé.");const k=b.dataset.pbx;if(k==="ok")PB.approve(S,p);else if(k==="back")PB.back(S,p);else PB.compose(S,{p,reg:p.reg,ville:p.ville})})};
+/* avis du ministre sur un dossier du bureau présidentiel */
+PB.advice=function(S,d){const k=d.id;S.adv=S.adv||{};if(S.adv[k]!=null)return S.adv[k];const min=minFromText(d.f)||"MINFI";const g=S.gov&&S.gov.min&&S.gov.min[min];const tr=g&&window.CAB?CAB.trait(g.n):"cooperatif";
+  let best=0,bs=-1e9;d.c.forEach((c,i)=>{const e=c.e||{};let s=Object.values(e).reduce((a,v)=>a+v,0);const dt=(c.n&&c.n.dette)||0;s-=dt/(tr==="prudent"?40:tr==="ambitieux"?160:80);if(tr==="prudent")s-=Object.values(e).filter(v=>v<0).reduce((a,v)=>a+Math.abs(v),0)*.5;if(s>bs){bs=s;best=i}});
+  return(S.adv[k]={i:best,n:g?g.n:"Le ministre",min,tr})};
+PB.adviceHTML=function(S,d){const a=PB.advice(S,d);const c=d.c[a.i];const me=E.MINISTERES.find(x=>x.id===a.min);if(!c)return"";
+  const byMin=!!minFromText(d.f);const sg=!byMin&&S.gov&&S.gov.sg?S.gov.sg.n:null;
+  return'<div class="card" style="gap:4px;background:var(--panel3)"><b>📋 Proposition '+(byMin?"du ministre "+esc(window.SYS.deM(me?me.n:a.min)+(me?me.n:a.min)):"du "+esc(String(d.f).toLowerCase()))+'</b><span class="small">'+esc(byMin?a.n:(sg||"Le secrétaire général"))+' recommande : « '+esc(c.t)+' »'+(c.n&&c.n.dette?", pour un coût d'environ "+esc(String(c.n.dette))+" milliards":"")+'.</span><span class="small muted">Vous restez libre de choisir une autre option ou de donner une autre instruction.</span></div>'};
+
 /* à la voix : « quels sont les problèmes de l'Est », « problèmes à Bertoua » */
 PB.voice=function(S,t,reply,close){if(!/\b(problemes?|difficultes|crises?|soucis)\b/.test(t)||/mes dossiers/.test(t))return false;if(!/(quels?|quelles?|liste|montre|affiche|voir|ou sont|y a t il|il y a|situation)/.test(t)&&!/^(les )?problemes/.test(t))return false;
   const reg=window.SAV&&SAV.region?SAV.region(t):null;let ville=null;if(window.VOY)for(const c of VOY.CITIES)if(new RegExp("\\b"+norm(c.n)+"\\b").test(t)){ville=c.n;break}
   const L=PB.all(S).filter(p=>(!reg||p.reg===reg)&&(!ville||norm(p.ville||"")===norm(ville)));if(close)close();PB.sheet(S,{reg:reg||null,ville:null,q:ville||""});
   reply((ville?"À "+ville:reg?"Dans la région "+regName(reg):"Dans le pays")+", "+L.length+" problème"+(L.length>1?"s":"")+" suivi"+(L.length>1?"s":"")+(L.length?" : "+L.sort((a,b)=>b.sev-a.sev).slice(0,3).map(p=>p.t).join(" ; ")+".":".")+" Choisissez-en un pour donner vos instructions.");return true};
+})();
+
+</script>
+<script>
+/* Chemin d'Etoudi — les ministres ne font pas que dépenser : ils proposent, sans relâche, des mesures qui font
+   rentrer de l'argent dans les caisses de l'État (mines, forêts, fiscalité, pêche, tourisme, télécoms…).
+   Chaque proposition est chiffrée (recettes annuelles attendues, coût de départ, délai, risques). Approuvée, elle
+   devient une directive ; réussie, elle rapporte chaque mois et allège la dette, pour financer la vie des citoyens. */
+(function(){
+"use strict";
+const CM=window.CM,E=window.ETAT,G=window.GAME;
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const REC={};window.REC=REC;
+const say=m=>{try{window.Audio2.speak(m,{voix:"f"})}catch(e){}};
+const md=v=>String(Math.round(v*10)/10).replace(".",",")+" milliard"+(v>=2?"s":"");
+/* [id, ministère, titre, détail, recettes/an (Md), coût de départ (Md), délai (jours), risques, effets] */
+const L=[
+ ["or","MINMIDT","Comptoirs publics d'achat de l'or artisanal","Canaliser l'or des chantiers de l'Est (Bétaré-Oya, Batouri, Kambélé) vers des comptoirs agréés de la SONAMINES : achat au prix du marché, taxe à l'export, constitution de réserves d'or à la BEAC.",25,6,120,"résistance des collecteurs informels, contrebande vers la Centrafrique",{eco:1,int:.5}],
+ ["conv","MINMIDT","Renégociation des conventions minières","Réviser les conventions signées : 10 % de parts gratuites pour l'État, option d'achat de 20 %, redevances indexées sur les cours mondiaux, contenu local et emplois camerounais.",40,1,180,"départ de certains investisseurs, arbitrages internationaux",{eco:1,int:-.5}],
+ ["fer","MINMIDT","Relance du fer de Mbalam-Nabeba","Finaliser la convention d'exploitation du fer de Mbalam avec le Congo, le chemin de fer minier et le terminal du port de Kribi ; recettes à pleine production.",60,15,360,"financement du chemin de fer, cours du fer",{eco:2,infra:1}],
+ ["bauxite","MINMIDT","Bauxite de Minim-Martap : exploitation et transformation locale","Accorder l'exploitation à un partenaire qui s'engage sur une raffinerie d'alumine au Cameroun plutôt que l'export brut.",35,5,300,"coût de l'énergie, délais industriels",{eco:1.5}],
+ ["cobalt","MINMIDT","Cobalt-nickel de Nkamouna (Lomié)","Relancer le projet de cobalt-nickel avec un partenaire solide ; le cobalt est très demandé pour les batteries.",20,3,300,"cours du cobalt, enclavement",{eco:1}],
+ ["itie","MINMIDT","Audit de la production et des exportations minières","Traçabilité complète (ITIE), croisement des déclarations d'exportation avec les données des pays acheteurs, redressements.",12,.8,90,"lenteurs administratives",{int:1.5,eco:.5}],
+ ["sable","MINMIDT","Carrières et sable : redevances et fin de l'extraction illégale","Recenser les carrières et les sablières, faire payer les redevances et fermer les sites illégaux qui détruisent les rivières.",8,.5,60,"tensions avec les exploitants artisanaux",{eco:.5}],
+ ["hydro","MINMIDT","Gaz naturel et hydrocarbures : nouveaux permis et gaz domestique","Attribuer de nouveaux blocs pétroliers et gaziers (bassins de Douala-Kribi-Campo et du Rio del Rey) et développer le gaz domestique pour réduire les importations.",45,4,300,"cours du pétrole, appétit des compagnies",{eco:1.5}],
+ ["grumes","MINFOF","Fin progressive de l'export des grumes, transformation locale du bois","Interdire l'export des grumes brutes par étapes et soutenir les 2e et 3e transformations (parquets, meubles, contreplaqué) : plus de valeur et d'emplois au pays.",30,4,240,"baisse temporaire des exportations",{eco:1.5,pop:1}],
+ ["rfa","MINFOF","Recouvrement de la redevance forestière et des pénalités","Recouvrer la redevance forestière annuelle impayée et les amendes des exploitants en infraction ; publier la liste des mauvais payeurs.",18,.5,60,"résistances des exploitants",{int:1,eco:.5}],
+ ["trace","MINFOF","Traçabilité du bois jusqu'aux ports","Marquage électronique des grumes et contrôles conjoints aux ports de Douala et Kribi pour arrêter l'exploitation illégale.",15,2,120,"corruption aux points de contrôle",{int:1}],
+ ["carbone","MINFOF","Crédits carbone des forêts camerounaises","Vendre des crédits carbone certifiés (REDD+) pour les forêts préservées ; une part revient aux communautés riveraines.",25,2,360,"certification longue, prix du carbone",{eco:1,int:1}],
+ ["faune","MINFOF","Tourisme de vision dans les parcs (Waza, Bénoué, Lobéké)","Remettre en état les parcs, concessions touristiques, lutte contre le braconnage.",6,3,240,"insécurité dans le Nord",{eco:.5}],
+ ["exo","MINFI","Rationalisation des exonérations fiscales et douanières","Supprimer les exonérations sans contrepartie et publier les bénéficiaires ; les exonérations coûtent des centaines de milliards chaque année.",120,0,90,"mécontentement de certaines entreprises",{eco:.5,int:1}],
+ ["num","MINFI","Fiscalité du numérique et du mobile money","Faire payer la TVA aux plateformes numériques étrangères et élargir l'assiette des services numériques.",35,.5,120,"réaction des usagers si la taxe touche les transferts",{eco:.5,pop:-.5}],
+ ["scan","MINFI","Scanners et dédouanement électronique aux frontières","Scanners aux postes frontières terrestres et dédouanement 100 % électronique pour réduire la fraude.",40,12,180,"coût initial, formation des agents",{eco:1,int:1}],
+ ["pechein","MINEPIA","Licences de pêche industrielle et lutte contre la pêche illégale","Revoir les licences, surveillance satellitaire des chalutiers, amendes dissuasives.",10,3,120,"moyens de surveillance en mer",{eco:.5}],
+ ["betail","MINEPIA","Exportation de bétail et de viande","Abattoirs modernes à Ngaoundéré et Garoua, vaccination, exportation vers le Nigeria, le Gabon et la Guinée équatoriale.",12,6,240,"maladies animales, insécurité",{eco:1}],
+ ["tour","MINTOUL","Relance du tourisme et visa électronique","Visa électronique, promotion de Kribi, Limbé et des monts Mandara, formation hôtelière.",15,5,180,"image sécuritaire du pays",{eco:.5,int:.5}],
+ ["5g","MINPOSTEL","Attribution des fréquences 5G","Mise aux enchères des fréquences 5G auprès des opérateurs, avec obligations de couverture rurale.",50,.5,120,"capacité d'investissement des opérateurs",{eco:1,infra:.5}],
+ ["cacao","MINADER","Transformation locale du cacao","Objectif 20 % du cacao transformé au pays, label « cacao du Cameroun », usines à Kribi et Douala.",25,8,300,"coût de l'énergie",{eco:1,pop:.5}],
+ ["foncier","MINDCAF","Taxation des grands terrains non mis en valeur","Recenser les grands domaines non exploités et appliquer l'impôt foncier ou reprendre les terrains.",20,1,180,"résistances des grands propriétaires",{eco:.5,pop:.5}],
+ ["contre","MINCOMMERCE","Lutte contre la contrebande de carburant et de produits importés","Brigades mixtes aux frontières avec le Nigeria, saisies et ventes aux enchères.",30,2,120,"corruption, violences aux frontières",{eco:.5,sec:.5}]];
+REC.L=L.map(([id,min,t,d,rec,cout,delai,risk,fx])=>({id,min,t,d,rec,cout,delai,risk,fx}));
+const byId=id=>REC.L.find(x=>x.id===id);
+function st(S){return S.rec||(S.rec={next:S.day+3,seen:{},props:[],on:[]})}
+function minName(id){const m=E.MINISTERES.find(x=>x.id===id);return m?m.n:id}
+function who(S,id){const g=S.gov&&S.gov.min&&S.gov.min[id];const n=g?g.n:(S.recN=S.recN||{},S.recN[id]=S.recN[id]||window.SYS.nom("CE"));const sx=window.SYS.sexe(n);return{n,sexe:sx,lab:window.SYS.accord("le ministre "+window.SYS.deM(minName(id))+minName(id),sx)}}
+/* prochaine proposition : mines et forêts en priorité, puis les autres ministères */
+function pickNext(S){const R=st(S);const pool=REC.L.filter(x=>!R.seen[x.id]);if(!pool.length)return null;
+  if(S.mode==="min"&&S.minis){const own=pool.filter(x=>x.min===S.minis.id);return own[0]||null}
+  const pri=pool.filter(x=>x.min==="MINMIDT"||x.min==="MINFOF");const k=Object.keys(R.seen).length;return(k%3!==2&&pri.length?pri:pool)[Math.floor(Math.random()*(k%3!==2&&pri.length?pri.length:pool.length))]}
+REC.tick=function(S){if(!S||S.phase!=="play"||(S.mode!=="pres"&&S.mode!=="min"))return;const R=st(S);
+  if(S.day>=R.next){const x=pickNext(S);R.next=S.day+(S.mode==="min"?10:5)+Math.random()*4;if(x){R.seen[x.id]=S.day;R.props.push({id:x.id,day:S.day,st:"attente"});const W=who(S,x.min);
+      const from=S.mode==="min"?"Direction des études de votre ministère":W.n+", "+W.lab;
+      window.SYS.inbox(S,{from,t:"💰 Proposition de recettes : "+x.t,b:x.d+"\nRecettes attendues : environ "+md(x.rec)+" de FCFA par an à plein régime.\nCoût de départ : "+(x.cout?md(x.cout)+" de FCFA":"négligeable")+". Délai de mise en place : "+x.delai+" jours.\nRisques : "+x.risk+".",k:"rapport",rec:x.id});
+      G.toast("💰 "+(S.mode==="min"?"Vos services proposent":W.n+" propose")+" : "+x.t.slice(0,60),()=>REC.sheet(S))}}
+  // mesures réussies : recettes mensuelles
+  for(const d of S.directives||[]){if(!d.rec||!d.done||d.recOn)continue;d.recOn=1;const q=/réussie/.test(d.res||"")?1:/partielle/.test(d.res||"")?.5:0;if(q>0)R.on.push({id:d.rec,t:byId(d.rec)?byId(d.rec).t:d.titre,v:byId(d.rec).rec*q,since:S.day})}
+  if(R.on.length&&(!R.last||S.day-R.last>=30)){R.last=S.day;const m=R.on.reduce((a,x)=>a+x.v,0)/12;if(S.nums)S.nums.dette=Math.max(0,S.nums.dette-m);if(S.st&&S.st.eco!=null)S.st.eco=Math.min(100,S.st.eco+.3);if(S.minis)S.minis.perf=Math.min(100,S.minis.perf+.5);
+    window.SYS.inbox(S,{from:"Direction générale du Trésor",t:"Recettes nouvelles du mois : "+md(m)+" de FCFA",b:"Les mesures de recettes en vigueur ont rapporté environ "+md(m)+" de FCFA ce mois-ci : "+R.on.map(x=>x.t).join(" ; ")+".\nCes ressources financent le fonctionnement de l'État sans nouvel endettement.",k:"bonne"})}};
+function approve(S,id){const x=byId(id);if(!x||!window.DIR)return;const R=st(S);const p=R.props.find(y=>y.id===id);if(p)p.st="approuvee";
+  const n0=(S.directives||[]).length;DIR.handle(S,"Je veux "+x.t.charAt(0).toLowerCase()+x.t.slice(1)+" dans "+x.delai+" jours",m=>{say(m);G.toast(m.slice(0,130))},{force:true,cout:Math.max(.1,x.cout),direct:S.mode==="pres",nat:S.mode==="min"?true:undefined,ctx:"Proposition de recettes : "+x.t}).then(()=>{const L=S.directives||[];if(L.length>n0){const d=L[L.length-1];d.rec=id;if(S.mode==="pres")d.resp=x.min;d.fx=Object.assign({},x.fx);G.render()}})}
+REC.act=function(S,id,k){const R=st(S);const p=R.props.find(y=>y.id===id);if(!p)return;
+  if(k==="ok")return approve(S,id);
+  if(k==="etude"){p.st="etude";R.seen[id]=S.day;setTimeout(()=>{},0);const x=byId(id);window.SYS.inbox(S,{from:who(S,x.min).n,t:"Étude complémentaire demandée : "+x.t,b:"L'étude détaillée (impact, calendrier, partenaires) vous sera présentée dans 15 jours ; la proposition reviendra alors pour décision.",k:"info",read:true});p.back=S.day+15;G.toast("Étude complémentaire demandée : retour dans 15 jours.")}
+  if(k==="non"){p.st="ecartee";G.toast("Proposition écartée.")}G.render()};
+/* retour des études complémentaires */
+const _t=REC.tick;REC.tick=function(S){_t(S);if(!S||!S.rec)return;for(const p of S.rec.props)if(p.st==="etude"&&p.back&&S.day>=p.back){p.st="attente";p.back=null;const x=byId(p.id);window.SYS.inbox(S,{from:who(S,x.min).n,t:"💰 Étude remise : "+x.t,b:x.d+"\nL'étude confirme des recettes d'environ "+md(x.rec)+" de FCFA par an. Décision attendue.",k:"rapport",rec:x.id})}};
+REC.mailActs=function(S,it){if(!it.rec)return"";const p=(st(S).props||[]).find(y=>y.id===it.rec);if(!p||p.st!=="attente")return p?'<p class="small muted">Statut : '+esc({approuvee:"approuvée",etude:"étude en cours",ecartee:"écartée"}[p.st]||p.st)+'</p>':"";
+  return'<button class="btn primary" data-recx="ok">✅ '+(S.mode==="pres"?"Approuver et lancer":"Soumettre à la Présidence")+'</button><button class="btn" data-recx="etude">📝 Demander une étude complémentaire</button><button class="btn ghost" data-recx="non">❌ Écarter</button>'};
+REC.mailBind=function(S,it,el){el.querySelectorAll("[data-recx]").forEach(b=>b.onclick=()=>{el.remove();REC.act(S,it.rec,b.dataset.recx)})};
+REC.card=function(S){if(!S||(S.mode!=="pres"&&S.mode!=="min"))return"";const R=st(S);const w=R.props.filter(p=>p.st==="attente");const tot=R.on.reduce((a,x)=>a+x.v,0);if(!w.length&&!R.on.length)return"";
+  return'<div class="card" data-recopen role="button" tabindex="0" style="cursor:pointer"><div class="row" style="justify-content:space-between"><b>💰 Recettes de l\'État</b><span class="small muted">Voir ▸</span></div><div class="small">'+(w.length?"<b>"+w.length+" proposition"+(w.length>1?"s":"")+" à examiner</b>":"Aucune proposition en attente")+(tot?" · mesures en vigueur : +"+md(tot)+" de FCFA par an":"")+'</div></div>'};
+REC.bindCard=function(S,root){(root||document).querySelectorAll("[data-recopen]").forEach(c=>{c.onclick=()=>REC.sheet(S);c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();REC.sheet(S)}}})};
+REC.sheet=function(S){const R=st(S);const P=R.props.slice().reverse();const lab={attente:"à examiner",approuvee:"approuvée",etude:"étude en cours",ecartee:"écartée"};
+  G.sheet('<span class="eyebrow">Finances publiques</span><h3 class="h2">Propositions de recettes</h3><p class="small muted">Les ministères proposent des mesures pour faire rentrer de l\'argent dans les caisses de l\'État, en priorité par les mines et les forêts.</p>'+
+   (R.on.length?'<span class="eyebrow">En vigueur</span>'+R.on.map(x=>'<div class="small">• '+esc(x.t)+' : +'+md(x.v)+' de FCFA par an</div>').join(""):"")+
+   (P.length?P.map(p=>{const x=byId(p.id);return'<div class="card" style="gap:6px;background:var(--panel3)"><b>'+esc(x.t)+'</b><span class="small muted">Ministère '+esc(window.SYS.deM(minName(x.min))+minName(x.min))+' · '+esc(lab[p.st]||p.st)+'</span><span class="small">'+esc(x.d)+'</span><span class="small"><b>Recettes :</b> ~'+md(x.rec)+' de FCFA par an · <b>Coût de départ :</b> '+(x.cout?md(x.cout):"négligeable")+' · <b>Délai :</b> '+x.delai+' j</span><span class="small muted">Risques : '+esc(x.risk)+'</span>'+
+     (p.st==="attente"?'<div class="row" style="gap:6px"><button class="btn small primary" data-rc="ok" data-id="'+x.id+'">✅ '+(S.mode==="pres"?"Approuver":"Soumettre à la Présidence")+'</button><button class="btn small" data-rc="etude" data-id="'+x.id+'">📝 Étude</button><button class="btn small ghost" data-rc="non" data-id="'+x.id+'">❌ Écarter</button></div>':"")+'</div>'}).join(""):'<p class="small muted">Les premières propositions arrivent dans quelques jours.</p>')+
+   '<button class="btn" data-recask>📣 Demander de nouvelles propositions aux ministres des Mines et des Forêts</button>',el=>{el.setAttribute("data-noinstr","");
+    el.querySelectorAll("[data-rc]").forEach(b=>b.onclick=()=>{el.remove();REC.act(S,b.dataset.id,b.dataset.rc)});
+    el.querySelector("[data-recask]").onclick=()=>{R.next=S.day;REC.tick(S);el.remove();REC.sheet(S)}})};
 })();
 
 </script>
@@ -7882,10 +8032,10 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
     MIC.bind({onText:t=>{inp.value=t;go()},onState:ui,alive:()=>d.isConnected&&!!d.offsetParent});
     mic.onclick=()=>{MIC.toggle();ui(MIC.state);if(MIC.want)hint("Micro activé : dictez votre consigne. Il reste ouvert jusqu'à ce que vous le coupiez.")}}};
 
-INSTR.run=async function(el,text,hint){if(window.DICO)text=DICO.fix(text);hint=hint||(()=>{});const S=G.S;
-  const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
+INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
+  const n=window.DICO?DICO.n(text):norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
   if(window.NOTE&&NOTE.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();NOTE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
-  const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
+  const b=best(el,window.DICO?DICO.fix(text):text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
   if(window.GENRE&&GENRE.matches(text)){el.remove();GENRE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
   if(window.DIR&&DIR.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
   if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");

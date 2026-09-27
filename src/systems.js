@@ -24,7 +24,7 @@ function accord(lab,s){if(s!=="f"||!lab)return lab;return String(lab).replace(/\
   .replace(/\ble secrétaire général\b/g,"la secrétaire générale").replace(/\ble Premier ministre\b/g,"la Première ministre").replace(/\ble vice-président\b/g,"la vice-présidente").replace(/\ble chef\b/g,"la cheffe").replace(/\ble responsable\b/g,"la responsable")}
 SYS.sexe=sexe;SYS.accord=accord;
 /* article devant un nom de ministère : du Commerce, de la Défense, de l'Eau, des Finances, des PME */
-SYS.deM=n=>/^(Commerce|Tourisme|Travail|Contrôle)/.test(n)?"du ":/^PME/.test(n)?"des ":/^[AEÉIOUHÉ]/.test(n)?"de l'":/^\S+s\b/.test(n)?"des ":"de la ";
+SYS.deM=n=>/^(Commerce|Tourisme|Travail|Contrôle)/.test(n)?"du ":/^PME/.test(n)?"des ":/^[AEÉIOUHÉ]/.test(n)?"de l'":/^\S+[sx]\b/.test(n)?"des ":"de la ";
 function regAlea(){const t=Math.random()*30.36;let a=0;for(const r of CM.REGIONS){a+=r.pop;if(t<=a)return r.id}return"CE"}
 SYS.nom=nom;
 
@@ -420,6 +420,8 @@ SYS.openMail=function(S,id){
   if(window.EMP)acts+=EMP.mailActs(S,it);
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
   if(window.DIR)acts+=DIR.mailActs(S,it);
+  if(window.REC)acts+=REC.mailActs(S,it);
+  if(window.PB&&PB.mailActs)acts+=PB.mailActs(S,it);
   if(window.NOTE)acts+=NOTE.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
   if(it.reg)acts+='<button class="btn" id="mSee">Voir la région</button>';
@@ -431,6 +433,8 @@ SYS.openMail=function(S,id){
     if(window.EMP)EMP.mailBind(S,it,el);
     if(window.ACTU)ACTU.mailBind(S,it,el);
     if(window.DIR)DIR.mailBind(S,it,el);
+    if(window.REC)REC.mailBind(S,it,el);
+    if(window.PB&&PB.mailBind)PB.mailBind(S,it,el);
     if(window.NOTE)NOTE.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
     if(q("#mFollow"))q("#mFollow").onclick=()=>{const who=S.mode==="pres"?"Cabinet du ministre de la Justice":(S.opp.experts.find(e=>e.dom==="droit")||{n:"Juriste"}).n+", juriste du parti";S.tasks.push({id:nid(),who,sujet:"suivi",caseId:c.id,due:S.m+1+Math.round(Math.random()),skill:70});el.remove();G.toast("Dossier confié. Compte rendu d'ici un à deux mois.");rerender()};

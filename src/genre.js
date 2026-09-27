@@ -48,8 +48,8 @@ GENRE.apply=function(S,k,cible,reply){const g=groups(S).find(x=>x.k===k);if(!g)r
 
 /* commandes : « combien de femmes au gouvernement ? », « je veux 30 % de femmes au gouvernement » */
 const RE=/(parite|equilibre (du |de |des )?genre|equilibre hommes? femmes|combien de femmes|nombre de femmes|pourcentage de femmes|femmes (au|dans le|du) gouvernement|plus de femmes|\d+ ?% de femmes|quota)/;
-GENRE.matches=t=>RE.test(norm(t));
-GENRE.handle=function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=norm(raw);if(!RE.test(t))return false;reply=reply||say;
+GENRE.matches=t=>RE.test(window.DICO?DICO.n(t):norm(t));
+GENRE.handle=function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=window.DICO?DICO.n(raw):norm(raw);if(!RE.test(t))return false;reply=reply||say;
   const k=/\bdg\b|directeurs? generaux|entreprises/.test(t)?"dg":/gouverneur/.test(t)?"gouverneurs":/prefet/.test(t)?"prefets":/hopita/.test(t)?"hop":/commissaire/.test(t)?"comm":"gouv";
   const imper=/je veux|j exige|j ordonne|ordonne|il faut|nommez|nommer|atteindre|remani|faites|que le gouvernement|que les/.test(t);
   if(!imper){const Gs=groups(S);const g=Gs.find(x=>x.k===k);reply(g.lab+" : "+g.f+" femmes sur "+g.t+", soit "+g.pct+" %."+(k==="gouv"?" "+Gs.slice(1,3).map(x=>x.lab+" : "+x.pct+" %").join(" ; ")+".":""));return true}

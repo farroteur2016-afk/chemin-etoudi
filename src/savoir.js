@@ -91,7 +91,7 @@ function prestataire(S,t){if(!/(prestataire|fournisseur|entreprise|societe|sous 
    (S&&(S.mode==="pres"||S.mode==="min")?" Pour un marché public, la règle est l'appel d'offres (Code des marchés publics, ministère des Marchés publics) ; dites par exemple « je veux un appel d'offres pour la vidéosurveillance de Yaoundé » pour en faire une directive.":"")}
 
 /* ---------- entrée ---------- */
-SAV.handle=function(S,raw,reply){const t=norm(raw);let r=null;
+SAV.handle=function(S,raw,reply){const t=window.DICO?DICO.n(raw):norm(raw);let r=null;
   if(window.NOTE&&NOTE.matches(raw)&&!/^(combien|quel|quelle)/.test(t))return false;
   if(SAV.last&&/^(oui|d accord|ok|vas y|allez y)?\s*,?\s*(fais|faites|fait|transforme|transformez)[- ]?(en|le|la|moi)? ?(une )?directive|^(oui|ok|d accord),? (lance|lancez|valide)/.test(t)&&window.DIR){const L=SAV.last;SAV.last=null;DIR.handle(S,"Je veux "+L.text.replace(/^je veux /i,""),reply,{force:true,cout:L.cout,nat:L.nat});return true}
   r=salaires(S,t)||effectifs(S,t)||prix(t)||couts(S,t,raw)||prestataire(S,t);

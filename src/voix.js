@@ -104,7 +104,7 @@ function meeting(S,a,end){const P=a.who;if(P&&P.n&&!P.sexe&&window.SYS)P.sexe=wi
 function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name)+". Voici la situation de l'établissement.");setTimeout(()=>{window.VIE.openOrg(S,{k:"hop",id:v.hop});if(window.VID)setTimeout(()=>{},0)},900);S.st&&(S.st.pop=clamp(S.st.pop+.5,0,100));window.SYS.cause(S,v.reg,"Visite surprise à "+lc(v.name),1.5,"sante")}}
 
 /* ---------- compréhension d'une consigne ---------- */
-VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0);const raw=window.DICO?DICO.fix(raw0):raw0;const t=norm(raw);
+VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0);const raw=raw0;const t=window.DICO?DICO.n(raw0):norm(raw0);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
   if(window.SAV&&SAV.handle(S,raw,reply))return;
@@ -183,7 +183,12 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
 
 /* ---------- interface : micro et saisie ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let unbind=null;
-function log(t){const l=$("vxLog");if(!l)return;const d=document.createElement("div");d.textContent=t;d.className=t.startsWith("Vous")?"me":"it";l.appendChild(d);l.scrollTop=l.scrollHeight}
+/* historique conservé dans la partie (et sur l'appareil hors partie) */
+function hist(){const S=G.S;if(S){S.vxHist=S.vxHist||[];return S.vxHist}try{return JSON.parse(localStorage.getItem("etoudi-vxhist")||"[]")}catch(e){return[]}}
+function keep(H){const S=G.S;const L=H.slice(-400);if(S)S.vxHist=L;else try{localStorage.setItem("etoudi-vxhist",JSON.stringify(L))}catch(e){}}
+VOIX.remember=function(t,j){const H=hist();H.push({t:String(t),j:j!=null?j:(G.S?G.S.day:null)});keep(H)};
+function line(t,j,sep){const l=$("vxLog");if(!l)return;if(sep){const s=document.createElement("div");s.className="small muted";s.style.cssText="text-align:center;margin:6px 0";s.textContent="— "+sep+" —";l.appendChild(s)}const d=document.createElement("div");d.textContent=t;d.className=/^Vous|\] Vous :/.test(t)?"me":"it";l.appendChild(d)}
+function log(t){VOIX.remember(t);line(t);const l=$("vxLog");if(l)l.scrollTop=l.scrollHeight}
 function micUi(st,x){const b=$("vxMic"),h=$("vxHint");if(b){b.textContent=MIC.want?"⏹ Couper le micro":"🎙 Activer le micro";b.setAttribute("aria-pressed",MIC.want?"true":"false");b.classList.toggle("micon",MIC.want)}
   if(h){if(st==="tmp")h.textContent=x;else if(st==="on"||st==="wait")h.textContent="Micro activé : parlez quand vous voulez. Il reste ouvert jusqu'à ce que vous le coupiez.";else if(st==="pause")h.textContent="Micro en pause pendant la réponse… il reprend tout seul.";
     else if(st==="blocked"||st==="err")h.textContent=window.VOY&&VOY.driving?"Micro indisponible : au volant, vous ne pouvez pas écrire. Autorisez le micro dans Chrome, ou passez la vidéo pour arriver.":MIC.msg(st);else if(st==="off")h.textContent=SR?"Micro coupé. Appuyez sur 🎙 pour le réactiver, ou tapez votre consigne.":MIC.msg("off")}}
@@ -193,7 +198,8 @@ VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.drivi
   el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="sheet-x" id="vxX" aria-label="Fermer" title="Fermer" style="margin:0;position:static">✕</button></div><div class="vxlog" id="vxLog"></div>'+
    '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Activer le micro</button><textarea data-grow rows="1" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"></textarea><button class="btn" id="vxGo">OK</button></div>'+
    '<span class="small muted" id="vxHint">'+(SR?"Activez le micro : il reste ouvert jusqu'à ce que vous le coupiez.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
-  document.body.appendChild(el);$("vxX").onclick=()=>{el.remove();if(unbind){unbind();unbind=null}};
+  document.body.appendChild(el);{let last=null;for(const h of hist()){const dl=h.j!=null&&G.dayLabel?G.dayLabel(h.j):"";line(h.t,h.j,dl&&dl!==last?dl:null);last=dl||last}const l=$("vxLog");if(l)l.scrollTop=l.scrollHeight}
+  $("vxX").onclick=()=>{el.remove();if(unbind){unbind();unbind=null}};
   unbind=MIC.bind({onText:t=>VOIX.handle(t),onState:micUi,alive:()=>el.isConnected});micUi(MIC.state);
   if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Le micro est ouvert : donnez vos consignes à la voix.";setTimeout(()=>{if(SR)MIC.start()},300)}
   const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";$("vxIn").style.height="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};

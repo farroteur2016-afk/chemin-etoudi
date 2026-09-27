@@ -100,7 +100,7 @@ function infin(raw){let x=String(raw).trim().replace(/^(alors|donc|bon|bien|mons
   .replace(/^(j'ai dit|j’ai dit|je dis|je répète|je repete)( ceci| cela| que)?\s*:?\s*/i,"")
   .replace(/^(je vous (demande|ordonne|charge|instruis|prie|donne l'ordre) (de |d'|d’)|je veux que vous |il faut que vous |il faut qu'on |il faut |il faudrait |nous devons |on doit |j'exige que vous |je souhaite que vous |je veux |je voudrais |veuillez )/i,"");
   x=x.replace(/^([a-zà-ÿ]+?)(iez|ez)\b/i,(m,r,e)=>{const w=m.toLowerCase();if(IRR[w])return IRR[w];return /[^aeiouyéè]iss$/.test(r)?r.replace(/iss$/,"ir"):r+"er"});return x}
-function reply(S,P,raw){const t=norm(raw),a=adr(S),Z=st(P),L=dossOf(S,P),off=isOff(P);Z.n++;const k=K[P.kind]||K.habitant;
+function reply(S,P,raw){const t=window.DICO?DICO.n(raw):norm(raw),a=adr(S),Z=st(P),L=dossOf(S,P),off=isOff(P);Z.n++;const k=K[P.kind]||K.habitant;
   const T=Z.topic;const R=(r,fx,id)=>({id:id||"libre",fx:fx||{m:.2},r:()=>r});
   if(/(au revoir|a bientot|bonne (journee|soiree|nuit|continuation)|on se reparle|je vous laisse|ce sera tout|c est tout pour|je raccroche|fin de l entretien)/.test(t))
     return R(off?pick(["Bien reçu, "+a+". Je vous tiens informé. Au revoir.","Merci, "+a+". Je me mets au travail. Au revoir."]):pick(["Merci pour votre visite. Revenez nous voir !","Merci. N'oubliez pas ce que vous avez vu ici.","Que Dieu vous bénisse. Bonne route."]),{m:.2},"fin");
@@ -191,7 +191,7 @@ RENC.open=function(S,o){if(!S||S.phase!=="play")return;const k=K[o.kind]||K.habi
    '<div class="row" role="tablist" style="gap:6px"><button class="btn small" data-rm="voix">🎙 Voix</button><button class="btn small" data-rm="texte">⌨ Texte</button><button class="btn small" data-rm="choix">☑ Choix</button></div>'+
    '<div class="vxlog" id="rnLog" style="flex:none;min-height:140px;max-height:38vh;margin:8px 0"></div><div id="rnIn"></div><p class="small muted" id="rnHint"></p>'+
    '<div class="row"><button class="btn ghost" id="rnEnd">Terminer l\'entretien</button></div>',el=>{
-    const log=(t,me)=>{const d=document.createElement("div");d.className=me?"me":"it";d.textContent=(me?"Vous : ":P.n+" : ")+t;$("rnLog").appendChild(d);$("rnLog").scrollTop=1e6;turns.push({me,t})};
+    const log=(t,me)=>{try{if(window.VOIX&&VOIX.remember)VOIX.remember((o.tel?"[📞 ":"[🤝 ")+P.n+"] "+(me?"Vous : ":"")+t)}catch(e){}const d=document.createElement("div");d.className=me?"me":"it";d.textContent=(me?"Vous : ":P.n+" : ")+t;$("rnLog").appendChild(d);$("rnLog").scrollTop=1e6;turns.push({me,t})};
     const hint=t=>{const h=$("rnHint");if(h)h.textContent=t||""};
     const speak=t=>{try{A.speak(t,{voix:P.sexe,rate:1,pitch:P.sexe==="f"?1.05:.9})}catch(e){}};
     const npc=(t,d)=>{log(t,false);speak(t);if(d)mood+=d};

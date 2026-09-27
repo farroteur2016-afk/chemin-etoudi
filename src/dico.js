@@ -38,8 +38,10 @@ function dist(a,b,max){if(Math.abs(a.length-b.length)>max)return max+1;const m=a
 const KEEP=new Set("affaire affaires dossier dossiers appeliez appelle appeler telephone telephoner discuter parler monsieur madame excellence avec dans pour vous nous elle elles leur leurs mais donc alors aussi tres tout tous toute toutes faire fais faites veux voudrais peux pouvez avoir etre suis sont etait sera quand comment combien pourquoi quelle quel quels quelles cette ceux celle celui ainsi apres avant depuis entre sans sous chez vers plus moins bien mieux encore toujours jamais deja donner donnez donne moi toi lui meme autre autres chose choses place temps jour jours annee annees point partie compte rende rendre discute discuter tout suite porte porter parle parler grand grande petit petite nouveau nouvelle premier premiere dernier derniere".split(" "));
 DICO.fix=function(raw){if(!raw)return raw;if(!LEX)build();let changed=false;
   const out=String(raw).replace(/[A-Za-zÀ-ÿ'-]+/g,w=>{const parts=w.split(/(['-])/);return parts.map(x=>{if(x.length<4||/['-]/.test(x))return x;const k=nf(x);if(TYPO[k]){changed=true;return TYPO[k]}if(SET.has(k)||KEEP.has(k)||k.length<5)return x;
-    const max=k.length>=9?2:1;let best=null,bd=max+1,tie=false;for(const c of SET){if(Math.abs(c.length-k.length)>max||c[0]!==k[0]&&k.length<7)continue;const d=dist(k,c,max);if(d<bd){bd=d;best=c;tie=false}else if(d===bd&&best&&LEX.get(c)!==LEX.get(best))tie=true}
+    if(k.length<6)return x;const max=1;let best=null,bd=max+1,tie=false;for(const c of SET){if(Math.abs(c.length-k.length)>max||c[0]!==k[0]&&k.length<7)continue;const d=dist(k,c,max);if(d<bd){bd=d;best=c;tie=false}else if(d===bd&&best&&LEX.get(c)!==LEX.get(best))tie=true}
     if(best&&bd<=max&&!tie&&!(k.length>=7&&best.slice(0,6)===k.slice(0,6))&&best+"s"!==k&&k+"s"!==best&&best+"x"!==k&&k+"x"!==best&&!/(iez|ions|ez|ent|ait|ais)$/.test(k)){changed=true;const v=LEX.get(best);return x===x.toLowerCase()&&v!==v.toUpperCase()?v.toLowerCase():v}return x}).join("")});
   DICO.last=changed?out:null;return out};
 DICO.rebuild=()=>{LEX=null};
+/* le texte du joueur n'est jamais modifié : la correction ne sert qu'à comprendre */
+DICO.n=raw=>{const c=DICO.fix(raw);return String(c||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’'\-]/g," ").replace(/\s+/g," ").trim()};
 })();
