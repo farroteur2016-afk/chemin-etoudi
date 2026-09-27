@@ -54,7 +54,7 @@ function findPerson0(S,t){
   if(/commissaire|commissariat/.test(t)){const c=findCity(t);const o=S.org&&c&&S.org.comm.find(p=>norm(p.ville)===norm(c.n));return{k:"police",lab:"le commissaire"+(c?" de "+c.n:""),n:o?o.n:"le commissaire",org:o&&{k:"police",id:o.id},reg:c&&c.reg}}
   if(/\b(dg|pdg|directeur|directrice|patron|patronne|administrateur|responsable|chef|dirige|gere|tete)\b/.test(t)&&S.org&&!/hopital|clinique/.test(t)){const e=findEnt(S,t);if(e)return{k:"ent",lab:"le directeur général "+(/^[AEIOU]/.test(e.n)?"d'":"de ")+e.n+(e.act?" ("+e.act.replace(/\s*\(.*\)/,"")+")":""),n:e.dg,org:{k:"ent",id:e.id},min:e.tut}}
   if(/directeur|directrice/.test(t)&&/hopital/.test(t)&&S.org){const h=findHospital(S,t);if(h)return{k:"hop",lab:"le directeur "+deL(lc(h.n).replace(/^(h[oô]pital|centre|clinique)/i,m=>"l'"+m).replace(/^l'centre/,"le centre").replace(/^l'clinique/,"la clinique")),n:h.dir,org:{k:"hop",id:h.id},reg:h.reg,min:"MINSANTE"}}
-  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":/^\S+s\b/.test(m.n)?"des ":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
+  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+window.SYS.deM(m.n)+m.n),n:g?g.n:null,min:m.id}}}
   return null}
 const de=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;const lc=t=>t.charAt(0).toLowerCase()+t.slice(1);
 function findHospital(S,t){if(!S.org)return null;const c=findCity(t),r=findRegion(t);let L=S.org.hop.filter(h=>t.includes(norm(h.n).replace(/^hopital (general|central|regional|de district) (de |d )?/,"")));
@@ -106,6 +106,14 @@ function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name
 VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous : "+raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
+  // appel téléphonique immédiat
+  if(/\b(telephone|un appel|coup de fil|en ligne|joindre|appelez le|appelez la|appelle le|appelle la|l appeliez|l appeler|l appelle|appeler le|appeler la|le joindre|la joindre|passe moi|passez moi|lancez un appel|lance un appel)\b/.test(t)&&!/\b(demain|apres demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|\d{1,2} ?h)\b/.test(t)&&window.RENC){
+    const P=findPerson(S,t)||(window.QA&&QA._last)||null;if(!P||!P.n)return reply("Qui voulez-vous appeler ? Par exemple : « appelle le ministre de la Défense ».");
+    const st=window.CAB?CAB.status(S,P):null;const F=P.sexe==="f";
+    if(st&&st.st==="injoignable"){reply((P.n)+" ne répond pas au téléphone. Son secrétariat prend le message."+"");return}
+    reply("J'appelle "+P.n+", "+P.lab+"."+(st&&st.st==="domicile"?" "+(F?"Elle":"Il")+" est chez "+(F?"elle":"lui")+" à cette heure-ci ; "+(F?"elle":"il")+" décroche quand même.":st&&st.st==="etranger"?" "+(F?"Elle":"Il")+" est à "+st.ville+", l'appel passe par l'international.":""));
+    closeP();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:(st&&(st.ville||st.base))||"Yaoundé",lieu:"au téléphone",sujet:"appel du "+(S.mode==="pres"?"président de la République":"cabinet"),tel:true,bonjour:(st&&st.st==="domicile"?"Allô… Oui, ":"Allô ? Oui, ")+(S.mode==="pres"?"Excellence, Monsieur le Président":"bonjour")+", je vous écoute."}),500);QA._last=P;return}
+  if(window.NOTE&&NOTE.matches(raw)){NOTE.handle(S,raw,reply);return}
   if(window.GENRE&&GENRE.handle(S,raw,reply))return;
   if(window.QA&&QA.isQuestion(raw)&&QA.handle(S,raw,reply))return;
   // directive politique claire (« je veux que… », « j'ordonne… »)
@@ -124,7 +132,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
   // vidéo
   if(/video|montre moi les images|filme/.test(t)&&window.VID){VID.play({text:raw});return reply("Voici les images.")}
   // marcher
-  if(/marcher|me promener|dans la rue/.test(t)&&window.VID){VID.walk();return reply("Vous descendez dans la rue.")}
+  if(/(je veux|allons|on va|laisse moi|fais moi|descend|descends|descendre)?.*\b(marcher|me promener|promenade|descendre dans la rue|dans la rue a pied)\b/.test(t)&&!/\?|^(suis je|est ce que|ou |si je)|je suis (au|dans)/.test(raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))&&window.VID){VID.walk();return reply("Vous descendez dans la rue.")}
   // onglets
   const TABS=[["carte","carte"],["budget|gouvernement","gouv"],["justice|prison","justice"],["courrier|messages|mails","bureau"],["journal","journal"],["marche|appels d offres","marche"],["medias|presse","media"],["services publics|hopitaux","services"],["annuaire|talents","annuaire"],["carriere","pro"],["economie","eco"],["defense","defense"],["projets","projets"],["parti","parti"]];
   if(/^(ouvre|montre|affiche|va sur|va dans|je veux voir)\b/.test(t)&&!/video/.test(t)){for(const [re,tab] of TABS)if(new RegExp(re).test(t)&&document.querySelector('.tab[data-t="'+tab+'"]')){G.setTab(tab);return reply("J'ouvre l'onglet "+tab+".")}}
@@ -168,12 +176,12 @@ let rec=null,listening=false;const SR=window.SpeechRecognition||window.webkitSpe
 function log(t){const l=$("vxLog");if(!l)return;const d=document.createElement("div");d.textContent=t;d.className=t.startsWith("Vous")?"me":"it";l.appendChild(d);l.scrollTop=l.scrollHeight}
 VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.driving));let el=$("vxPanel");if(el){el.remove();if(!o.driving)return}
   el=document.createElement("div");el.id="vxPanel";el.className="vxpanel";
-  el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="btn small ghost" id="vxX">Fermer</button></div><div class="vxlog" id="vxLog"></div>'+
-   '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Parler</button><input type="text" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"><button class="btn" id="vxGo">OK</button></div>'+
+  el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="sheet-x" id="vxX" aria-label="Fermer" title="Fermer" style="margin:0;position:static">✕</button></div><div class="vxlog" id="vxLog"></div>'+
+   '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Parler</button><textarea data-grow rows="1" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"></textarea><button class="btn" id="vxGo">OK</button></div>'+
    '<span class="small muted" id="vxHint">'+(SR?"Appuyez sur Parler, puis dites votre consigne.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
   document.body.appendChild(el);$("vxX").onclick=()=>{stop();el.remove()};
   if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Appuyez sur Parler et donnez vos consignes à la voix.";setTimeout(()=>{if(SR)start()},300)}
-  const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter")send()};
+  const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";$("vxIn").style.height="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
   $("vxMic").onclick=()=>listening?stop():start();
 
 };

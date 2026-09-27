@@ -24,7 +24,8 @@ function region(t){const w=x=>new RegExp("\\b"+x+"\\b");for(const r of CM.REGION
 const CAT=[
  {id:"patrimoine",re:/patrimoine|declar\w* (de |des )?(leurs |ses )?biens|biens et avoirs|avoirs|declaration de fortune/,titre:"Déclaration des biens et avoirs",
   base:"article 66 de la Constitution et loi n° 003/2006 du 25 avril 2006 relative à la déclaration des biens et avoirs",fx:{int:3,pop:2},loy:-3,delai:30,cout:0},
- {id:"audit",re:/audit|corruption|detourn|conac|controle superieur|consupe|enquete sur|inspection generale|gestion des fonds/,titre:"Opération d'audit et de lutte contre la corruption",fx:{int:2,eco:.5,pop:1},loy:-2,delai:45,cout:2},
+ {id:"justice",re:/parquet|procureur|poursuiv|poursuite|auditionn|audition|entendre (les|le|la)|enquete judiciaire|ouvrir une enquete|interpell|arrest|tribunal|juge d instruction|traduire en justice|mettre aux arrets|garde a vue|police judiciaire/,titre:"Action judiciaire",fx:{int:2,soc:1,pop:1},delai:30,cout:.5},
+ {id:"audit",re:/\baudit|corruption|detourn|conac|controle superieur|consupe|inspection generale|gestion des fonds/,titre:"Opération d'audit et de lutte contre la corruption",fx:{int:2,eco:.5,pop:1},loy:-2,delai:45,cout:2},
  {id:"prix",re:/baisse|vie chere|prix des?|carburant|subvention|pouvoir d achat|panier de la menagere/,titre:"Mesures contre la vie chère",fx:{pop:3,soc:1,eco:-1},delai:20,cout:60},
  {id:"arrieres",re:/arriere|primes?|salaires?|rappels?|dette interieure|dette academique|payer (les |leurs )?/,titre:"Apurement des arriérés et des primes",fx:{soc:3,pop:1},delai:30,cout:40},
  {id:"emploi",re:/recrut|emploi des jeunes|chomage|jeunes diplomes|insertion/,titre:"Programme spécial d'emploi des jeunes",fx:{pop:2,soc:1},delai:90,cout:50},
@@ -44,6 +45,14 @@ const CAT=[
 const GENERIC={id:"generique",titre:"Directive",fx:{pop:.5},delai:30,cout:5};
 const IMPER=/je veux|j exige|j ordonne|ordonne|exige|il faut|faites|demande[zr]? (a|aux|que)|je demande|qu on|que (tous|toutes|les|le|la)|instruis|instruction|decret|decide|je decide|mettez|lancez|prenez/;
 
+const cut=(s,n)=>s.length<=n?s:s.slice(0,Math.max(20,s.lastIndexOf(" ",n)))+"…";
+const stripTxt=raw=>{const x=String(raw).trim().replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites|je veux|je souhaite|je demande)\s+/i,"");return x.charAt(0).toUpperCase()+x.slice(1)};
+const NBW={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,dix:10,quinze:15,vingt:20,trente:30};
+/* délai donné dans la consigne : « dans 48 h », « sous 72 heures », « d'ici une semaine », « dans 15 jours », « d'ici 3 mois », « immédiatement » */
+function delai(S,t){const num=x=>/^\d+$/.test(x)?+x:NBW[x]||null;let m=t.match(/(?:dans|sous|d ici|en|avant|au plus tard dans|delai de)\s+(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|dix|quinze|vingt|trente)\s*(h|heures?|jours?|j|semaines?|mois)\b/);
+  if(m){const n=num(m[1]);if(n){const u=m[2];return/^h/.test(u)?Math.max(n/24,1/24):/^j/.test(u)?n:/^s/.test(u)?n*7:n*30}}
+  if(/immediatement|sans delai|tout de suite|dans l heure|en urgence|d urgence/.test(t))return .5;if(/fin de la semaine/.test(t))return 7-((new Date(2026,9,1).getDay()+Math.floor(S.day))%7);
+  if(/fin du mois/.test(t))return Math.max(1,(S.m+1)*30-S.day);return null}
 DIR.matches=t=>{t=norm(t);return CAT.some(c=>c.re.test(t))||IMPER.test(t)};
 
 /* ---------- compétence ---------- */
@@ -55,17 +64,19 @@ function scope(S,c,t){if(S.mode==="pres")return{ok:true,qui:"Présidence de la R
   return{ok:false,msg:"Cette décision relève des autorités. Votre demande est transmise sous forme de pétition.",pet:true}}
 
 /* ---------- lancement ---------- */
-DIR.handle=async function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
+DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(!opt.force&&window.NOTE&&S&&NOTE.matches(raw))return NOTE.handle(S,raw,reply,opt);if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
   let c=CAT.find(x=>x.re.test(t))||GENERIC;const cb=cible(t);const sc=scope(S,{...c,k:cb.k},t);
   if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+raw.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
   let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:raw,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
   if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
-  if(c===GENERIC){const x=raw.trim().replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites)\s+/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}
+  // le titre, ce sont VOS mots ; le domaine est indiqué à part ; le délai que vous donnez est respecté
+  d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(raw),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
+  if(opt.ctx){d.dossier=String(opt.ctx).slice(0,140);if(window.ACTU){const a=ACTU.all().find(x=>x.titre===opt.ctx||x.titre.startsWith(opt.ctx.slice(0,70)));if(a){S.actuFait=S.actuFait||{};(S.actuFait[a.id]=S.actuFait[a.id]||[]).push("directive");d.reg=d.reg||a.reg}}}
   if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
     "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
     "Qualifie-la de façon réaliste. Réponds uniquement en JSON : {\"titre\": \"titre officiel court\", \"base_legale\": \"texte camerounais applicable ou chaîne vide\", \"delai_jours\": 7-365, \"cout_milliards_fcfa\": 0-500, "+
     "\"effets\": {\"pop\":-5..5,\"eco\":-5..5,\"soc\":-5..5,\"sec\":-5..5,\"infra\":-5..5,\"int\":-5..5}, \"reaction\": \"une phrase : réaction de l'opinion et de la presse\"}",{modelTier:"quick",cache:false});
-    if(j&&j.titre){d.titre=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
+    if(j&&j.titre){d.domaine=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");if(!d.delaiDonne)d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
       d.fx={};for(const k of ["pop","eco","soc","sec","infra","int"])d.fx[k]=clamp(+((j.effets||{})[k])||0,-5,5)}}catch(e){if(e&&e.code==="not_granted")refused=true}}
   if(c.base)d.base=c.base;
   // coût (en milliards : État, ministère ou commune)
@@ -76,8 +87,8 @@ DIR.handle=async function(S,raw,reply){if(!S||S.phase!=="play")return false;cons
   if(c.id==="patrimoine"&&S.gov&&cb.k==="ministres"&&S.mode==="pres"){d.liste=Object.keys(S.gov.min);for(const id of d.liste){const g=S.gov.min[id];g.loy=clamp(g.loy+d.loy,0,100)}}
   S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);
   const when=G.dayLabel(d.due);
-  const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : "+d.titre.charAt(0).toLowerCase()+d.titre.slice(1)+(c.id==="patrimoine"?", pour "+cb.lab:"")+"."+(d.base?" Base légale : "+d.base+".":"")+
-    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Premier rapport attendu le "+when+"."+(d.cout?" Coût estimé : "+d.cout+" milliards de FCFA.":"");
+  const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : « "+d.titre+" »"+(c.id==="patrimoine"?", pour "+cb.lab:"")+". Domaine : "+d.domaine.toLowerCase()+"."+(d.dossier?" Dossier : "+d.dossier+".":"")+(d.base?" Base légale : "+d.base+".":"")+
+    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+d.cout+" milliards de FCFA.":"");
   window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+raw+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
   reply(txt);G.render();return true};
 
@@ -95,7 +106,7 @@ function report(S,d){const pm=S.gov&&S.gov.pm?S.gov.pm.comp:60;
       "\nLes déclarations sont transmises à la Commission ; en cas de fausse déclaration ou d'enrichissement illicite, le dossier peut être porté devant le Tribunal criminel spécial.",k:ko.length?"alerte":"rapport",dir:d.id});
     if(ko.length)say("Rapport sur la déclaration des biens : "+ko.length+" membres du gouvernement ne se sont pas exécutés.");return}
   const rg=d.resp&&S.gov&&S.gov.min[d.resp];const tb=rg&&window.CAB?CAB.traitBonus(rg.n):0;const q=clamp(.35+pm/200+(d.cout>100?-.1:0)+tb+Math.random()*.35,0,1);const res=q>.7?"réussie":q>.45?"partielle":"en échec";d.res="Mise en œuvre "+res;apply(S,d,q*.67);
-  window.SYS.inbox(S,{from:d.qui,t:"Compte rendu : "+d.titre,b:"Mise en œuvre "+res+" de votre instruction : « "+d.texte+" ».\n"+(rg&&window.CAB?"Responsable : "+rg.n+", ministre "+CAB.minName(S,d.resp)+" ("+CAB.traitLab(rg.n)+" : "+CAB.traitDesc(rg.n)+").\n":"")+(q>.7?"Les services ont exécuté la mesure dans les délais ; les premiers effets sont visibles sur le terrain.":q>.45?"Une partie seulement a été réalisée : lenteurs administratives et retards de décaissement.":"Blocages dans l'administration : la mesure n'a presque pas été appliquée. Il faut relancer ou sanctionner les responsables."),
+  window.SYS.inbox(S,{from:d.qui,t:"Compte rendu : "+d.titre,b:"Mise en œuvre "+res+" de votre instruction : « "+d.texte+" ».\n"+(rg&&window.CAB?"Responsable : "+rg.n+", "+window.SYS.accord("le ministre",window.SYS.sexe(rg.n)).replace(/^l[ea] /,"")+" "+window.SYS.deM(CAB.minName(S,d.resp))+CAB.minName(S,d.resp)+" ("+CAB.traitLab(rg.n)+" : "+CAB.traitDesc(rg.n)+").\n":"")+(q>.7?"Les services ont exécuté la mesure dans les délais ; les premiers effets sont visibles sur le terrain.":q>.45?"Une partie seulement a été réalisée : lenteurs administratives et retards de décaissement.":"Blocages dans l'administration : la mesure n'a presque pas été appliquée. Il faut relancer ou sanctionner les responsables."),
     k:q>.45?"rapport":"alerte",reg:d.reg,dir:d.id})}
 
 /* ---------- suites possibles depuis le courrier ---------- */
@@ -123,7 +134,7 @@ DIR.edit=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.d
     el.querySelector("#deNo").onclick=()=>{el.remove();DIR.sheet(S)};
     el.querySelector("#deOk").onclick=()=>{const tx=el.querySelector("#deTx").value.trim();if(!tx)return G.toast("L'instruction ne peut pas être vide.");const j=Math.max(1,Math.min(720,+el.querySelector("#deJ").value||rest));const rg=el.querySelector("#deReg").value||null;
       const ch=[];if(tx!==d.texte){const t=norm(tx);const c=CAT.find(x=>x.re.test(t))||GENERIC;const oldCost=d.cout||0;d.texte=tx;d.cat=c.id;d.fx={...c.fx};d.base=c.base||"";
-        if(c===GENERIC){const x=tx.replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites)\s+/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}else d.titre=c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");
+        d.titre=cut(stripTxt(tx),140);d.domaine=c===GENERIC?"Directive":c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");if(window.CAB&&S.mode==="pres")d.resp=CAB.resp(c.id);
         d.cout=c.cout;const extra=Math.max(0,d.cout-oldCost)*.25;if(extra){if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000)}ch.push("instruction")}
       if(rg!==d.reg){d.reg=rg;ch.push("région")}
       if(j!==rest){const faster=j<rest;d.due=S.day+j;if(faster){const extra=(d.cout||2)*.25*(rest/j-1)*.3;if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000);d.cout=Math.round((d.cout||0)*(1+.3*(rest/j-1)))}ch.push("délai")}
@@ -139,8 +150,8 @@ DIR.bindCard=function(S,root){(root||document).querySelectorAll("[data-dirall]")
 DIR.sheet=function(S){const all=(S.directives||[]).slice().reverse();const on=all.filter(d=>!d.done),off=all.filter(d=>d.done);
   const item=d=>{const tot=Math.max(1,d.due-d.start),pct=Math.max(0,Math.min(100,Math.round((S.day-d.start)*100/tot)));
     return '<div class="card" style="gap:6px"><b>'+esc(tDir(d))+'</b>'+(d.texte&&tDir(d)!==d.texte?'<span class="small">Votre instruction : « '+esc(d.texte)+' »</span>':"")+
-     '<div class="kv small"><span>Donnée par</span><b>'+esc(d.qui||"")+'</b><span>Concerne</span><b>'+esc(d.cat==="patrimoine"?d.cible.lab:d.reg?CM.REG[d.reg].n:"Tout le pays")+'</b>'+
-     (d.base?'<span>Base légale</span><b>'+esc(d.base)+'</b>':"")+'<span>Lancée le</span><b>'+esc(G.dayLabel(d.start))+'</b><span>Échéance</span><b>'+esc(G.dayLabel(d.due))+(d.done?"":" ("+Math.max(0,Math.round(d.due-S.day))+" j)")+'</b>'+
+     '<div class="kv small">'+(d.domaine?'<span>Domaine</span><b>'+esc(d.domaine)+'</b>':"")+(d.dossier?'<span>Dossier</span><b>'+esc(d.dossier)+'</b>':"")+'<span>Donnée par</span><b>'+esc(d.qui||"")+'</b><span>Concerne</span><b>'+esc(d.cat==="patrimoine"?d.cible.lab:d.reg?CM.REG[d.reg].n:"Tout le pays")+'</b>'+
+     (d.base?'<span>Base légale</span><b>'+esc(d.base)+'</b>':"")+'<span>Lancée le</span><b>'+esc(G.dayLabel(d.start))+'</b><span>Échéance</span><b>'+esc(G.dayLabel(d.due))+(d.done?"":d.due-S.day<2?" ("+Math.max(1,Math.round((d.due-S.day)*24))+" h)":" ("+Math.max(0,Math.round(d.due-S.day))+" j)")+'</b>'+
      (d.cout?'<span>Coût estimé</span><b>'+d.cout+' Md FCFA</b>':"")+'<span>Statut</span><b>'+(d.done?esc(d.res||"Terminée : compte rendu au courrier"):"En cours d'exécution")+'</b></div>'+
      (d.done?"":'<div class="bar"><i style="width:'+pct+'%"></i></div><div class="row"><button class="btn small primary" data-dedit="'+d.id+'">✏️ Modifier</button><button class="btn small" data-dacc="'+d.id+'">Accélérer (+50 % du coût, délai réduit d\'un tiers)</button><button class="btn small ghost" data-dann="'+d.id+'">Annuler la directive</button></div>')+'</div>'};
   G.sheet('<span class="eyebrow">Suivi</span><h3 class="h2">Vos directives</h3>'+(on.length?'<span class="eyebrow">En cours ('+on.length+')</span>'+on.map(item).join(""):'<p class="small muted">Aucune directive en cours.</p>')+

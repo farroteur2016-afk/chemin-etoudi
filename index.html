@@ -184,6 +184,11 @@ li .vidbtn,.log .vidbtn{padding:2px 8px!important;font-size:.72rem!important;mar
 .vxpanel{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;width:min(560px,calc(100vw - 24px));z-index:60;background:var(--card,#16181d);color:inherit;border:1px solid var(--line,#333);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
 body.travel .sheet{z-index:65}
 body.travel .vxpanel{z-index:70}
+textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px;line-height:1.35;width:100%;background:var(--panel3);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.sheet .in{position:relative}
+.sheet-x{position:sticky;top:0;align-self:flex-end;margin:-8px -6px -30px 0;z-index:5;width:36px;height:36px;flex:none;border-radius:8px;border:1px solid var(--line);background:var(--panel3);color:var(--ink);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
+.sheet-x:hover{background:#c42b1c;border-color:#c42b1c;color:#fff}
+.sheet .in>.eyebrow:first-of-type,.sheet .in>.h2:first-of-type{padding-right:44px}
 .instr{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
 .vxlog{max-height:34vh;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .vxlog .me{align-self:flex-end;background:rgba(80,140,255,.18);padding:6px 10px;border-radius:10px;max-width:85%}
@@ -1885,7 +1890,9 @@ const GAME={};window.GAME=GAME;
 
 /* ---------- utilitaires d'interface ---------- */
 function toast(msg){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
-function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in">'+html+'<button class="btn" data-close>Fermer</button></div>';
+/* zones de saisie : retour à la ligne automatique, hauteur ajustée, Entrée pour valider (Maj+Entrée : nouvelle ligne) */
+document.addEventListener("input",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea[data-grow]")){t.style.height="auto";t.style.height=Math.min(220,t.scrollHeight)+"px"}});
+function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in"><button class="sheet-x" data-close aria-label="Fermer la fenêtre" title="Fermer">✕</button>'+html+'</div>';
   el.addEventListener("click",e=>{if(e.target===el||e.target.hasAttribute("data-close")){el.remove()}});document.body.appendChild(el);if(after)after(el);if(window.VID)VID.bindAll(el);if(window.INSTR)INSTR.attach(el);return el}
 GAME.dayLabel=dayLabel;GAME.toast=toast;GAME.sheet=sheet;GAME.esc=esc;GAME.fmt=fmt;GAME.monthLabel=monthLabel;GAME.pick=pick;GAME.rnd=rnd;GAME.clamp=clamp;
 
@@ -1906,7 +1913,7 @@ GAME.viewRegion=viewRegion;
 
 function subs(who,text,opts){
   opts=opts||{};const el=$("subs");
-  el.innerHTML='<div class="who"><span>'+esc(who)+'</span><button class="btn small ghost" id="subsX">Fermer</button></div><div class="txt">'+esc(text)+'</div>';
+  el.innerHTML='<div class="who"><span>'+esc(who)+'</span><button class="sheet-x" id="subsX" aria-label="Fermer" title="Fermer" style="margin:0;position:static;width:30px;height:30px;font-size:15px">✕</button></div><div class="txt">'+esc(text)+'</div>';
   el.hidden=false;$("place").hidden=true;
   const close=()=>{el.hidden=true;$("place").hidden=false;A.stop()};
   $("subsX").onclick=close;
@@ -1957,6 +1964,7 @@ function advanceDays(d,auto){
   if(refresh&&(!auto||!inputBusy()))render();
   if(window.RENC)RENC.tick(S);
   if(window.DIR)DIR.tick(S);
+  if(window.NOTE)NOTE.tick(S);
   if(window.CAB)CAB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }
@@ -2732,6 +2740,8 @@ function accord(lab,s){if(s!=="f"||!lab)return lab;return String(lab).replace(/\
   .replace(/\ble ministre\b/g,"la ministre").replace(/\ble gouverneur\b/g,"la gouverneure").replace(/\ble préfet\b/g,"la préfète").replace(/\ble commissaire\b/g,"la commissaire").replace(/\ble délégué général\b/g,"la déléguée générale")
   .replace(/\ble secrétaire général\b/g,"la secrétaire générale").replace(/\ble Premier ministre\b/g,"la Première ministre").replace(/\ble vice-président\b/g,"la vice-présidente").replace(/\ble chef\b/g,"la cheffe").replace(/\ble responsable\b/g,"la responsable")}
 SYS.sexe=sexe;SYS.accord=accord;
+/* article devant un nom de ministère : du Commerce, de la Défense, de l'Eau, des Finances, des PME */
+SYS.deM=n=>/^(Commerce|Tourisme|Travail|Contrôle)/.test(n)?"du ":/^PME/.test(n)?"des ":/^[AEÉIOUHÉ]/.test(n)?"de l'":/^\S+s\b/.test(n)?"des ":"de la ";
 function regAlea(){const t=Math.random()*30.36;let a=0;for(const r of CM.REGIONS){a+=r.pop;if(t<=a)return r.id}return"CE"}
 SYS.nom=nom;
 
@@ -3127,6 +3137,7 @@ SYS.openMail=function(S,id){
   if(window.EMP)acts+=EMP.mailActs(S,it);
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
   if(window.DIR)acts+=DIR.mailActs(S,it);
+  if(window.NOTE)acts+=NOTE.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
   if(it.reg)acts+='<button class="btn" id="mSee">Voir la région</button>';
   if(window.VID&&!it.actu&&(it.reg||it.k==="alerte"||it.k==="rapport"))acts+=VID.btn(it.t+". "+it.b,it.reg||null,"Voir la vidéo");
@@ -3137,6 +3148,7 @@ SYS.openMail=function(S,id){
     if(window.EMP)EMP.mailBind(S,it,el);
     if(window.ACTU)ACTU.mailBind(S,it,el);
     if(window.DIR)DIR.mailBind(S,it,el);
+    if(window.NOTE)NOTE.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
     if(q("#mFollow"))q("#mFollow").onclick=()=>{const who=S.mode==="pres"?"Cabinet du ministre de la Justice":(S.opp.experts.find(e=>e.dom==="droit")||{n:"Juriste"}).n+", juriste du parti";S.tasks.push({id:nid(),who,sujet:"suivi",caseId:c.id,due:S.m+1+Math.round(Math.random()),skill:70});el.remove();G.toast("Dossier confié. Compte rendu d'ici un à deux mois.");rerender()};
     if(q("#mGrace"))q("#mGrace").onclick=()=>{c.verdict=(c.verdict||"")+" Grâce présidentielle accordée.";SYS.cause(S,c.reg,"Grâce présidentielle pour les condamnés de "+c.ville,3,"");S.st.int=clamp(S.st.int+1,0,100);el.remove();G.toast("Grâce accordée.");rerender()};
@@ -5726,7 +5738,7 @@ function findPerson0(S,t){
   if(/commissaire|commissariat/.test(t)){const c=findCity(t);const o=S.org&&c&&S.org.comm.find(p=>norm(p.ville)===norm(c.n));return{k:"police",lab:"le commissaire"+(c?" de "+c.n:""),n:o?o.n:"le commissaire",org:o&&{k:"police",id:o.id},reg:c&&c.reg}}
   if(/\b(dg|pdg|directeur|directrice|patron|patronne|administrateur|responsable|chef|dirige|gere|tete)\b/.test(t)&&S.org&&!/hopital|clinique/.test(t)){const e=findEnt(S,t);if(e)return{k:"ent",lab:"le directeur général "+(/^[AEIOU]/.test(e.n)?"d'":"de ")+e.n+(e.act?" ("+e.act.replace(/\s*\(.*\)/,"")+")":""),n:e.dg,org:{k:"ent",id:e.id},min:e.tut}}
   if(/directeur|directrice/.test(t)&&/hopital/.test(t)&&S.org){const h=findHospital(S,t);if(h)return{k:"hop",lab:"le directeur "+deL(lc(h.n).replace(/^(h[oô]pital|centre|clinique)/i,m=>"l'"+m).replace(/^l'centre/,"le centre").replace(/^l'clinique/,"la clinique")),n:h.dir,org:{k:"hop",id:h.id},reg:h.reg,min:"MINSANTE"}}
-  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":/^\S+s\b/.test(m.n)?"des ":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
+  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+window.SYS.deM(m.n)+m.n),n:g?g.n:null,min:m.id}}}
   return null}
 const de=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;const lc=t=>t.charAt(0).toLowerCase()+t.slice(1);
 function findHospital(S,t){if(!S.org)return null;const c=findCity(t),r=findRegion(t);let L=S.org.hop.filter(h=>t.includes(norm(h.n).replace(/^hopital (general|central|regional|de district) (de |d )?/,"")));
@@ -5778,6 +5790,14 @@ function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name
 VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous : "+raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
+  // appel téléphonique immédiat
+  if(/\b(telephone|un appel|coup de fil|en ligne|joindre|appelez le|appelez la|appelle le|appelle la|l appeliez|l appeler|l appelle|appeler le|appeler la|le joindre|la joindre|passe moi|passez moi|lancez un appel|lance un appel)\b/.test(t)&&!/\b(demain|apres demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|\d{1,2} ?h)\b/.test(t)&&window.RENC){
+    const P=findPerson(S,t)||(window.QA&&QA._last)||null;if(!P||!P.n)return reply("Qui voulez-vous appeler ? Par exemple : « appelle le ministre de la Défense ».");
+    const st=window.CAB?CAB.status(S,P):null;const F=P.sexe==="f";
+    if(st&&st.st==="injoignable"){reply((P.n)+" ne répond pas au téléphone. Son secrétariat prend le message."+"");return}
+    reply("J'appelle "+P.n+", "+P.lab+"."+(st&&st.st==="domicile"?" "+(F?"Elle":"Il")+" est chez "+(F?"elle":"lui")+" à cette heure-ci ; "+(F?"elle":"il")+" décroche quand même.":st&&st.st==="etranger"?" "+(F?"Elle":"Il")+" est à "+st.ville+", l'appel passe par l'international.":""));
+    closeP();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:(st&&(st.ville||st.base))||"Yaoundé",lieu:"au téléphone",sujet:"appel du "+(S.mode==="pres"?"président de la République":"cabinet"),tel:true,bonjour:(st&&st.st==="domicile"?"Allô… Oui, ":"Allô ? Oui, ")+(S.mode==="pres"?"Excellence, Monsieur le Président":"bonjour")+", je vous écoute."}),500);QA._last=P;return}
+  if(window.NOTE&&NOTE.matches(raw)){NOTE.handle(S,raw,reply);return}
   if(window.GENRE&&GENRE.handle(S,raw,reply))return;
   if(window.QA&&QA.isQuestion(raw)&&QA.handle(S,raw,reply))return;
   // directive politique claire (« je veux que… », « j'ordonne… »)
@@ -5796,7 +5816,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
   // vidéo
   if(/video|montre moi les images|filme/.test(t)&&window.VID){VID.play({text:raw});return reply("Voici les images.")}
   // marcher
-  if(/marcher|me promener|dans la rue/.test(t)&&window.VID){VID.walk();return reply("Vous descendez dans la rue.")}
+  if(/(je veux|allons|on va|laisse moi|fais moi|descend|descends|descendre)?.*\b(marcher|me promener|promenade|descendre dans la rue|dans la rue a pied)\b/.test(t)&&!/\?|^(suis je|est ce que|ou |si je)|je suis (au|dans)/.test(raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))&&window.VID){VID.walk();return reply("Vous descendez dans la rue.")}
   // onglets
   const TABS=[["carte","carte"],["budget|gouvernement","gouv"],["justice|prison","justice"],["courrier|messages|mails","bureau"],["journal","journal"],["marche|appels d offres","marche"],["medias|presse","media"],["services publics|hopitaux","services"],["annuaire|talents","annuaire"],["carriere","pro"],["economie","eco"],["defense","defense"],["projets","projets"],["parti","parti"]];
   if(/^(ouvre|montre|affiche|va sur|va dans|je veux voir)\b/.test(t)&&!/video/.test(t)){for(const [re,tab] of TABS)if(new RegExp(re).test(t)&&document.querySelector('.tab[data-t="'+tab+'"]')){G.setTab(tab);return reply("J'ouvre l'onglet "+tab+".")}}
@@ -5840,12 +5860,12 @@ let rec=null,listening=false;const SR=window.SpeechRecognition||window.webkitSpe
 function log(t){const l=$("vxLog");if(!l)return;const d=document.createElement("div");d.textContent=t;d.className=t.startsWith("Vous")?"me":"it";l.appendChild(d);l.scrollTop=l.scrollHeight}
 VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.driving));let el=$("vxPanel");if(el){el.remove();if(!o.driving)return}
   el=document.createElement("div");el.id="vxPanel";el.className="vxpanel";
-  el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="btn small ghost" id="vxX">Fermer</button></div><div class="vxlog" id="vxLog"></div>'+
-   '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Parler</button><input type="text" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"><button class="btn" id="vxGo">OK</button></div>'+
+  el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="sheet-x" id="vxX" aria-label="Fermer" title="Fermer" style="margin:0;position:static">✕</button></div><div class="vxlog" id="vxLog"></div>'+
+   '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Parler</button><textarea data-grow rows="1" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"></textarea><button class="btn" id="vxGo">OK</button></div>'+
    '<span class="small muted" id="vxHint">'+(SR?"Appuyez sur Parler, puis dites votre consigne.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
   document.body.appendChild(el);$("vxX").onclick=()=>{stop();el.remove()};
   if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Appuyez sur Parler et donnez vos consignes à la voix.";setTimeout(()=>{if(SR)start()},300)}
-  const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter")send()};
+  const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";$("vxIn").style.height="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
   $("vxMic").onclick=()=>listening?stop():start();
 
 };
@@ -6006,11 +6026,11 @@ ACTU.mailBind=function(S,it,el){if(!it.actu)return;const a=items.find(x=>x.id===
     if(k==="terrain"){el.remove();done.push(k);const to=place(a);const p=window.VOY?VOY.goTo(S,to,null,true,()=>{good(2,"Visite de terrain après : "+a.titre);if(S.st)S.st.pop=clamp(S.st.pop+.6,0,100);if(S.opp)S.opp.noto=clamp(S.opp.noto+2,0,100);
         if(window.RENC)setTimeout(()=>RENC.open(S,{kind:who(a),reg:to.reg,ville:to.v,sujet:a.titre,contexte:a.resume}),700);G.render()},()=>{const i=done.indexOf("terrain");if(i>=0)done.splice(i,1)}):"voyage indisponible";
       if(p){G.toast("Déplacement impossible : "+p);done.pop()}return}
-    if(k==="ministre"){good(1.5,"Le ministre dépêché sur place : "+a.titre);if(am){S.missions=S.missions||[];S.missions.push({min:am.id,ville:a.ville||(a.reg?CM.REG[a.reg].chef:"l'intérieur du pays"),objet:a.titre,from:S.day+.5,until:S.day+3.5})}if(am&&am.g)am.g.loy=clamp(am.g.loy+1,0,100);msg=(am?(am.g&&am.g.n?am.g.n+", ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":/^\S+s\b/.test(am.m.n)?"des ":"de la ")+am.m.n:"Le ministre compétent"):"Le ministre compétent")+" se rend à "+(a.ville||"l'endroit concerné")+" dès demain."}
+    if(k==="ministre"){good(1.5,"Le ministre dépêché sur place : "+a.titre);if(am){S.missions=S.missions||[];S.missions.push({min:am.id,ville:a.ville||(a.reg?CM.REG[a.reg].chef:"l'intérieur du pays"),objet:a.titre,from:S.day+.5,until:S.day+3.5})}if(am&&am.g)am.g.loy=clamp(am.g.loy+1,0,100);msg=(am?(am.g&&am.g.n?am.g.n+", ministre "+window.SYS.deM(am.m.n)+am.m.n:"Le ministre compétent"):"Le ministre compétent")+" se rend à "+(a.ville||"l'endroit concerné")+" dès demain."}
     else if(k==="aide"){const md=S.mode==="pres"?1:S.mode==="min"?.1:.005;if(!pay(S,md))return G.toast("Fonds insuffisants.");good(3,"Aide d'urgence : "+a.titre);if(S.st)S.st.soc=clamp(S.st.soc+.5,0,100);if(S.minis)S.minis.perf=clamp(S.minis.perf+2,0,100);msg="L'aide d'urgence est débloquée et acheminée vers "+(a.ville||"les zones touchées")+"."}
     else if(k==="enquete"){good(1.5,"Enquête ordonnée : "+a.titre);if(S.st)S.st.int=clamp(S.st.int+.8,0,100);msg="Une enquête est ouverte. Le parquet vous rendra compte."}
     else if(k==="convoque"){if(!am)return G.toast("Aucun ministre identifié.");const at=Math.floor(S.day+1/3)+1+9/24-1/3;S.agenda=S.agenda||[];
-      S.agenda.push({id:"a"+Date.now(),type:"meet",at,who:{k:"min",id:am.id,lab:(am.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":/^\S+s\b/.test(am.m.n)?"des ":"de la ")+am.m.n),n:am.g?am.g.n:null,min:am.id},objet:a.titre,lab:"Audience : "+a.titre.slice(0,50)});msg="Audience fixée demain à 9 h."}
+      S.agenda.push({id:"a"+Date.now(),type:"meet",at,who:{k:"min",id:am.id,lab:(am.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+window.SYS.deM(am.m.n)+am.m.n),n:am.g?am.g.n:null,min:am.id},objet:a.titre,lab:"Audience : "+a.titre.slice(0,50)});msg="Audience fixée demain à 9 h."}
     else if(k==="communique"){good(1,"Message officiel : "+a.titre);if(S.st)S.st.pop=clamp(S.st.pop+.4,0,100);if(S.opp)S.opp.noto=clamp(S.opp.noto+1,0,100);msg="Votre message est repris par les médias."}
     else if(k==="rapport"){if(S.minis)S.minis.conf=clamp(S.minis.conf+2,0,100);msg="Rapport transmis à la Présidence."}
     else if(k==="saisir"){good(.8,"La mairie saisit les autorités : "+a.titre);msg="Le préfet et le gouverneur sont saisis."}
@@ -6145,8 +6165,8 @@ RENC.open=function(S,o){if(!S||S.phase!=="play")return;const k=K[o.kind]||K.habi
     const draw=()=>{el.querySelectorAll("[data-rm]").forEach(b=>{b.classList.toggle("primary",b.dataset.rm===mode);b.setAttribute("aria-pressed",b.dataset.rm===mode)});const box=$("rnIn");if(!box||ended)return;
       if(mode==="choix"){const T=qcm(P);box.innerHTML='<div class="choices">'+T.map(o=>'<button class="choice" data-rq="'+o.id+'"><span class="t">'+esc(o.q)+'</span></button>').join("")+'</div>';
         box.querySelectorAll("[data-rq]").forEach(b=>b.onclick=()=>{const o=T.find(x=>x.id===b.dataset.rq);log(o.q,true);apply(o,o.q)});hint("")}
-      else if(mode==="texte"){box.innerHTML='<div class="row" style="gap:6px"><input type="text" id="rnTxt" placeholder="Écrivez ce que vous lui dites…" style="flex:1;min-width:0"><button class="btn primary" id="rnGo">Dire</button></div>';
-        const go=()=>{const v=$("rnTxt").value;$("rnTxt").value="";saySome(v)};$("rnGo").onclick=go;$("rnTxt").onkeydown=e=>{if(e.key==="Enter")go()};setTimeout(()=>{const i=$("rnTxt");i&&i.focus()},50);hint(sample&&!refused?"":"Réponses du moteur intégré (les réponses rédigées par l'IA sont disponibles sur la version en ligne).")}
+      else if(mode==="texte"){box.innerHTML='<div class="row" style="gap:6px"><textarea data-grow rows="1" id="rnTxt" placeholder="Écrivez ce que vous lui dites…" style="flex:1;min-width:0"></textarea><button class="btn primary" id="rnGo">Dire</button></div>';
+        const go=()=>{const v=$("rnTxt").value;$("rnTxt").value="";$("rnTxt").style.height="";saySome(v)};$("rnGo").onclick=go;$("rnTxt").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();go()}};setTimeout(()=>{const i=$("rnTxt");i&&i.focus()},50);hint(sample&&!refused?"":"Réponses du moteur intégré (les réponses rédigées par l'IA sont disponibles sur la version en ligne).")}
       else{box.innerHTML='<button class="btn primary" id="rnMic" style="width:100%">🎙 Appuyez et parlez</button>';
         $("rnMic").onclick=()=>listen(t=>saySome(t),(st,x)=>{const b=$("rnMic");if(!b)return;if(st==="on"){b.textContent="⏹ J'écoute…";hint("")}else if(st==="tmp")hint(x);else{b.textContent="🎙 Appuyez et parlez";
           if(st==="off"||st==="blocked"){hint(st==="off"?"La reconnaissance vocale n'existe pas dans ce navigateur (utilisez Chrome). Passez en mode Texte ou Choix.":"Le micro est bloqué ici (l'application Claude ne donne pas le micro aux jeux). Ouvrez la version hors ligne dans Chrome, ou utilisez Texte / Choix.")}}});
@@ -6274,7 +6294,17 @@ QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return f
   // où est / que fait un responsable
   if(/\b(ou est|ou se trouve|ou se trouvent|que fait|il est ou|elle est ou|ou sont|ou est ce que se trouve|joignable)\b/.test(t)&&window.VOIX&&VOIX.findPerson&&window.CAB){const P=VOIX.findPerson(S,raw);if(P&&P.n&&!/^le /.test(P.n)){const w=CAB.where(S,P);if(w){const f=P.sexe==="f";const rdv=(S.agenda||[]).some(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===P.n);if(rdv){reply(w);QA._last=P;return true}reply(w+" Voulez-vous "+(f?"la":"le")+" convoquer ? Dites par exemple : « convoque-"+(f?"la":"le")+" demain à 9 h ».");QA._last=P;return true}}}
   // où suis-je
-  if(/(ou (je suis|suis je|je me trouve|me trouve je|sommes nous|est ce que je suis)|dans quelle ville|quelle ville|ma position|ou suis)/.test(t)){const h=window.VOY?VOY.here(S):null;if(h){reply("Vous êtes à "+h.v+(h.lieu?", "+h.lieu:"")+", région "+(/^[AEIOUÉ]/.test(CM.REG[h.reg].n)?"de l'":"du ")+CM.REG[h.reg].n+".");return true}}
+  if(/(ou (je suis|suis je|je me trouve|me trouve je|sommes nous|est ce que je suis)|dans quelle ville|quelle ville|ma position|ou suis|si je suis|suis je (au|dans|a)|je suis (au|dans) (le |la )?(palais|rue|bureau)|au palais ou dans la rue|dans la rue ou au palais)/.test(t)){const h=window.VOY?VOY.here(S):null;if(h){
+    const rue=(window.Ultra&&Ultra.inStreet&&Ultra.inStreet())||(window.Scene3D&&Scene3D.inStreet&&Scene3D.inStreet());const au=l=>/^palais/i.test(l)?"au "+l.charAt(0).toLowerCase()+l.slice(1):/^(hôpital|h[oô]pital|immeuble|stade|port|march[eé]|aéroport|a[eé]roport)/i.test(l)?(/^[aeiouhéô]/i.test(l)?"à l'":"au ")+l.charAt(0).toLowerCase()+l.slice(1):"à "+l;
+    const bureau=S.mode==="pres"&&h.v==="Yaoundé"&&!h.lieu?"au palais d'Etoudi":S.mode==="pres"&&h.lieu?au(h.lieu):S.mode==="min"&&h.v==="Yaoundé"&&!h.lieu?"à votre ministère":h.lieu||"en ville";
+    reply("Vous êtes "+(rue?"dans la rue, à pied, à "+h.v:(h.lieu&&S.mode!=="pres"?au(h.lieu)+", à "+h.v:bureau+(bureau.includes(h.v)?"":", à "+h.v)))+", région "+(/^[AEIOUÉ]/.test(CM.REG[h.reg].n)?"de l'":"du ")+CM.REG[h.reg].n+"."+(rue?" Pour revenir, touchez « Quitter la rue ».":""));return true}}
+  // prisons
+  if(/(prison|prisonnier|detenu|carcer|cacer|penitenti|kondengui|new bell|incarcer|surpopulation)/.test(t)&&S.prisons&&S.prisons.length){const P=S.prisons;const tot=P.reduce((a,x)=>a+x.prev+x.cond,0),cap=P.reduce((a,x)=>a+x.cap,0),prev=P.reduce((a,x)=>a+x.prev,0);
+    const pl=place(t);const L=pl?P.filter(x=>x.reg===pl.reg):P;const top=L.slice().sort((a,b)=>(b.prev+b.cond)/b.cap-(a.prev+a.cond)/a.cap).slice(0,3);
+    reply((pl?"Région "+CM.REG[pl.reg].n+" : les prisons ":"Les prisons ")+(pl?"de la région ":"du pays ")+"comptent "+L.reduce((a,x)=>a+x.prev+x.cond,0).toLocaleString("fr-FR")+" détenus pour "+L.reduce((a,x)=>a+x.cap,0).toLocaleString("fr-FR")+" places"+(pl?"":" (taux d'occupation "+Math.round(tot*100/cap)+" %). "+Math.round(prev*100/tot)+" % sont des prévenus en attente de jugement")+". Les plus surpeuplées : "+top.map(x=>x.n+" ("+Math.round((x.prev+x.cond)*100/x.cap)+" %)").join(", ")+". Le détail est dans l'onglet Justice.");return true}
+  // chiffres du pays
+  if(/(combien d habitants|population du pays|nombre d habitants)/.test(t)&&S.nums){reply("Le Cameroun compte environ "+(S.nums.popu/1e6).toFixed(1).replace(".",",")+" millions d'habitants (estimation du jeu).");return true}
+  if(/inflation|hausse des prix/.test(t)&&S.nums&&S.nums.inflation!=null){reply("L'inflation est de "+(+S.nums.inflation).toFixed(1).replace(".",",")+" % sur un an.");return true}
   // agenda
   if(/(agenda|rendez vous|rdv|audiences? prevues?|mon programme|qu est ce que j ai (demain|aujourd hui))/.test(t)){const L=(S.agenda||[]).filter(a=>!a.done).sort((a,b)=>a.at-b.at);reply(L.length?"Votre agenda : "+L.slice(0,6).map(a=>a.lab+", le "+G.dayLabel(a.at)).join(" ; ")+".":"Votre agenda est vide.");return true}
   // directives
@@ -6330,7 +6360,7 @@ CAB.traitLab=n=>TRAITS[CAB.trait(n)][0];CAB.traitBonus=n=>TRAITS[CAB.trait(n)][1
 CAB.TRAITS=TRAITS;
 
 /* ministère responsable d'une directive */
-const RESP={audit:"MINFI",prix:"MINCOMMERCE",arrieres:"MINFI",emploi:"MINEFOP",construire:"MINTP",securite:"MINDEF",dialogue:"MINATD",liberer:"MINJUSTICE",gratuite:"MINSANTE",
+const RESP={justice:"MINJUSTICE",audit:"MINFI",prix:"MINCOMMERCE",arrieres:"MINFI",emploi:"MINEFOP",construire:"MINTP",securite:"MINDEF",dialogue:"MINATD",liberer:"MINJUSTICE",gratuite:"MINSANTE",
   electricite:"MINEE",eau:"MINEE",sante:"MINSANTE",education:"MINESEC",agriculture:"MINADER",transparence:"MINCOM",interdire:"MINATD"};
 CAB.resp=cat=>RESP[cat]||null;
 CAB.minName=(S,id)=>{const m=E.MINISTERES.find(x=>x.id===id);return m?m.n:id};
@@ -6428,7 +6458,7 @@ function run(S,p){const x=p.x;S.cab.stats.ok=(S.cab.stats.ok||0)+1;
   if(x.type==="dir"&&window.DIR){DIR.handle(S,x.text,m=>{say(m);G.toast(m.slice(0,110))});return null}
   if(x.type==="trip"&&window.VOY){VOY.ask(S,x.to,{});return null}
   if(x.type==="hop"&&window.VIE){VIE.openOrg(S,{k:"hop",id:x.id});const b=document.querySelector('.sheet [data-m="med"]');if(b){b.click();return null}return"Vous n'avez pas autorité sur cet hôpital."}
-  if(x.type==="relance"){const d=(S.directives||[]).find(y=>y.id===x.id);if(!d)return"Directive introuvable.";d.done=false;d.due=S.day+30;d.res="";if(d.resp&&S.gov&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now(),type:"meet",at:Math.floor(S.day+1/3)+1+9/24-1/3,who:{k:"min",id:d.resp,lab:"le ministre "+CAB.minName(S,d.resp),n:g.n,min:d.resp},objet:"relance : "+d.titre,lab:"Audience : relance "+d.titre.slice(0,40)})}G.toast("Directive relancée pour 30 jours.");return null}
+  if(x.type==="relance"){const d=(S.directives||[]).find(y=>y.id===x.id);if(!d)return"Directive introuvable.";d.done=false;d.due=S.day+30;d.res="";if(d.resp&&S.gov&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now(),type:"meet",at:Math.floor(S.day+1/3)+1+9/24-1/3,who:{k:"min",id:d.resp,lab:"le ministre "+window.SYS.deM(CAB.minName(S,d.resp))+CAB.minName(S,d.resp),n:g.n,min:d.resp},objet:"relance : "+d.titre,lab:"Audience : relance "+d.titre.slice(0,40)})}G.toast("Directive relancée pour 30 jours.");return null}
   if(x.type==="genre"&&window.GENRE){GENRE.apply(S,"gouv",30,m=>{say(m);G.toast(m.slice(0,110))});return null}
   if(x.type==="eng"&&window.RENC){const b=document.querySelector('[data-eng="'+x.id+'"]');if(b){b.click();return null}return"Engagement introuvable."}
   return"Action non disponible."}
@@ -6525,7 +6555,8 @@ function region(t){const w=x=>new RegExp("\\b"+x+"\\b");for(const r of CM.REGION
 const CAT=[
  {id:"patrimoine",re:/patrimoine|declar\w* (de |des )?(leurs |ses )?biens|biens et avoirs|avoirs|declaration de fortune/,titre:"Déclaration des biens et avoirs",
   base:"article 66 de la Constitution et loi n° 003/2006 du 25 avril 2006 relative à la déclaration des biens et avoirs",fx:{int:3,pop:2},loy:-3,delai:30,cout:0},
- {id:"audit",re:/audit|corruption|detourn|conac|controle superieur|consupe|enquete sur|inspection generale|gestion des fonds/,titre:"Opération d'audit et de lutte contre la corruption",fx:{int:2,eco:.5,pop:1},loy:-2,delai:45,cout:2},
+ {id:"justice",re:/parquet|procureur|poursuiv|poursuite|auditionn|audition|entendre (les|le|la)|enquete judiciaire|ouvrir une enquete|interpell|arrest|tribunal|juge d instruction|traduire en justice|mettre aux arrets|garde a vue|police judiciaire/,titre:"Action judiciaire",fx:{int:2,soc:1,pop:1},delai:30,cout:.5},
+ {id:"audit",re:/\baudit|corruption|detourn|conac|controle superieur|consupe|inspection generale|gestion des fonds/,titre:"Opération d'audit et de lutte contre la corruption",fx:{int:2,eco:.5,pop:1},loy:-2,delai:45,cout:2},
  {id:"prix",re:/baisse|vie chere|prix des?|carburant|subvention|pouvoir d achat|panier de la menagere/,titre:"Mesures contre la vie chère",fx:{pop:3,soc:1,eco:-1},delai:20,cout:60},
  {id:"arrieres",re:/arriere|primes?|salaires?|rappels?|dette interieure|dette academique|payer (les |leurs )?/,titre:"Apurement des arriérés et des primes",fx:{soc:3,pop:1},delai:30,cout:40},
  {id:"emploi",re:/recrut|emploi des jeunes|chomage|jeunes diplomes|insertion/,titre:"Programme spécial d'emploi des jeunes",fx:{pop:2,soc:1},delai:90,cout:50},
@@ -6545,6 +6576,14 @@ const CAT=[
 const GENERIC={id:"generique",titre:"Directive",fx:{pop:.5},delai:30,cout:5};
 const IMPER=/je veux|j exige|j ordonne|ordonne|exige|il faut|faites|demande[zr]? (a|aux|que)|je demande|qu on|que (tous|toutes|les|le|la)|instruis|instruction|decret|decide|je decide|mettez|lancez|prenez/;
 
+const cut=(s,n)=>s.length<=n?s:s.slice(0,Math.max(20,s.lastIndexOf(" ",n)))+"…";
+const stripTxt=raw=>{const x=String(raw).trim().replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites|je veux|je souhaite|je demande)\s+/i,"");return x.charAt(0).toUpperCase()+x.slice(1)};
+const NBW={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,dix:10,quinze:15,vingt:20,trente:30};
+/* délai donné dans la consigne : « dans 48 h », « sous 72 heures », « d'ici une semaine », « dans 15 jours », « d'ici 3 mois », « immédiatement » */
+function delai(S,t){const num=x=>/^\d+$/.test(x)?+x:NBW[x]||null;let m=t.match(/(?:dans|sous|d ici|en|avant|au plus tard dans|delai de)\s+(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|dix|quinze|vingt|trente)\s*(h|heures?|jours?|j|semaines?|mois)\b/);
+  if(m){const n=num(m[1]);if(n){const u=m[2];return/^h/.test(u)?Math.max(n/24,1/24):/^j/.test(u)?n:/^s/.test(u)?n*7:n*30}}
+  if(/immediatement|sans delai|tout de suite|dans l heure|en urgence|d urgence/.test(t))return .5;if(/fin de la semaine/.test(t))return 7-((new Date(2026,9,1).getDay()+Math.floor(S.day))%7);
+  if(/fin du mois/.test(t))return Math.max(1,(S.m+1)*30-S.day);return null}
 DIR.matches=t=>{t=norm(t);return CAT.some(c=>c.re.test(t))||IMPER.test(t)};
 
 /* ---------- compétence ---------- */
@@ -6556,17 +6595,19 @@ function scope(S,c,t){if(S.mode==="pres")return{ok:true,qui:"Présidence de la R
   return{ok:false,msg:"Cette décision relève des autorités. Votre demande est transmise sous forme de pétition.",pet:true}}
 
 /* ---------- lancement ---------- */
-DIR.handle=async function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
+DIR.handle=async function(S,raw,reply,opt){opt=opt||{};if(!opt.force&&window.NOTE&&S&&NOTE.matches(raw))return NOTE.handle(S,raw,reply,opt);if(!S||S.phase!=="play")return false;const t=norm(raw);if(!DIR.matches(t))return false;reply=reply||(m=>{say(m)});
   let c=CAT.find(x=>x.re.test(t))||GENERIC;const cb=cible(t);const sc=scope(S,{...c,k:cb.k},t);
   if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+raw.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
   let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:raw,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
   if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
-  if(c===GENERIC){const x=raw.trim().replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites)\s+/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}
+  // le titre, ce sont VOS mots ; le domaine est indiqué à part ; le délai que vous donnez est respecté
+  d.domaine=c===GENERIC?"Directive":d.titre;d.titre=cut(stripTxt(raw),140);const dl=delai(S,t);if(dl!=null){d.due=S.day+dl;d.delaiDonne=true}
+  if(opt.ctx){d.dossier=String(opt.ctx).slice(0,140);if(window.ACTU){const a=ACTU.all().find(x=>x.titre===opt.ctx||x.titre.startsWith(opt.ctx.slice(0,70)));if(a){S.actuFait=S.actuFait||{};(S.actuFait[a.id]=S.actuFait[a.id]||[]).push("directive");d.reg=d.reg||a.reg}}}
   if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
     "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
     "Qualifie-la de façon réaliste. Réponds uniquement en JSON : {\"titre\": \"titre officiel court\", \"base_legale\": \"texte camerounais applicable ou chaîne vide\", \"delai_jours\": 7-365, \"cout_milliards_fcfa\": 0-500, "+
     "\"effets\": {\"pop\":-5..5,\"eco\":-5..5,\"soc\":-5..5,\"sec\":-5..5,\"infra\":-5..5,\"int\":-5..5}, \"reaction\": \"une phrase : réaction de l'opinion et de la presse\"}",{modelTier:"quick",cache:false});
-    if(j&&j.titre){d.titre=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
+    if(j&&j.titre){d.domaine=String(j.titre).slice(0,90);d.base=String(j.base_legale||"");if(!d.delaiDonne)d.due=S.day+clamp(+j.delai_jours||30,7,365);d.cout=clamp(+j.cout_milliards_fcfa||0,0,500);d.reaction=String(j.reaction||"");
       d.fx={};for(const k of ["pop","eco","soc","sec","infra","int"])d.fx[k]=clamp(+((j.effets||{})[k])||0,-5,5)}}catch(e){if(e&&e.code==="not_granted")refused=true}}
   if(c.base)d.base=c.base;
   // coût (en milliards : État, ministère ou commune)
@@ -6577,8 +6618,8 @@ DIR.handle=async function(S,raw,reply){if(!S||S.phase!=="play")return false;cons
   if(c.id==="patrimoine"&&S.gov&&cb.k==="ministres"&&S.mode==="pres"){d.liste=Object.keys(S.gov.min);for(const id of d.liste){const g=S.gov.min[id];g.loy=clamp(g.loy+d.loy,0,100)}}
   S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);
   const when=G.dayLabel(d.due);
-  const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : "+d.titre.charAt(0).toLowerCase()+d.titre.slice(1)+(c.id==="patrimoine"?", pour "+cb.lab:"")+"."+(d.base?" Base légale : "+d.base+".":"")+
-    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Premier rapport attendu le "+when+"."+(d.cout?" Coût estimé : "+d.cout+" milliards de FCFA.":"");
+  const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : « "+d.titre+" »"+(c.id==="patrimoine"?", pour "+cb.lab:"")+". Domaine : "+d.domaine.toLowerCase()+"."+(d.dossier?" Dossier : "+d.dossier+".":"")+(d.base?" Base légale : "+d.base+".":"")+
+    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+d.cout+" milliards de FCFA.":"");
   window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+raw+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
   reply(txt);G.render();return true};
 
@@ -6596,7 +6637,7 @@ function report(S,d){const pm=S.gov&&S.gov.pm?S.gov.pm.comp:60;
       "\nLes déclarations sont transmises à la Commission ; en cas de fausse déclaration ou d'enrichissement illicite, le dossier peut être porté devant le Tribunal criminel spécial.",k:ko.length?"alerte":"rapport",dir:d.id});
     if(ko.length)say("Rapport sur la déclaration des biens : "+ko.length+" membres du gouvernement ne se sont pas exécutés.");return}
   const rg=d.resp&&S.gov&&S.gov.min[d.resp];const tb=rg&&window.CAB?CAB.traitBonus(rg.n):0;const q=clamp(.35+pm/200+(d.cout>100?-.1:0)+tb+Math.random()*.35,0,1);const res=q>.7?"réussie":q>.45?"partielle":"en échec";d.res="Mise en œuvre "+res;apply(S,d,q*.67);
-  window.SYS.inbox(S,{from:d.qui,t:"Compte rendu : "+d.titre,b:"Mise en œuvre "+res+" de votre instruction : « "+d.texte+" ».\n"+(rg&&window.CAB?"Responsable : "+rg.n+", ministre "+CAB.minName(S,d.resp)+" ("+CAB.traitLab(rg.n)+" : "+CAB.traitDesc(rg.n)+").\n":"")+(q>.7?"Les services ont exécuté la mesure dans les délais ; les premiers effets sont visibles sur le terrain.":q>.45?"Une partie seulement a été réalisée : lenteurs administratives et retards de décaissement.":"Blocages dans l'administration : la mesure n'a presque pas été appliquée. Il faut relancer ou sanctionner les responsables."),
+  window.SYS.inbox(S,{from:d.qui,t:"Compte rendu : "+d.titre,b:"Mise en œuvre "+res+" de votre instruction : « "+d.texte+" ».\n"+(rg&&window.CAB?"Responsable : "+rg.n+", "+window.SYS.accord("le ministre",window.SYS.sexe(rg.n)).replace(/^l[ea] /,"")+" "+window.SYS.deM(CAB.minName(S,d.resp))+CAB.minName(S,d.resp)+" ("+CAB.traitLab(rg.n)+" : "+CAB.traitDesc(rg.n)+").\n":"")+(q>.7?"Les services ont exécuté la mesure dans les délais ; les premiers effets sont visibles sur le terrain.":q>.45?"Une partie seulement a été réalisée : lenteurs administratives et retards de décaissement.":"Blocages dans l'administration : la mesure n'a presque pas été appliquée. Il faut relancer ou sanctionner les responsables."),
     k:q>.45?"rapport":"alerte",reg:d.reg,dir:d.id})}
 
 /* ---------- suites possibles depuis le courrier ---------- */
@@ -6624,7 +6665,7 @@ DIR.edit=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.d
     el.querySelector("#deNo").onclick=()=>{el.remove();DIR.sheet(S)};
     el.querySelector("#deOk").onclick=()=>{const tx=el.querySelector("#deTx").value.trim();if(!tx)return G.toast("L'instruction ne peut pas être vide.");const j=Math.max(1,Math.min(720,+el.querySelector("#deJ").value||rest));const rg=el.querySelector("#deReg").value||null;
       const ch=[];if(tx!==d.texte){const t=norm(tx);const c=CAT.find(x=>x.re.test(t))||GENERIC;const oldCost=d.cout||0;d.texte=tx;d.cat=c.id;d.fx={...c.fx};d.base=c.base||"";
-        if(c===GENERIC){const x=tx.replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites)\s+/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}else d.titre=c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");
+        d.titre=cut(stripTxt(tx),140);d.domaine=c===GENERIC?"Directive":c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");if(window.CAB&&S.mode==="pres")d.resp=CAB.resp(c.id);
         d.cout=c.cout;const extra=Math.max(0,d.cout-oldCost)*.25;if(extra){if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000)}ch.push("instruction")}
       if(rg!==d.reg){d.reg=rg;ch.push("région")}
       if(j!==rest){const faster=j<rest;d.due=S.day+j;if(faster){const extra=(d.cout||2)*.25*(rest/j-1)*.3;if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000);d.cout=Math.round((d.cout||0)*(1+.3*(rest/j-1)))}ch.push("délai")}
@@ -6640,8 +6681,8 @@ DIR.bindCard=function(S,root){(root||document).querySelectorAll("[data-dirall]")
 DIR.sheet=function(S){const all=(S.directives||[]).slice().reverse();const on=all.filter(d=>!d.done),off=all.filter(d=>d.done);
   const item=d=>{const tot=Math.max(1,d.due-d.start),pct=Math.max(0,Math.min(100,Math.round((S.day-d.start)*100/tot)));
     return '<div class="card" style="gap:6px"><b>'+esc(tDir(d))+'</b>'+(d.texte&&tDir(d)!==d.texte?'<span class="small">Votre instruction : « '+esc(d.texte)+' »</span>':"")+
-     '<div class="kv small"><span>Donnée par</span><b>'+esc(d.qui||"")+'</b><span>Concerne</span><b>'+esc(d.cat==="patrimoine"?d.cible.lab:d.reg?CM.REG[d.reg].n:"Tout le pays")+'</b>'+
-     (d.base?'<span>Base légale</span><b>'+esc(d.base)+'</b>':"")+'<span>Lancée le</span><b>'+esc(G.dayLabel(d.start))+'</b><span>Échéance</span><b>'+esc(G.dayLabel(d.due))+(d.done?"":" ("+Math.max(0,Math.round(d.due-S.day))+" j)")+'</b>'+
+     '<div class="kv small">'+(d.domaine?'<span>Domaine</span><b>'+esc(d.domaine)+'</b>':"")+(d.dossier?'<span>Dossier</span><b>'+esc(d.dossier)+'</b>':"")+'<span>Donnée par</span><b>'+esc(d.qui||"")+'</b><span>Concerne</span><b>'+esc(d.cat==="patrimoine"?d.cible.lab:d.reg?CM.REG[d.reg].n:"Tout le pays")+'</b>'+
+     (d.base?'<span>Base légale</span><b>'+esc(d.base)+'</b>':"")+'<span>Lancée le</span><b>'+esc(G.dayLabel(d.start))+'</b><span>Échéance</span><b>'+esc(G.dayLabel(d.due))+(d.done?"":d.due-S.day<2?" ("+Math.max(1,Math.round((d.due-S.day)*24))+" h)":" ("+Math.max(0,Math.round(d.due-S.day))+" j)")+'</b>'+
      (d.cout?'<span>Coût estimé</span><b>'+d.cout+' Md FCFA</b>':"")+'<span>Statut</span><b>'+(d.done?esc(d.res||"Terminée : compte rendu au courrier"):"En cours d'exécution")+'</b></div>'+
      (d.done?"":'<div class="bar"><i style="width:'+pct+'%"></i></div><div class="row"><button class="btn small primary" data-dedit="'+d.id+'">✏️ Modifier</button><button class="btn small" data-dacc="'+d.id+'">Accélérer (+50 % du coût, délai réduit d\'un tiers)</button><button class="btn small ghost" data-dann="'+d.id+'">Annuler la directive</button></div>')+'</div>'};
   G.sheet('<span class="eyebrow">Suivi</span><h3 class="h2">Vos directives</h3>'+(on.length?'<span class="eyebrow">En cours ('+on.length+')</span>'+on.map(item).join(""):'<p class="small muted">Aucune directive en cours.</p>')+
@@ -6655,6 +6696,87 @@ DIR.sheet=function(S){const all=(S.directives||[]).slice().reverse();const on=al
 
 </script>
 <script>
+/* Chemin d'Etoudi — notes : « donnez-moi la structure du prix de l'essence… je veux des propositions pour baisser de 40 % »
+   n'est pas un ordre à exécuter mais une DEMANDE DE NOTE. Le ministre compétent (ou votre cabinet) répond par une note
+   (analyse chiffrée + propositions) ; chaque proposition peut ensuite être adoptée en directive, modifiée ou écartée.
+   En ligne, Claude rédige la note à partir de l'état de la partie ; ailleurs, des notes types et les chiffres du jeu. */
+(function(){
+"use strict";
+const CM=window.CM,E=window.ETAT,G=window.GAME,A=window.Audio2;
+const esc=G.esc,clamp=G.clamp;
+const NOTE={};window.NOTE=NOTE;
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'\-]/g," ").replace(/\s+/g," ").trim();
+const say=t=>{try{A.speak(t,{voix:"f"})}catch(e){}};
+let sample=null;(async()=>{try{if(window.claude&&claude.use)sample=await claude.use("sample")}catch(e){}})();let refused=false;
+const F=n=>Math.round(n).toLocaleString("fr-FR");
+
+const RE=/^(donne[rz]? moi|donnez moi|donner moi|fais moi|faites moi|je veux (un complement|une note|un rapport|des propositions|un point|une etude|connaitre|savoir|comprendre|la structure)|propose[rz]? moi|proposez|explique[rz]? moi|expliquez|j ai besoin (d une note|d un rapport|de propositions)|preparez|prepare moi|redigez|faites une etude|je voudrais (une note|des propositions|connaitre|savoir))|\b(structur\w* (du|des|de la) (cout|prix)|des propositions pour|note sur|rapport sur|etude sur)\b/;
+NOTE.matches=t=>RE.test(norm(t));
+
+const TOPICS=[
+ {id:"carburant",re:/essence|gasoil|gazoil|super\b|petrole lampant|carburant|pompe|hydrocarbure/,lab:"le prix des carburants",min:"MINCOMMERCE"},
+ {id:"electricite",re:/electricit|delestage|eneo|courant|kwh/,lab:"l'électricité",min:"MINEE"},
+ {id:"vie",re:/vie chere|prix des denrees|panier|riz|farine|huile|ciment|inflation/,lab:"la vie chère",min:"MINCOMMERCE"},
+ {id:"budget",re:/budget|dette|deficit|recettes|fiscal|impot|taxe/,lab:"les finances publiques",min:"MINFI"},
+ {id:"emploi",re:/emploi|chomage|jeunes/,lab:"l'emploi des jeunes",min:"MINEFOP"},
+ {id:"securite",re:/securit|boko|separatist|anglophone|attaque/,lab:"la sécurité",min:"MINDEF"},
+ {id:"sante",re:/sante|hopita|medicament|epidemie/,lab:"la santé",min:"MINSANTE"},
+ {id:"education",re:/ecole|universit|enseign|education|greve/,lab:"l'éducation",min:"MINESUP"}];
+function topicOf(t){return TOPICS.find(x=>x.re.test(t))||{id:"general",lab:"la question posée",min:null}}
+function auteur(S,tp){if(S.mode==="pres"&&tp.min&&S.gov&&S.gov.min[tp.min]){const g=S.gov.min[tp.min];const m=E.MINISTERES.find(x=>x.id===tp.min);return{n:g.n,lab:window.SYS.accord("le ministre",window.SYS.sexe(g.n))+" "+(m?window.SYS.deM(m.n)+m.n:""),min:tp.min}}
+  const c=window.CAB?CAB.conseiller(S):{n:"Votre cabinet",titre:"cabinet"};return{n:c.n,lab:c.titre}}
+
+/* ---------- notes types (chiffres indicatifs du jeu, à affiner) ---------- */
+function carburant(S,pct){const P={super:840,gasoil:828,petrole:350};const cible=k=>Math.round(P[k]*(1-pct/100));
+  const v={achat:480,taxes:190,logistique:70,marges:65,divers:35};
+  return{titre:"Structure du prix des carburants à la pompe"+(pct?" et pistes pour une baisse de "+pct+" %":""),
+   analyse:"Prix homologués en vigueur (base 2024) : super "+P.super+" FCFA/l, gasoil "+P.gasoil+" FCFA/l, pétrole lampant "+P.petrole+" FCFA/l.\n"+
+    "Ventilation indicative d'un litre de super ("+P.super+" FCFA) : produit importé et fret ≈ "+v.achat+" FCFA (57 %) ; taxes (TSPP, TVA, droits) ≈ "+v.taxes+" FCFA (23 %) ; stockage et transport (SCDP, transporteurs) ≈ "+v.logistique+" FCFA (8 %) ; marges des distributeurs ≈ "+v.marges+" FCFA (8 %) ; frais divers ≈ "+v.divers+" FCFA (4 %).\n"+
+    "Depuis l'arrêt de la raffinerie SONARA (2019), tout le carburant est importé ; l'écart entre le coût réel et le prix homologué est compensé par l'État via la CSPH (subvention)."+
+    (pct?"\nObjectif demandé (−"+pct+" %) : super ≈ "+cible("super")+" FCFA, gasoil ≈ "+cible("gasoil")+" FCFA, pétrole lampant ≈ "+cible("petrole")+" FCFA. Une baisse de cette ampleur suppose de combiner plusieurs mesures ; son coût pour le Trésor serait élevé.":""),
+   props:[{t:"Suspendre la TSPP et réduire la TVA sur les carburants pendant 12 mois",effet:"≈ −150 FCFA/l",cout:250},
+    {t:"Relancer la raffinerie SONARA de Limbé pour réduire le coût d'importation",effet:"≈ −60 à −90 FCFA/l à moyen terme",cout:300},
+    {t:"Mettre en place une subvention ciblée pour les transporteurs, les moto-taximen et le pétrole lampant des ménages ruraux",effet:"baisse ciblée jusqu'à −40 % pour les bénéficiaires",cout:120},
+    {t:"Lancer une opération contre la fraude et la contrebande de carburant et plafonner les marges logistiques",effet:"≈ −20 FCFA/l",cout:5}]}}
+function general(S,tp,raw,pct){const st=S.st||{};const k={carburant:"eco",electricite:"infra",vie:"soc",budget:"eco",emploi:"soc",securite:"sec",sante:"soc",education:"soc"}[tp.id];
+  const P={electricite:[{t:"Lancer un plan d'urgence contre les délestages avec des centrales temporaires",effet:"moins de coupures dans 3 mois",cout:45},{t:"Accélérer les barrages en cours et la réhabilitation du réseau de transport d'électricité",effet:"effet à 2 ans",cout:150},{t:"Imposer à ENEO un contrat de performance avec pénalités",effet:"meilleur service",cout:2}],
+   vie:[{t:"Réduire les droits de douane sur le riz, la farine et l'huile pendant 6 mois",effet:"≈ −10 % sur ces produits",cout:40},{t:"Renforcer les contrôles des prix sur les marchés",effet:"lutte contre la spéculation",cout:3},{t:"Créer des magasins témoins dans chaque région",effet:"prix de référence",cout:15}],
+   budget:[{t:"Lancer un audit des dépenses fiscales et des exonérations",effet:"+100 Md de recettes potentielles",cout:2},{t:"Geler les achats de véhicules administratifs pendant un an",effet:"≈ 30 Md d'économies",cout:0},{t:"Élargir l'assiette fiscale au secteur informel par un impôt libératoire simplifié",effet:"recettes nouvelles",cout:5}],
+   emploi:[{t:"Lancer un programme de 50 000 emplois jeunes dans les travaux à haute intensité de main-d'œuvre",effet:"emplois rapides",cout:60},{t:"Créer un fonds de garantie pour les jeunes entrepreneurs",effet:"création d'entreprises",cout:25},{t:"Relancer l'apprentissage en entreprise avec une prime à l'embauche",effet:"insertion",cout:20}]}[tp.id]||
+   [{t:"Mettre en place un comité interministériel sur "+tp.lab+" avec rapport sous 30 jours",effet:"diagnostic partagé",cout:1},{t:"Organiser une concertation avec les acteurs concernés",effet:"apaisement",cout:2},{t:"Dégager une enveloppe d'urgence ciblée",effet:"réponse rapide",cout:20}];
+  return{titre:"Note sur "+tp.lab,analyse:"Votre demande : « "+raw+" ».\nÉtat des lieux (indicateurs du jeu) : "+(k?"indicateur du secteur à "+Math.round(st[k]||0)+" sur 100 ; ":"")+"popularité "+Math.round(st.pop||0)+", cohésion "+Math.round(st.soc||0)+"."+(pct?"\nL'objectif de "+pct+" % demandé est ambitieux : il suppose de combiner plusieurs des mesures ci-dessous.":""),props:P}}
+
+/* ---------- demande ---------- */
+NOTE.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);reply=reply||say;const tp=topicOf(t);const pct=(t.match(/(\d{1,2}) ?%/)||[])[1];
+  const au=auteur(S,tp);let dl=1;const m=t.match(/(?:dans|sous|d ici)\s+(\d+)\s*(h|heures?|jours?)/);if(m)dl=/^h/.test(m[2])?Math.max(+m[1]/24,.1):+m[1];
+  S.notes=S.notes||[];const n={id:"n"+Date.now().toString(36),texte:raw,topic:tp.id,pct:pct?+pct:0,due:S.day+dl,au,done:false,ctx:opt.ctx||null};S.notes.push(n);
+  window.SYS.inbox(S,{from:"Cabinet",t:"Demande de note : "+tp.lab,b:"Votre demande : « "+raw+" »\nTransmise à "+au.n+", "+au.lab+". Note attendue le "+G.dayLabel(n.due)+".",k:"info",read:true});
+  reply("Demande transmise à "+au.n+", "+au.lab+". Vous recevrez une note"+(tp.id==="carburant"?" chiffrée":"")+" avec des propositions le "+G.dayLabel(n.due)+(dl<1?" à "+Math.round(((n.due%1)*24+8)%24)+" h":"")+".");G.render();return true};
+
+NOTE.tick=function(S){if(!S||!S.notes)return;for(const n of S.notes)if(!n.done&&!n.busy&&S.day>=n.due)deliver(S,n)};
+function deliver(S,n){const tp=TOPICS.find(x=>x.id===n.topic)||{id:"general",lab:"la question posée"};
+  const fin=N=>{n.done=true;n.busy=false;n.titre=N.titre;n.props=N.props.map(p=>Object.assign({st:"attente"},p));
+    window.SYS.inbox(S,{from:n.au.n+", "+n.au.lab,t:"Note : "+N.titre,b:N.analyse+"\n\nPropositions :\n"+n.props.map((p,i)=>(i+1)+". "+p.t+" — effet attendu : "+p.effet+(p.cout?" ; coût estimé : "+p.cout+" milliards de FCFA":"")).join("\n")+"\n\nChaque proposition peut être adoptée en directive, modifiée ou écartée.",k:"rapport",note:n.id});
+    say("Vous avez reçu la note de "+n.au.n+" sur "+tp.lab+".");G.render()};
+  if(sample&&!refused){n.busy=true;const st=S.st||{};
+    sample.json("Tu es "+n.au.n+", "+n.au.lab+", dans « Chemin d'Etoudi », simulation réaliste de la politique au Cameroun (2026). Le président (le joueur) te demande : « "+n.texte+" ».\nDonnées de la partie : jauges "+Object.entries(st).map(([k,v])=>k+" "+Math.round(v)).join(", ")+", dette "+Math.round((S.nums||{}).dette||0)+" milliards de FCFA.\n"+
+      "Rédige une note administrative réaliste et chiffrée (ordres de grandeur plausibles au Cameroun, indiqués comme estimations), sans inventer de propos de personnes réelles. Réponds uniquement en JSON : {\"titre\": \"...\", \"analyse\": \"3 à 6 phrases, retours à la ligne permis\", \"props\": [{\"t\": \"mesure formulée comme une instruction\", \"effet\": \"effet attendu chiffré\", \"cout\": nombre de milliards de FCFA}] (3 à 4 propositions)}",{modelTier:"default",cache:false})
+      .then(j=>{if(j&&j.titre&&Array.isArray(j.props)&&j.props.length)fin({titre:String(j.titre).slice(0,120),analyse:String(j.analyse||""),props:j.props.slice(0,5).map(p=>({t:String(p.t||"").slice(0,200),effet:String(p.effet||""),cout:clamp(+p.cout||0,0,2000)}))});else fin(n.topic==="carburant"?carburant(S,n.pct):general(S,tp,n.texte,n.pct))})
+      .catch(e=>{if(e&&e.code==="not_granted")refused=true;fin(n.topic==="carburant"?carburant(S,n.pct):general(S,tp,n.texte,n.pct))});return}
+  fin(n.topic==="carburant"?carburant(S,n.pct):general(S,tp,n.texte,n.pct))}
+
+/* ---------- adopter une proposition depuis le courrier ---------- */
+NOTE.mailActs=function(S,it){const n=it.note&&(S.notes||[]).find(x=>x.id===it.note);if(!n||!n.props)return"";
+  return n.props.map((p,i)=>p.st==="attente"?'<button class="btn small primary" data-nadopt="'+i+'">Adopter la proposition '+(i+1)+'</button><button class="btn small" data-nmod="'+i+'">Modifier '+(i+1)+'</button>':'<span class="pill '+(p.st==="adoptee"?"ok":"bad")+'">'+(i+1)+' : '+(p.st==="adoptee"?"adoptée":"écartée")+'</span>').join("")+'<button class="btn small ghost" data-nplus>Demander un complément</button>'};
+NOTE.mailBind=function(S,it,el){const n=it.note&&(S.notes||[]).find(x=>x.id===it.note);if(!n||!n.props)return;
+  const adopt=(i,txt)=>{const p=n.props[i];p.st="adoptee";el.remove();if(window.DIR)DIR.handle(S,"Je veux "+txt.charAt(0).toLowerCase()+txt.slice(1),m=>{say(m);G.toast(m.slice(0,110))},{ctx:n.titre,force:true})};
+  el.querySelectorAll("[data-nadopt]").forEach(b=>b.onclick=()=>{const i=+b.dataset.nadopt;adopt(i,n.props[i].t)});
+  el.querySelectorAll("[data-nmod]").forEach(b=>b.onclick=()=>{const i=+b.dataset.nmod;el.remove();G.sheet('<span class="eyebrow">Modifier la proposition</span><h3 class="h2">'+esc(n.titre)+'</h3><textarea data-grow id="nmTx" rows="3">'+esc(n.props[i].t)+'</textarea><div class="row"><button class="btn primary" id="nmOk">Adopter cette version</button></div>',e2=>{e2.setAttribute("data-noinstr","");e2.querySelector("#nmOk").onclick=()=>{const v=e2.querySelector("#nmTx").value.trim();if(!v)return;n.props[i].t=v;adopt(i,v);e2.remove()}})});
+  const pl=el.querySelector("[data-nplus]");if(pl)pl.onclick=()=>{el.remove();NOTE.handle(S,"Je veux un complément sur : "+n.titre,m=>{say(m);G.toast(m.slice(0,110))})}};
+})();
+
+</script>
+<script>
 /* Chemin d'Etoudi — « Autre instruction » : sous chaque fenêtre de décision, on peut écrire ou dicter sa propre consigne
    au lieu de choisir un bouton. Le jeu choisit l'action correspondante, exécute une commande (convoquer, se déplacer…)
    ou transmet la consigne à vos services. En ligne, Claude interprète les consignes libres ; ailleurs, un moteur intégré. */
@@ -6664,7 +6786,7 @@ const G=window.GAME,A=window.Audio2;
 const esc=G.esc;
 const INSTR={};window.INSTR=INSTR;
 const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'\-]/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
-const STOP=new Set("les des une pour avec dans sur par que qui mon mes son ses leur vous nous tout tous plus faire fais faites veux voudrais aller donner donne mettre cette ceci cela etre avoir".split(" "));
+const STOP=new Set("les des une pour avec dans sur par que qui mon mes son ses leur vous nous tout tous toute toutes plus faire fais faites veux voudrais aller donner donne mettre cette ceci cela etre avoir voir dossier dossiers options option affaire affaires apres avant depuis entre sans chez leurs ces cet autre autres".split(" "));
 const toks=t=>norm(t).split(" ").filter(w=>w.length>2&&!STOP.has(w)).map(w=>w.slice(0,5));
 const SYN=[["urgence","aide","secours","debloq","fonds","argent","financ"],["enquet","investig","justice","parquet","poursuiv"],["place","rendre","terrain","deplac","visite","aller"],["ministr","depech","envoy"],["convoq","recevo","audien"],["messag","condol","nation","discou","communi","declar"],["region","carte"],["ecout","lire"],["sanct","limog","revoq","suspen","renvoy"],["nomme","remplac"],["felic","bravo","encour"]];
 const syn=w=>{for(const g of SYN)if(g.some(x=>w.startsWith(x)||x.startsWith(w)))return g[0];return w};
@@ -6676,28 +6798,29 @@ function options(el){return [...el.querySelectorAll("button.choice,button.btn")]
 function label(b){return b.textContent.replace(/\s+/g," ").trim()}
 function best(el,text){const T=toks(text).map(syn);let top=null,sc=0,second=0;
   for(const b of options(el)){const L=toks(label(b)).map(syn);let s=0;for(const w of T)if(L.includes(w))s+=1;if(s>sc){second=sc;sc=s;top=b}else if(s>second)second=s}
-  return sc>=1&&sc>second?top:null}
+  const need=T.length<=4?1:2;return sc>=need&&sc>second?top:null}
 const CMD=/(convoqu|recevoir|recois|audience|aller a|va a|vais a|visite|visiter|rencontr|rendre visite|avance|video|montre|ouvre|marcher|parler avec|discuter avec|quelle heure|quel jour|situation|qui est)/;
 
 INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttribute("data-noinstr"))return;if(!G.S||G.S.phase!=="play")return;
   if(!options(el).length)return;const box=el.querySelector(".in")||el;const close=box.querySelector("[data-close]");
   const d=document.createElement("div");d.className="instr";
-  d.innerHTML='<span class="eyebrow">Autre instruction</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input type="text" placeholder="Écrivez votre propre consigne…" aria-label="Autre instruction" style="flex:1;min-width:0">'+
+  d.innerHTML='<span class="eyebrow">Autre instruction</span><div class="row" style="gap:6px;flex-wrap:nowrap;align-items:flex-end"><textarea data-grow rows="1" placeholder="Écrivez votre propre consigne…" aria-label="Autre instruction" style="flex:1;min-width:0"></textarea>'+
    (SR?'<button class="btn" data-imic aria-label="Dicter la consigne" title="Dicter la consigne">🎙</button>':'')+'<button class="btn primary" data-igo>OK</button></div><p class="small muted" data-ihint></p>';
   box.insertBefore(d,close||null);
-  const inp=d.querySelector("input"),hint=t=>{d.querySelector("[data-ihint]").textContent=t||""};
+  const inp=d.querySelector("textarea"),hint=t=>{d.querySelector("[data-ihint]").textContent=t||""};
   if(window.VOY&&VOY.driving){inp.disabled=true;inp.placeholder="Au volant : dictez votre consigne avec 🎙";const g=d.querySelector("[data-igo]");if(g)g.disabled=true}
-  const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";await INSTR.run(el,v,hint)};
-  d.querySelector("[data-igo]").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
+  const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";inp.style.height="";await INSTR.run(el,v,hint)};
+  d.querySelector("[data-igo]").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();go()}};
   const mic=d.querySelector("[data-imic]");if(mic)mic.onclick=()=>{try{A.stop()}catch(e){}const r=new SR();r.lang="fr-FR";r.interimResults=true;mic.textContent="⏹";hint("J'écoute…");
     r.onresult=e=>{let f="",t="";for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)f+=x[0].transcript;else t+=x[0].transcript}if(t)hint(t);if(f){inp.value=f;try{r.stop()}catch(x){}go()}};
     r.onerror=e=>{hint(e.error==="not-allowed"||e.error==="service-not-allowed"?"Micro bloqué ici : autorisez-le dans Chrome, ou écrivez la consigne.":"Micro : "+e.error)};r.onend=()=>{mic.textContent="🎙"};try{r.start()}catch(e){mic.textContent="🎙"}}};
 
 INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
   const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
+  if(window.NOTE&&NOTE.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();NOTE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
   const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
   if(window.GENRE&&GENRE.matches(text)){el.remove();GENRE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
-  if(window.DIR&&DIR.matches(text)){el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
+  if(window.DIR&&DIR.matches(text)){const ctx=((el.querySelector(".h2")||{}).textContent||"").trim();el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))},{ctx});return}
   if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");
     try{const j=await sample.json("Tu es le chef de cabinet du joueur dans un jeu de simulation politique réaliste au Cameroun. Situation affichée : « "+title+" ».\n"+body+"\n\nActions disponibles (index : libellé) :\n"+opts.map((o,i)=>i+" : "+o).join("\n")+
       "\n\nConsigne du joueur : « "+text+" ».\nSi une action disponible correspond à la consigne, choisis-la. Sinon, choix = -1 et résume en une phrase ce que tes services vont faire. Réponds uniquement en JSON : {\"choix\": nombre, \"reponse\": \"une phrase en français, à la 2e personne du pluriel\"}",{modelTier:"quick",cache:false});

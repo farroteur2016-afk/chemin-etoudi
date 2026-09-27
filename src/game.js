@@ -22,7 +22,9 @@ const GAME={};window.GAME=GAME;
 
 /* ---------- utilitaires d'interface ---------- */
 function toast(msg){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
-function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in">'+html+'<button class="btn" data-close>Fermer</button></div>';
+/* zones de saisie : retour à la ligne automatique, hauteur ajustée, Entrée pour valider (Maj+Entrée : nouvelle ligne) */
+document.addEventListener("input",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea[data-grow]")){t.style.height="auto";t.style.height=Math.min(220,t.scrollHeight)+"px"}});
+function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in"><button class="sheet-x" data-close aria-label="Fermer la fenêtre" title="Fermer">✕</button>'+html+'</div>';
   el.addEventListener("click",e=>{if(e.target===el||e.target.hasAttribute("data-close")){el.remove()}});document.body.appendChild(el);if(after)after(el);if(window.VID)VID.bindAll(el);if(window.INSTR)INSTR.attach(el);return el}
 GAME.dayLabel=dayLabel;GAME.toast=toast;GAME.sheet=sheet;GAME.esc=esc;GAME.fmt=fmt;GAME.monthLabel=monthLabel;GAME.pick=pick;GAME.rnd=rnd;GAME.clamp=clamp;
 
@@ -43,7 +45,7 @@ GAME.viewRegion=viewRegion;
 
 function subs(who,text,opts){
   opts=opts||{};const el=$("subs");
-  el.innerHTML='<div class="who"><span>'+esc(who)+'</span><button class="btn small ghost" id="subsX">Fermer</button></div><div class="txt">'+esc(text)+'</div>';
+  el.innerHTML='<div class="who"><span>'+esc(who)+'</span><button class="sheet-x" id="subsX" aria-label="Fermer" title="Fermer" style="margin:0;position:static;width:30px;height:30px;font-size:15px">✕</button></div><div class="txt">'+esc(text)+'</div>';
   el.hidden=false;$("place").hidden=true;
   const close=()=>{el.hidden=true;$("place").hidden=false;A.stop()};
   $("subsX").onclick=close;
@@ -94,6 +96,7 @@ function advanceDays(d,auto){
   if(refresh&&(!auto||!inputBusy()))render();
   if(window.RENC)RENC.tick(S);
   if(window.DIR)DIR.tick(S);
+  if(window.NOTE)NOTE.tick(S);
   if(window.CAB)CAB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }

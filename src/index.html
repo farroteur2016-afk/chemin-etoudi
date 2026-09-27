@@ -176,6 +176,11 @@ li .vidbtn,.log .vidbtn{padding:2px 8px!important;font-size:.72rem!important;mar
 .vxpanel{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;width:min(560px,calc(100vw - 24px));z-index:60;background:var(--card,#16181d);color:inherit;border:1px solid var(--line,#333);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
 body.travel .sheet{z-index:65}
 body.travel .vxpanel{z-index:70}
+textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px;line-height:1.35;width:100%;background:var(--panel3);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.sheet .in{position:relative}
+.sheet-x{position:sticky;top:0;align-self:flex-end;margin:-8px -6px -30px 0;z-index:5;width:36px;height:36px;flex:none;border-radius:8px;border:1px solid var(--line);background:var(--panel3);color:var(--ink);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
+.sheet-x:hover{background:#c42b1c;border-color:#c42b1c;color:#fff}
+.sheet .in>.eyebrow:first-of-type,.sheet .in>.h2:first-of-type{padding-right:44px}
 .instr{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
 .vxlog{max-height:34vh;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .vxlog .me{align-self:flex-end;background:rgba(80,140,255,.18);padding:6px 10px;border-radius:10px;max-width:85%}
@@ -236,6 +241,7 @@ body.travel .vxpanel{z-index:70}
 <script src="qa.js"></script>
 <script src="conseil.js"></script>
 <script src="directives.js"></script>
+<script src="notes.js"></script>
 <script src="instr.js"></script>
 <script src="musique.js"></script>
 <script src="ultra.js"></script>

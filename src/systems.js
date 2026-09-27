@@ -23,6 +23,8 @@ function accord(lab,s){if(s!=="f"||!lab)return lab;return String(lab).replace(/\
   .replace(/\ble ministre\b/g,"la ministre").replace(/\ble gouverneur\b/g,"la gouverneure").replace(/\ble préfet\b/g,"la préfète").replace(/\ble commissaire\b/g,"la commissaire").replace(/\ble délégué général\b/g,"la déléguée générale")
   .replace(/\ble secrétaire général\b/g,"la secrétaire générale").replace(/\ble Premier ministre\b/g,"la Première ministre").replace(/\ble vice-président\b/g,"la vice-présidente").replace(/\ble chef\b/g,"la cheffe").replace(/\ble responsable\b/g,"la responsable")}
 SYS.sexe=sexe;SYS.accord=accord;
+/* article devant un nom de ministère : du Commerce, de la Défense, de l'Eau, des Finances, des PME */
+SYS.deM=n=>/^(Commerce|Tourisme|Travail|Contrôle)/.test(n)?"du ":/^PME/.test(n)?"des ":/^[AEÉIOUHÉ]/.test(n)?"de l'":/^\S+s\b/.test(n)?"des ":"de la ";
 function regAlea(){const t=Math.random()*30.36;let a=0;for(const r of CM.REGIONS){a+=r.pop;if(t<=a)return r.id}return"CE"}
 SYS.nom=nom;
 
@@ -418,6 +420,7 @@ SYS.openMail=function(S,id){
   if(window.EMP)acts+=EMP.mailActs(S,it);
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
   if(window.DIR)acts+=DIR.mailActs(S,it);
+  if(window.NOTE)acts+=NOTE.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
   if(it.reg)acts+='<button class="btn" id="mSee">Voir la région</button>';
   if(window.VID&&!it.actu&&(it.reg||it.k==="alerte"||it.k==="rapport"))acts+=VID.btn(it.t+". "+it.b,it.reg||null,"Voir la vidéo");
@@ -428,6 +431,7 @@ SYS.openMail=function(S,id){
     if(window.EMP)EMP.mailBind(S,it,el);
     if(window.ACTU)ACTU.mailBind(S,it,el);
     if(window.DIR)DIR.mailBind(S,it,el);
+    if(window.NOTE)NOTE.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
     if(q("#mFollow"))q("#mFollow").onclick=()=>{const who=S.mode==="pres"?"Cabinet du ministre de la Justice":(S.opp.experts.find(e=>e.dom==="droit")||{n:"Juriste"}).n+", juriste du parti";S.tasks.push({id:nid(),who,sujet:"suivi",caseId:c.id,due:S.m+1+Math.round(Math.random()),skill:70});el.remove();G.toast("Dossier confié. Compte rendu d'ici un à deux mois.");rerender()};
     if(q("#mGrace"))q("#mGrace").onclick=()=>{c.verdict=(c.verdict||"")+" Grâce présidentielle accordée.";SYS.cause(S,c.reg,"Grâce présidentielle pour les condamnés de "+c.ville,3,"");S.st.int=clamp(S.st.int+1,0,100);el.remove();G.toast("Grâce accordée.");rerender()};

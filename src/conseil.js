@@ -19,7 +19,7 @@ CAB.traitLab=n=>TRAITS[CAB.trait(n)][0];CAB.traitBonus=n=>TRAITS[CAB.trait(n)][1
 CAB.TRAITS=TRAITS;
 
 /* ministère responsable d'une directive */
-const RESP={audit:"MINFI",prix:"MINCOMMERCE",arrieres:"MINFI",emploi:"MINEFOP",construire:"MINTP",securite:"MINDEF",dialogue:"MINATD",liberer:"MINJUSTICE",gratuite:"MINSANTE",
+const RESP={justice:"MINJUSTICE",audit:"MINFI",prix:"MINCOMMERCE",arrieres:"MINFI",emploi:"MINEFOP",construire:"MINTP",securite:"MINDEF",dialogue:"MINATD",liberer:"MINJUSTICE",gratuite:"MINSANTE",
   electricite:"MINEE",eau:"MINEE",sante:"MINSANTE",education:"MINESEC",agriculture:"MINADER",transparence:"MINCOM",interdire:"MINATD"};
 CAB.resp=cat=>RESP[cat]||null;
 CAB.minName=(S,id)=>{const m=E.MINISTERES.find(x=>x.id===id);return m?m.n:id};
@@ -117,7 +117,7 @@ function run(S,p){const x=p.x;S.cab.stats.ok=(S.cab.stats.ok||0)+1;
   if(x.type==="dir"&&window.DIR){DIR.handle(S,x.text,m=>{say(m);G.toast(m.slice(0,110))});return null}
   if(x.type==="trip"&&window.VOY){VOY.ask(S,x.to,{});return null}
   if(x.type==="hop"&&window.VIE){VIE.openOrg(S,{k:"hop",id:x.id});const b=document.querySelector('.sheet [data-m="med"]');if(b){b.click();return null}return"Vous n'avez pas autorité sur cet hôpital."}
-  if(x.type==="relance"){const d=(S.directives||[]).find(y=>y.id===x.id);if(!d)return"Directive introuvable.";d.done=false;d.due=S.day+30;d.res="";if(d.resp&&S.gov&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now(),type:"meet",at:Math.floor(S.day+1/3)+1+9/24-1/3,who:{k:"min",id:d.resp,lab:"le ministre "+CAB.minName(S,d.resp),n:g.n,min:d.resp},objet:"relance : "+d.titre,lab:"Audience : relance "+d.titre.slice(0,40)})}G.toast("Directive relancée pour 30 jours.");return null}
+  if(x.type==="relance"){const d=(S.directives||[]).find(y=>y.id===x.id);if(!d)return"Directive introuvable.";d.done=false;d.due=S.day+30;d.res="";if(d.resp&&S.gov&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now(),type:"meet",at:Math.floor(S.day+1/3)+1+9/24-1/3,who:{k:"min",id:d.resp,lab:"le ministre "+window.SYS.deM(CAB.minName(S,d.resp))+CAB.minName(S,d.resp),n:g.n,min:d.resp},objet:"relance : "+d.titre,lab:"Audience : relance "+d.titre.slice(0,40)})}G.toast("Directive relancée pour 30 jours.");return null}
   if(x.type==="genre"&&window.GENRE){GENRE.apply(S,"gouv",30,m=>{say(m);G.toast(m.slice(0,110))});return null}
   if(x.type==="eng"&&window.RENC){const b=document.querySelector('[data-eng="'+x.id+'"]');if(b){b.click();return null}return"Engagement introuvable."}
   return"Action non disponible."}
