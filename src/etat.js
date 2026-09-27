@@ -189,7 +189,9 @@ E.DOMAINES=[
  {id:"agri",n:"Agronome",role:"Agriculture et élevage"},{id:"mines",n:"Ingénieur des mines et de l'énergie",role:"Mines et énergie"},{id:"fin",n:"Expert en finances publiques",role:"Trésorier"}
 ];
 E.BUREAU=["Président du parti","Secrétaire général","Trésorier","Porte-parole","Secrétaire à la mobilisation","Conseiller juridique","Chargé des élections"];
-E.PRENOMS=["Jean-Paul","Marie","Aïssatou","Hamidou","Emmanuel","Chantal","Blaise","Brenda","Clarisse","Hervé","Yannick","Joëlle","Samuel","Esther","Ibrahim","Fadimatou","Patrice","Solange","Achille","Mireille","Désiré","Rosine","Oumarou","Célestine","Divine","Eric","Nadège","Christian","Ruth","Moussa"];
+E.PRENOMS_F=["Marie","Aïssatou","Chantal","Brenda","Clarisse","Joëlle","Esther","Fadimatou","Solange","Mireille","Rosine","Célestine","Divine","Nadège","Ruth","Hadjara","Hélène","Pauline","Florence","Grâce","Bernadette","Hawaou","Laure","Sandrine","Nathalie","Béatrice","Ramatou","Yvette","Estelle","Madeleine"];
+E.PRENOMS_M=["Jean-Paul","Hamidou","Emmanuel","Blaise","Hervé","Yannick","Samuel","Ibrahim","Patrice","Achille","Désiré","Oumarou","Eric","Christian","Moussa","Joseph","Paul","Alain","Issa","Daniel","Martin","Félix","Bouba","Serge","Thierry","Roger","Célestin","Aboubakar","Gilbert","Charles"];
+E.PRENOMS=E.PRENOMS_F.concat(E.PRENOMS_M);
 E.NOMS={EN:["Hamadou","Abba","Mahamat","Bouba","Djibrilla","Mana"],NO:["Aboubakar","Oumarou","Adamou","Babba","Sali"],AD:["Mohaman","Yaya","Bello","Issa","Hayatou"],CE:["Mbarga","Essomba","Atangana","Ondoa","Nkodo","Owona","Ateba"],LT:["Ekwalla","Moukoko","Ngando","Ebongue","Din","Bell"],OU:["Fotso","Kamga","Tchoupo","Kenfack","Djoumessi","Nana","Njoya"],NW:["Ngwa","Nfor","Achu","Mbah","Fru","Tamfu"],SW:["Tabi","Ayuk","Enow","Ebai","Mokake","Agbor"],ES:["Mboula","Doumba","Ngoe","Bindzi","Yondo"],SU:["Mvondo","Ela","Obam","Nkoulou","Ze","Abessolo"]};
 E.ENTREPRISES={
  local:[["Wouri Construction","Douala",62],["Ets Nkodo & Fils","Yaoundé",48],["Sahel BTP","Maroua",55],["Grassfields Engineering","Bamenda",58],["Bafoussam Travaux","Bafoussam",66],["Sanaga Génie civil","Édéa",60],["Diaspora Engineering Group","Douala et Houston",74]],

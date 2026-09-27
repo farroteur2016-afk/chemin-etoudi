@@ -11,7 +11,9 @@ const VIE={};window.VIE=VIE;
 let uid=1;const nid=()=>"v"+Date.now().toString(36)+(uid++);
 const pill=(t,c)=>'<span class="pill '+c+'">'+esc(t)+'</span>';
 const inbox=(S,o)=>window.SYS.inbox(S,o);
-const nom=r=>window.SYS.nom(r);
+const nom=(r,x)=>window.SYS.nom(r,x);
+/* au départ, peu de femmes aux postes de direction (comme dans la réalité) : à vous de rééquilibrer */
+const nomT=(r,p)=>window.SYS.nom(r,Math.random()<p?"f":"m");
 const deR=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;
 
 /* ---------- conditions d'âge (Code électoral, Code civil) ---------- */
@@ -58,15 +60,15 @@ const ENTREPRISES=[["ENEO","Électricité","MINEE",38],["CAMWATER","Eau potable"
  ["SODEPA","Développement des productions animales","MINEPIA",30],["MAGZI","Zones industrielles","MINMIDT",35],["SODECAO","Développement du cacao","MINADER",35],["ONCC","Office national du cacao et du café","MINCOMMERCE",45],
  ["ART","Agence de régulation des télécommunications","MINPOSTEL",45],["ARSEL","Régulation du secteur de l'électricité","MINEE",45],["EDC","Electricity Development Corporation (barrages)","MINEE",45],
  ["CSPH","Caisse de stabilisation des prix des hydrocarbures","MINCOMMERCE",40],["SNI","Société nationale d'investissement","MINFI",40]];
-const mkEnt=e=>({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nom(pick(CM.REGIONS).id),pl:0});
+const mkEnt=e=>({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nomT(pick(CM.REGIONS).id,.15),pl:0});
 const MALADIES=[["palu","Paludisme",.263,.012],["ira","Infections respiratoires",.12,.01],["diar","Diarrhées et fièvre typhoïde",.12,.008],["cardio","Hypertension et diabète",.08,.03],["trauma","Accidents et traumatismes",.07,.03],["mat","Grossesses et accouchements",.1,.004],["vih","VIH et tuberculose",.05,.05],["malnut","Malnutrition",.02,.03],["menin","Méningite",.005,.1],["autres","Autres pathologies",.172,.01]];
 VIE.init=function(S){
   if(S.org){for(const e of ENTREPRISES)if(!S.org.ent.find(x=>x.id===e[0]))S.org.ent.push(mkEnt(e));return}
   const O={gouv:[],pref:[],comm:[],gend:[],hop:[],ent:[],aud:[],nextAud:(S.day||0)+1,nextPl:(S.day||0)+2,quot:null};
   for(const r of CM.REGIONS){
-    O.gouv.push({id:"g"+r.id,reg:r.id,n:nom(r.id===pick(["CE","SU"])?"CE":regX(r.id)),perf:rnd(40,70),integ:rnd(40,80),pl:0});
-    O.gend.push({id:"l"+r.id,reg:r.id,n:"Colonel "+nom(regX(r.id)),perf:rnd(40,70),integ:rnd(45,80),pl:0});
-    r.villes.forEach((v,i)=>{O.pref.push({id:"p"+r.id+i,reg:r.id,ville:v,n:nom(regX(r.id)),perf:rnd(35,70),integ:rnd(35,80),pl:0});O.comm.push({id:"c"+r.id+i,reg:r.id,ville:v,n:"Commissaire "+nom(regX(r.id)),perf:rnd(30,70),integ:rnd(25,80),pl:0})});
+    O.gouv.push({id:"g"+r.id,reg:r.id,n:nomT(r.id===pick(["CE","SU"])?"CE":regX(r.id),.1),perf:rnd(40,70),integ:rnd(40,80),pl:0});
+    O.gend.push({id:"l"+r.id,reg:r.id,n:"Colonel "+nomT(regX(r.id),.05),perf:rnd(40,70),integ:rnd(45,80),pl:0});
+    r.villes.forEach((v,i)=>{O.pref.push({id:"p"+r.id+i,reg:r.id,ville:v,n:nomT(regX(r.id),.12),perf:rnd(35,70),integ:rnd(35,80),pl:0});O.comm.push({id:"c"+r.id+i,reg:r.id,ville:v,n:"Commissaire "+nomT(regX(r.id),.15),perf:rnd(30,70),integ:rnd(25,80),pl:0})});
     if(!["CE","LT"].includes(r.id))O.hop.push(mkHop("hr"+r.id,"Hôpital régional de "+r.chef,r.id,220,r.pop/30.36*.6));
     O.hop.push(mkHop("hd"+r.id,"Hôpitaux de district de la région "+deR(r),r.id,900,r.pop/30.36*.9));
   }
@@ -75,7 +77,7 @@ VIE.init=function(S){
   S.org=O;
 };
 function regX(r){return Math.random()<.6?r:pick(CM.REGIONS).id}
-function mkHop(id,n,reg,lits,share){return{id,n,reg,lits,share,med:Math.round(lits/12),inf:Math.round(lits/3),stock:rnd(35,70),dir:nom(regX(reg)),sat:rnd(35,60),stats:null,pl:0}}
+function mkHop(id,n,reg,lits,share){return{id,n,reg,lits,share,med:Math.round(lits/12),inf:Math.round(lits/3),stock:rnd(35,70),dir:nomT(regX(reg),.3),sat:rnd(35,60),stats:null,pl:0}}
 
 /* ---------- qui peut agir ? ---------- */
 function canPolice(S){return S.mode==="pres"||(S.mode==="min"&&["DGSN","MINATD","MINDEF"].includes(S.minis.id))}
@@ -240,25 +242,27 @@ VIE.openOrg=function(S,ref){
   const can=k==="police"||k==="gendarmerie"?canPolice(S):k==="prefet"||k==="gouverneur"?canTerr(S):k==="hop"?canHop(S):k==="ent"?canEnt(S,o):false;
   const titre=k==="hop"?o.n:k==="ent"?o.n+" — "+o.act:k==="police"?o.n+", commissariat central de "+lieu:k==="prefet"?"Préfet de "+lieu+" : "+o.n:k==="gouverneur"?"Gouverneur de la région "+deR(CM.REG[o.reg])+" : "+o.n:o.n+", légion de gendarmerie";
   let body=k==="hop"?'<div class="kv"><span>Directeur</span><b>'+esc(o.dir)+'</b><span>Lits</span><b>'+o.lits+'</b><span>Médecins / infirmiers</span><b>'+o.med+' / '+o.inf+'</b><span>Stocks de médicaments</span><b>'+Math.round(o.stock)+'/100</b><span>Satisfaction des usagers</span><b>'+Math.round(o.sat)+'/100</b></div>':k==="ent"?'<div class="kv"><span>Directeur général</span><b>'+esc(o.dg)+'</b><span>Tutelle</span><b>'+o.tut+'</b><span>Performance</span><b>'+Math.round(o.perf)+'/100</b></div>':'<div class="kv"><span>Efficacité</span><b>'+Math.round(o.perf)+'/100</b><span>Intégrité</span><b>'+Math.round(o.integ)+'/100</b><span>Dernière plainte</span><b>'+esc(o.last||"—")+'</b></div>';
-  let acts="";
+  let acts="";let gChoice="";const nomG=r=>window.SYS.nom(r,gChoice||undefined);
   if(can){if(k==="hop")acts='<button class="btn" data-m="med">Envoyer des médicaments (0,5 Md)</button><button class="btn" data-m="doc">Affecter 10 médecins</button><button class="btn" data-m="dir">Nommer un nouveau directeur</button><button class="btn" data-m="insp">Inspection</button>';
     else if(k==="ent")acts='<button class="btn" data-m="dg">Remplacer le directeur général</button><button class="btn" data-m="audit">Audit du CONSUPE</button><button class="btn" data-m="recap">Recapitaliser (20 Mds)</button>';
     else acts='<button class="btn" data-m="enq">'+(k==="police"?"Enquête de la police des polices":"Enquête de l'inspection")+'</button><button class="btn" data-m="mut">Muter</button><button class="btn" data-m="susp">Suspendre et remplacer</button><button class="btn" data-m="fel">Féliciter publiquement</button>'}
   else{acts=S.opp?'<button class="btn" data-m="denonce">Dénoncer publiquement (médias)</button>':"";if(S.profil==="maire")acts+='<button class="btn" data-m="saisir">Saisir le préfet et le gouverneur</button>';if(S.mode==="pro"||S.mode==="ing")acts+='<button class="btn" data-m="saisir">Signer une pétition au gouverneur</button>';if(S.profil==="depute")acts+='<button class="btn" data-m="question">Question orale au gouvernement</button>'}
+  if(can)acts+='<div class="row small" style="width:100%;gap:6px">En cas de remplacement, nommer : <button class="btn small" data-gch="f">une femme</button><button class="btn small" data-gch="m">un homme</button><button class="btn small primary" data-gch="">au choix</button></div>';
   const vtxt=k==="hop"?"hôpital patients "+lieu:k==="ent"?(o.id==="ENEO"?"délestage électricité ":o.id==="CAMWATER"?"coupure eau village ":"chantier ")+lieu:"contrôle police racket "+lieu;
   G.sheet('<h3 class="h2">'+esc(titre)+'</h3>'+body+(window.VID||window.RENC?'<div class="row">'+(window.VID?VID.btn(vtxt,o.reg||null,"Voir la vidéo sur place"):"")+(window.RENC?RENC.orgBtn():"")+'</div>':"")+(can?"":'<p class="small muted">Seuls le président et le ministre de tutelle peuvent sanctionner ou nommer. Vous pouvez alerter.</p>')+'<div class="row">'+acts+'</div>',el=>{
     if(window.RENC)RENC.bindOrg(S,el,k,o);
+    el.querySelectorAll("[data-gch]").forEach(b=>b.onclick=()=>{gChoice=b.dataset.gch;el.querySelectorAll("[data-gch]").forEach(x=>x.classList.toggle("primary",x===b))});
     el.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const m=b.dataset.m;let msg="";
       if(m==="med"){if(!pay(S,.5))return G.toast("Crédits insuffisants.");o.stock=clamp(o.stock+40,0,100);msg="Médicaments livrés"}
       else if(m==="doc"){if(!pay(S,.2))return G.toast("Crédits insuffisants.");o.med+=10;msg="10 médecins affectés"}
-      else if(m==="dir"){o.dir=nom(pick(CM.REGIONS).id);o.sat=clamp(o.sat+5,0,100);msg="Nouveau directeur : "+o.dir}
+      else if(m==="dir"){o.dir=nomG(pick(CM.REGIONS).id);o.sat=clamp(o.sat+5,0,100);msg=window.SYS.accord("Nouveau directeur : ",window.SYS.sexe(o.dir)).replace("Nouveau directrice","Nouvelle directrice")+o.dir}
       else if(m==="insp"){inbox(S,{from:"Inspection générale de la Santé",t:"Inspection : "+o.n,b:rapHop(o),k:"rapport"});msg="Rapport d'inspection au courrier"}
-      else if(m==="dg"){o.dg=nom(pick(CM.REGIONS).id);o.perf=clamp(o.perf+8,0,100);msg="Nouveau directeur général : "+o.dg}
+      else if(m==="dg"){o.dg=nomG(pick(CM.REGIONS).id);o.perf=clamp(o.perf+8,0,100);msg=(window.SYS.sexe(o.dg)==="f"?"Nouvelle directrice générale : ":"Nouveau directeur général : ")+o.dg}
       else if(m==="audit"){const f=Math.random()<.4;if(f)window.SYS.newCase(S,"corruption","CE",Math.round(rnd(1,4)),"Yaoundé");inbox(S,{from:"Contrôle supérieur de l'État",t:"Audit de "+o.n,b:f?"Des irrégularités graves ont été relevées ; le dossier est transmis au Tribunal criminel spécial.":"Gestion jugée perfectible, sans faute pénale.",k:"rapport"});msg="Audit lancé"}
       else if(m==="recap"){if(!pay(S,20))return G.toast("Crédits insuffisants.");o.perf=clamp(o.perf+15,0,100);msg="Recapitalisation effectuée"}
       else if(m==="enq"){const guilty=o.integ<45||Math.random()<.2;if(guilty){window.SYS.newCase(S,"corruption",o.reg,1,lieu);o.integ=clamp(o.integ+25,0,100)}msg=guilty?"L'enquête confirme les abus : poursuites engagées":"L'enquête ne relève pas de faute grave";window.SYS.cause(S,o.reg,"Enquête ouverte sur "+o.n+" à "+lieu,2,"")}
-      else if(m==="mut"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nom(o.reg);o.perf=rnd(40,70);o.integ=rnd(40,80);msg="Responsable muté, remplacé par "+o.n;window.SYS.cause(S,o.reg,"Mutation du responsable contesté à "+lieu,2,"")}
-      else if(m==="susp"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nom(o.reg);o.perf=rnd(45,75);o.integ=rnd(55,85);msg="Suspendu et remplacé par "+o.n;window.SYS.cause(S,o.reg,"Sanction exemplaire à "+lieu,3,"corruption")}
+      else if(m==="mut"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nomG(o.reg);o.perf=rnd(40,70);o.integ=rnd(40,80);msg="Responsable muté, remplacé par "+o.n;window.SYS.cause(S,o.reg,"Mutation du responsable contesté à "+lieu,2,"")}
+      else if(m==="susp"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nomG(o.reg);o.perf=rnd(45,75);o.integ=rnd(55,85);msg="Suspendu et remplacé par "+o.n;window.SYS.cause(S,o.reg,"Sanction exemplaire à "+lieu,3,"corruption")}
       else if(m==="fel"){o.perf=clamp(o.perf+5,0,100);msg="Félicitations publiques"}
       else if(m==="denonce"){S.opp.noto=clamp(S.opp.noto+2,0,100);window.SYS.cause(S,o.reg||"CE","L'opposition dénonce la gestion de "+(o.n||o.dir),-1,"corruption");msg="Dénonciation relayée par la presse"}
       else if(m==="saisir"){if(Math.random()<.4){o.n=(k==="police"?"Commissaire ":"")+nom(o.reg);msg="Le gouverneur a muté le responsable"}else msg="Le préfet promet d'examiner la situation"}

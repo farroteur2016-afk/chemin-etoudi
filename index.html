@@ -1717,7 +1717,9 @@ E.DOMAINES=[
  {id:"agri",n:"Agronome",role:"Agriculture et élevage"},{id:"mines",n:"Ingénieur des mines et de l'énergie",role:"Mines et énergie"},{id:"fin",n:"Expert en finances publiques",role:"Trésorier"}
 ];
 E.BUREAU=["Président du parti","Secrétaire général","Trésorier","Porte-parole","Secrétaire à la mobilisation","Conseiller juridique","Chargé des élections"];
-E.PRENOMS=["Jean-Paul","Marie","Aïssatou","Hamidou","Emmanuel","Chantal","Blaise","Brenda","Clarisse","Hervé","Yannick","Joëlle","Samuel","Esther","Ibrahim","Fadimatou","Patrice","Solange","Achille","Mireille","Désiré","Rosine","Oumarou","Célestine","Divine","Eric","Nadège","Christian","Ruth","Moussa"];
+E.PRENOMS_F=["Marie","Aïssatou","Chantal","Brenda","Clarisse","Joëlle","Esther","Fadimatou","Solange","Mireille","Rosine","Célestine","Divine","Nadège","Ruth","Hadjara","Hélène","Pauline","Florence","Grâce","Bernadette","Hawaou","Laure","Sandrine","Nathalie","Béatrice","Ramatou","Yvette","Estelle","Madeleine"];
+E.PRENOMS_M=["Jean-Paul","Hamidou","Emmanuel","Blaise","Hervé","Yannick","Samuel","Ibrahim","Patrice","Achille","Désiré","Oumarou","Eric","Christian","Moussa","Joseph","Paul","Alain","Issa","Daniel","Martin","Félix","Bouba","Serge","Thierry","Roger","Célestin","Aboubakar","Gilbert","Charles"];
+E.PRENOMS=E.PRENOMS_F.concat(E.PRENOMS_M);
 E.NOMS={EN:["Hamadou","Abba","Mahamat","Bouba","Djibrilla","Mana"],NO:["Aboubakar","Oumarou","Adamou","Babba","Sali"],AD:["Mohaman","Yaya","Bello","Issa","Hayatou"],CE:["Mbarga","Essomba","Atangana","Ondoa","Nkodo","Owona","Ateba"],LT:["Ekwalla","Moukoko","Ngando","Ebongue","Din","Bell"],OU:["Fotso","Kamga","Tchoupo","Kenfack","Djoumessi","Nana","Njoya"],NW:["Ngwa","Nfor","Achu","Mbah","Fru","Tamfu"],SW:["Tabi","Ayuk","Enow","Ebai","Mokake","Agbor"],ES:["Mboula","Doumba","Ngoe","Bindzi","Yondo"],SU:["Mvondo","Ela","Obam","Nkoulou","Ze","Abessolo"]};
 E.ENTREPRISES={
  local:[["Wouri Construction","Douala",62],["Ets Nkodo & Fils","Yaoundé",48],["Sahel BTP","Maroua",55],["Grassfields Engineering","Bamenda",58],["Bafoussam Travaux","Bafoussam",66],["Sanaga Génie civil","Édéa",60],["Diaspora Engineering Group","Douala et Houston",74]],
@@ -2260,7 +2262,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.VOIX?VOIX.agendaCard(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
@@ -2717,7 +2719,16 @@ const lc1=x=>x.charAt(0).toLowerCase()+x.slice(1);
 const deR=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;
 
 /* ---------- noms ---------- */
-function nom(reg){return pick(E.PRENOMS)+" "+pick(E.NOMS[reg]||E.NOMS.CE)}
+function nom(reg,sexe){const s=sexe==="f"||sexe==="m"?sexe:Math.random()<.5?"f":"m";return pick(s==="f"?E.PRENOMS_F:E.PRENOMS_M)+" "+pick(E.NOMS[reg]||E.NOMS.CE)}
+/* genre d'une personne d'après son prénom (fonctionne aussi sur les parties anciennes) */
+const F_SET=new Set(E.PRENOMS_F.map(x=>x.toLowerCase())),M_SET=new Set(E.PRENOMS_M.map(x=>x.toLowerCase()));
+function sexe(n){if(!n)return null;const w=String(n).replace(/^(Colonel|Commissaire|Général|Dr|Pr|Me|Mgr|Madame|Monsieur|M\.|Mme)\s+/i,"").split(/\s+/)[0].toLowerCase();if(F_SET.has(w))return"f";if(M_SET.has(w))return"m";
+  if(/(ine|ette|elle|ienne|ée|a|ou)$/.test(w)&&!/(ou)$/.test(w))return"f";return"m"}
+/* accord d'une fonction selon le genre : « le ministre » → « la ministre », « le directeur général » → « la directrice générale »… */
+function accord(lab,s){if(s!=="f"||!lab)return lab;return String(lab).replace(/\ble directeur général\b/g,"la directrice générale").replace(/\bdirecteur général\b/g,"directrice générale").replace(/\ble directeur\b/g,"la directrice").replace(/\bdirecteur\b/g,"directrice")
+  .replace(/\ble ministre\b/g,"la ministre").replace(/\ble gouverneur\b/g,"la gouverneure").replace(/\ble préfet\b/g,"la préfète").replace(/\ble commissaire\b/g,"la commissaire").replace(/\ble délégué général\b/g,"la déléguée générale")
+  .replace(/\ble secrétaire général\b/g,"la secrétaire générale").replace(/\ble Premier ministre\b/g,"la Première ministre").replace(/\ble vice-président\b/g,"la vice-présidente").replace(/\ble chef\b/g,"la cheffe").replace(/\ble responsable\b/g,"la responsable")}
+SYS.sexe=sexe;SYS.accord=accord;
 function regAlea(){const t=Math.random()*30.36;let a=0;for(const r of CM.REGIONS){a+=r.pop;if(t<=a)return r.id}return"CE"}
 SYS.nom=nom;
 
@@ -2743,7 +2754,7 @@ function seedCauses(S){
 function initGov(S){
   const gov={min:{},pm:{n:"Joseph Dion Ngute",reg:"SW",comp:62,loy:80,reel:1},vp:null,sg:{n:nom("SU"),reg:"SU",comp:70,loy:85},alloc:{},fisc:{},smig:E.SALAIRES.smigPrive,indice:100,recrues:{},etat:[]};
   const regs=CM.REGIONS.map(r=>r.id);
-  E.MINISTERES.forEach((m,i)=>{const reg=regs[(i*7)%10];gov.min[m.id]={n:nom(reg),reg,comp:Math.round(rnd(45,78)),loy:Math.round(rnd(60,90))};gov.alloc[m.id]=m.b});
+  E.MINISTERES.forEach((m,i)=>{const reg=regs[(i*7)%10];gov.min[m.id]={n:nom(reg,Math.random()<.2?"f":"m"),reg,comp:Math.round(rnd(45,78)),loy:Math.round(rnd(60,90))};gov.alloc[m.id]=m.b});
   E.FISCAL.forEach(f=>gov.fisc[f.id]=f.v);
   for(const id in gov.min)tdvFor(gov.min[id]);
   gov.tdv=Object.fromEntries(E.TRAIN.map(t=>[t.id,"normal"]));
@@ -3635,7 +3646,9 @@ const VIE={};window.VIE=VIE;
 let uid=1;const nid=()=>"v"+Date.now().toString(36)+(uid++);
 const pill=(t,c)=>'<span class="pill '+c+'">'+esc(t)+'</span>';
 const inbox=(S,o)=>window.SYS.inbox(S,o);
-const nom=r=>window.SYS.nom(r);
+const nom=(r,x)=>window.SYS.nom(r,x);
+/* au départ, peu de femmes aux postes de direction (comme dans la réalité) : à vous de rééquilibrer */
+const nomT=(r,p)=>window.SYS.nom(r,Math.random()<p?"f":"m");
 const deR=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;
 
 /* ---------- conditions d'âge (Code électoral, Code civil) ---------- */
@@ -3682,15 +3695,15 @@ const ENTREPRISES=[["ENEO","Électricité","MINEE",38],["CAMWATER","Eau potable"
  ["SODEPA","Développement des productions animales","MINEPIA",30],["MAGZI","Zones industrielles","MINMIDT",35],["SODECAO","Développement du cacao","MINADER",35],["ONCC","Office national du cacao et du café","MINCOMMERCE",45],
  ["ART","Agence de régulation des télécommunications","MINPOSTEL",45],["ARSEL","Régulation du secteur de l'électricité","MINEE",45],["EDC","Electricity Development Corporation (barrages)","MINEE",45],
  ["CSPH","Caisse de stabilisation des prix des hydrocarbures","MINCOMMERCE",40],["SNI","Société nationale d'investissement","MINFI",40]];
-const mkEnt=e=>({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nom(pick(CM.REGIONS).id),pl:0});
+const mkEnt=e=>({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nomT(pick(CM.REGIONS).id,.15),pl:0});
 const MALADIES=[["palu","Paludisme",.263,.012],["ira","Infections respiratoires",.12,.01],["diar","Diarrhées et fièvre typhoïde",.12,.008],["cardio","Hypertension et diabète",.08,.03],["trauma","Accidents et traumatismes",.07,.03],["mat","Grossesses et accouchements",.1,.004],["vih","VIH et tuberculose",.05,.05],["malnut","Malnutrition",.02,.03],["menin","Méningite",.005,.1],["autres","Autres pathologies",.172,.01]];
 VIE.init=function(S){
   if(S.org){for(const e of ENTREPRISES)if(!S.org.ent.find(x=>x.id===e[0]))S.org.ent.push(mkEnt(e));return}
   const O={gouv:[],pref:[],comm:[],gend:[],hop:[],ent:[],aud:[],nextAud:(S.day||0)+1,nextPl:(S.day||0)+2,quot:null};
   for(const r of CM.REGIONS){
-    O.gouv.push({id:"g"+r.id,reg:r.id,n:nom(r.id===pick(["CE","SU"])?"CE":regX(r.id)),perf:rnd(40,70),integ:rnd(40,80),pl:0});
-    O.gend.push({id:"l"+r.id,reg:r.id,n:"Colonel "+nom(regX(r.id)),perf:rnd(40,70),integ:rnd(45,80),pl:0});
-    r.villes.forEach((v,i)=>{O.pref.push({id:"p"+r.id+i,reg:r.id,ville:v,n:nom(regX(r.id)),perf:rnd(35,70),integ:rnd(35,80),pl:0});O.comm.push({id:"c"+r.id+i,reg:r.id,ville:v,n:"Commissaire "+nom(regX(r.id)),perf:rnd(30,70),integ:rnd(25,80),pl:0})});
+    O.gouv.push({id:"g"+r.id,reg:r.id,n:nomT(r.id===pick(["CE","SU"])?"CE":regX(r.id),.1),perf:rnd(40,70),integ:rnd(40,80),pl:0});
+    O.gend.push({id:"l"+r.id,reg:r.id,n:"Colonel "+nomT(regX(r.id),.05),perf:rnd(40,70),integ:rnd(45,80),pl:0});
+    r.villes.forEach((v,i)=>{O.pref.push({id:"p"+r.id+i,reg:r.id,ville:v,n:nomT(regX(r.id),.12),perf:rnd(35,70),integ:rnd(35,80),pl:0});O.comm.push({id:"c"+r.id+i,reg:r.id,ville:v,n:"Commissaire "+nomT(regX(r.id),.15),perf:rnd(30,70),integ:rnd(25,80),pl:0})});
     if(!["CE","LT"].includes(r.id))O.hop.push(mkHop("hr"+r.id,"Hôpital régional de "+r.chef,r.id,220,r.pop/30.36*.6));
     O.hop.push(mkHop("hd"+r.id,"Hôpitaux de district de la région "+deR(r),r.id,900,r.pop/30.36*.9));
   }
@@ -3699,7 +3712,7 @@ VIE.init=function(S){
   S.org=O;
 };
 function regX(r){return Math.random()<.6?r:pick(CM.REGIONS).id}
-function mkHop(id,n,reg,lits,share){return{id,n,reg,lits,share,med:Math.round(lits/12),inf:Math.round(lits/3),stock:rnd(35,70),dir:nom(regX(reg)),sat:rnd(35,60),stats:null,pl:0}}
+function mkHop(id,n,reg,lits,share){return{id,n,reg,lits,share,med:Math.round(lits/12),inf:Math.round(lits/3),stock:rnd(35,70),dir:nomT(regX(reg),.3),sat:rnd(35,60),stats:null,pl:0}}
 
 /* ---------- qui peut agir ? ---------- */
 function canPolice(S){return S.mode==="pres"||(S.mode==="min"&&["DGSN","MINATD","MINDEF"].includes(S.minis.id))}
@@ -3864,25 +3877,27 @@ VIE.openOrg=function(S,ref){
   const can=k==="police"||k==="gendarmerie"?canPolice(S):k==="prefet"||k==="gouverneur"?canTerr(S):k==="hop"?canHop(S):k==="ent"?canEnt(S,o):false;
   const titre=k==="hop"?o.n:k==="ent"?o.n+" — "+o.act:k==="police"?o.n+", commissariat central de "+lieu:k==="prefet"?"Préfet de "+lieu+" : "+o.n:k==="gouverneur"?"Gouverneur de la région "+deR(CM.REG[o.reg])+" : "+o.n:o.n+", légion de gendarmerie";
   let body=k==="hop"?'<div class="kv"><span>Directeur</span><b>'+esc(o.dir)+'</b><span>Lits</span><b>'+o.lits+'</b><span>Médecins / infirmiers</span><b>'+o.med+' / '+o.inf+'</b><span>Stocks de médicaments</span><b>'+Math.round(o.stock)+'/100</b><span>Satisfaction des usagers</span><b>'+Math.round(o.sat)+'/100</b></div>':k==="ent"?'<div class="kv"><span>Directeur général</span><b>'+esc(o.dg)+'</b><span>Tutelle</span><b>'+o.tut+'</b><span>Performance</span><b>'+Math.round(o.perf)+'/100</b></div>':'<div class="kv"><span>Efficacité</span><b>'+Math.round(o.perf)+'/100</b><span>Intégrité</span><b>'+Math.round(o.integ)+'/100</b><span>Dernière plainte</span><b>'+esc(o.last||"—")+'</b></div>';
-  let acts="";
+  let acts="";let gChoice="";const nomG=r=>window.SYS.nom(r,gChoice||undefined);
   if(can){if(k==="hop")acts='<button class="btn" data-m="med">Envoyer des médicaments (0,5 Md)</button><button class="btn" data-m="doc">Affecter 10 médecins</button><button class="btn" data-m="dir">Nommer un nouveau directeur</button><button class="btn" data-m="insp">Inspection</button>';
     else if(k==="ent")acts='<button class="btn" data-m="dg">Remplacer le directeur général</button><button class="btn" data-m="audit">Audit du CONSUPE</button><button class="btn" data-m="recap">Recapitaliser (20 Mds)</button>';
     else acts='<button class="btn" data-m="enq">'+(k==="police"?"Enquête de la police des polices":"Enquête de l'inspection")+'</button><button class="btn" data-m="mut">Muter</button><button class="btn" data-m="susp">Suspendre et remplacer</button><button class="btn" data-m="fel">Féliciter publiquement</button>'}
   else{acts=S.opp?'<button class="btn" data-m="denonce">Dénoncer publiquement (médias)</button>':"";if(S.profil==="maire")acts+='<button class="btn" data-m="saisir">Saisir le préfet et le gouverneur</button>';if(S.mode==="pro"||S.mode==="ing")acts+='<button class="btn" data-m="saisir">Signer une pétition au gouverneur</button>';if(S.profil==="depute")acts+='<button class="btn" data-m="question">Question orale au gouvernement</button>'}
+  if(can)acts+='<div class="row small" style="width:100%;gap:6px">En cas de remplacement, nommer : <button class="btn small" data-gch="f">une femme</button><button class="btn small" data-gch="m">un homme</button><button class="btn small primary" data-gch="">au choix</button></div>';
   const vtxt=k==="hop"?"hôpital patients "+lieu:k==="ent"?(o.id==="ENEO"?"délestage électricité ":o.id==="CAMWATER"?"coupure eau village ":"chantier ")+lieu:"contrôle police racket "+lieu;
   G.sheet('<h3 class="h2">'+esc(titre)+'</h3>'+body+(window.VID||window.RENC?'<div class="row">'+(window.VID?VID.btn(vtxt,o.reg||null,"Voir la vidéo sur place"):"")+(window.RENC?RENC.orgBtn():"")+'</div>':"")+(can?"":'<p class="small muted">Seuls le président et le ministre de tutelle peuvent sanctionner ou nommer. Vous pouvez alerter.</p>')+'<div class="row">'+acts+'</div>',el=>{
     if(window.RENC)RENC.bindOrg(S,el,k,o);
+    el.querySelectorAll("[data-gch]").forEach(b=>b.onclick=()=>{gChoice=b.dataset.gch;el.querySelectorAll("[data-gch]").forEach(x=>x.classList.toggle("primary",x===b))});
     el.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const m=b.dataset.m;let msg="";
       if(m==="med"){if(!pay(S,.5))return G.toast("Crédits insuffisants.");o.stock=clamp(o.stock+40,0,100);msg="Médicaments livrés"}
       else if(m==="doc"){if(!pay(S,.2))return G.toast("Crédits insuffisants.");o.med+=10;msg="10 médecins affectés"}
-      else if(m==="dir"){o.dir=nom(pick(CM.REGIONS).id);o.sat=clamp(o.sat+5,0,100);msg="Nouveau directeur : "+o.dir}
+      else if(m==="dir"){o.dir=nomG(pick(CM.REGIONS).id);o.sat=clamp(o.sat+5,0,100);msg=window.SYS.accord("Nouveau directeur : ",window.SYS.sexe(o.dir)).replace("Nouveau directrice","Nouvelle directrice")+o.dir}
       else if(m==="insp"){inbox(S,{from:"Inspection générale de la Santé",t:"Inspection : "+o.n,b:rapHop(o),k:"rapport"});msg="Rapport d'inspection au courrier"}
-      else if(m==="dg"){o.dg=nom(pick(CM.REGIONS).id);o.perf=clamp(o.perf+8,0,100);msg="Nouveau directeur général : "+o.dg}
+      else if(m==="dg"){o.dg=nomG(pick(CM.REGIONS).id);o.perf=clamp(o.perf+8,0,100);msg=(window.SYS.sexe(o.dg)==="f"?"Nouvelle directrice générale : ":"Nouveau directeur général : ")+o.dg}
       else if(m==="audit"){const f=Math.random()<.4;if(f)window.SYS.newCase(S,"corruption","CE",Math.round(rnd(1,4)),"Yaoundé");inbox(S,{from:"Contrôle supérieur de l'État",t:"Audit de "+o.n,b:f?"Des irrégularités graves ont été relevées ; le dossier est transmis au Tribunal criminel spécial.":"Gestion jugée perfectible, sans faute pénale.",k:"rapport"});msg="Audit lancé"}
       else if(m==="recap"){if(!pay(S,20))return G.toast("Crédits insuffisants.");o.perf=clamp(o.perf+15,0,100);msg="Recapitalisation effectuée"}
       else if(m==="enq"){const guilty=o.integ<45||Math.random()<.2;if(guilty){window.SYS.newCase(S,"corruption",o.reg,1,lieu);o.integ=clamp(o.integ+25,0,100)}msg=guilty?"L'enquête confirme les abus : poursuites engagées":"L'enquête ne relève pas de faute grave";window.SYS.cause(S,o.reg,"Enquête ouverte sur "+o.n+" à "+lieu,2,"")}
-      else if(m==="mut"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nom(o.reg);o.perf=rnd(40,70);o.integ=rnd(40,80);msg="Responsable muté, remplacé par "+o.n;window.SYS.cause(S,o.reg,"Mutation du responsable contesté à "+lieu,2,"")}
-      else if(m==="susp"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nom(o.reg);o.perf=rnd(45,75);o.integ=rnd(55,85);msg="Suspendu et remplacé par "+o.n;window.SYS.cause(S,o.reg,"Sanction exemplaire à "+lieu,3,"corruption")}
+      else if(m==="mut"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nomG(o.reg);o.perf=rnd(40,70);o.integ=rnd(40,80);msg="Responsable muté, remplacé par "+o.n;window.SYS.cause(S,o.reg,"Mutation du responsable contesté à "+lieu,2,"")}
+      else if(m==="susp"){o.n=(k==="police"?"Commissaire ":k==="gendarmerie"?"Colonel ":"")+nomG(o.reg);o.perf=rnd(45,75);o.integ=rnd(55,85);msg="Suspendu et remplacé par "+o.n;window.SYS.cause(S,o.reg,"Sanction exemplaire à "+lieu,3,"corruption")}
       else if(m==="fel"){o.perf=clamp(o.perf+5,0,100);msg="Félicitations publiques"}
       else if(m==="denonce"){S.opp.noto=clamp(S.opp.noto+2,0,100);window.SYS.cause(S,o.reg||"CE","L'opposition dénonce la gestion de "+(o.n||o.dir),-1,"corruption");msg="Dénonciation relayée par la presse"}
       else if(m==="saisir"){if(Math.random()<.4){o.n=(k==="police"?"Commissaire ":"")+nom(o.reg);msg="Le gouverneur a muté le responsable"}else msg="Le préfet promet d'examiner la situation"}
@@ -5601,7 +5616,8 @@ function findRegion(t){for(const r of CM.REGIONS){if(t.includes(norm(r.n))||t.in
 function findCity(t){const L=window.VOY?VOY.CITIES.slice().sort((a,b)=>b.n.length-a.n.length):[];for(const c of L)if(new RegExp("\\b"+norm(c.n)+"\\b").test(t))return c;return null}
 const ENT_AL={SOPECAM:"cameroon tribune",PAD:"port de douala|port autonome de douala",PAK:"port de kribi",CRTV:"television|radio nationale",CAMRAIL:"chemin de fer|chemins de fer|rail",ADC:"aeroports?",ENEO:"electricite",CAMWATER:"eau potable",CNPS:"securite sociale|caisse de prevoyance",SNH:"hydrocarbures|petrole",SONARA:"raffinerie","Camair-Co":"camair|compagnie aerienne",CAMPOST:"la poste",FEICOM:"fonds special",ONCC:"office du cacao|office national du cacao"};
 function findEnt(S,t){for(const x of S.org.ent){const id=norm(x.id);if(new RegExp("\\b"+id.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b").test(t))return x;const al=ENT_AL[x.id];if(al&&new RegExp("\\b("+al+")\\b").test(t))return x}return null}
-function findPerson(S,t){
+function findPerson(S,t){const P=findPerson0(S,t);if(P&&P.n&&!/^(le|la) /.test(P.n)){P.sexe=window.SYS.sexe(P.n);P.lab=window.SYS.accord(P.lab,P.sexe)}return P}
+function findPerson0(S,t){
   if(/premier ministre/.test(t))return{k:"pm",lab:"le Premier ministre",n:S.gov&&S.gov.pm?S.gov.pm.n:"le Premier ministre"};
   if(/vice president/.test(t))return{k:"vp",lab:"le vice-président",n:S.gov&&S.gov.vp?S.gov.vp.n:null};
   if(/secretaire general/.test(t))return{k:"sg",lab:"le secrétaire général de la Présidence",n:S.gov&&S.gov.sg?S.gov.sg.n:"le secrétaire général"};
@@ -5640,13 +5656,13 @@ function run(S,a){closeP();const end=()=>{busy=false;G.render();setTimeout(()=>V
 function meeting(S,a,end){const P=a.who;const who=(P.n?P.n+", ":"")+P.lab;G.toast("Audience : "+who);say("Votre rendez-vous est arrivé : "+who+" est là.");
   G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":"Bureau","Audience");
   const g=P.k==="min"&&S.gov?S.gov.min[P.id]:null;const opts=[["Faire le point de la situation","point"],["Donner des instructions fermes","ordre"],["Le féliciter et l'encourager","bravo"]];
-  if(S.mode==="pres"&&(P.k==="min"||P.k==="pm"))opts.push(["Mettre fin à ses fonctions","limoger"]);if(P.org)opts.push(["Ouvrir sa fiche (mesures possibles)","fiche"]);if(window.RENC)opts.unshift(["💬 S'entretenir librement (voix, texte ou choix)","libre"]);
+  if(S.mode==="pres"&&(P.k==="min"||P.k==="pm"))opts.push(["Mettre fin à ses fonctions et nommer une femme","limoger_f"],["Mettre fin à ses fonctions et nommer un homme","limoger_m"]);if(P.org)opts.push(["Ouvrir sa fiche (mesures possibles)","fiche"]);if(window.RENC)opts.unshift(["💬 S'entretenir librement (voix, texte ou choix)","libre"]);
   G.sheet('<span class="eyebrow">Audience · '+esc(G.dayLabel(S.day))+'</span><h3 class="h2">'+esc(who.charAt(0).toUpperCase()+who.slice(1))+'</h3><p class="small muted">Objet : '+esc(a.objet||"point de situation")+'</p><div class="choices">'+opts.map(([l,k])=>'<button class="choice" data-mk="'+k+'"><span class="t">'+esc(l)+'</span></button>').join("")+'</div>',el=>{
     el.querySelectorAll("[data-mk]").forEach(b=>b.onclick=()=>{const k=b.dataset.mk;el.remove();let txt="";const comp=g?g.comp:60;
       if(k==="point"){const sec=P.min?(E.MINISTERES.find(m=>m.id===P.min)||{}).s:null;const v=sec&&S.st&&S.st[sec]!=null?Math.round(S.st[sec]):null;txt=who+" vous présente la situation"+(v!=null?" : l'indicateur de son secteur est à "+v+" sur 100":"")+". "+(comp>65?"Son rapport est précis et convaincant.":"Son rapport est approximatif.");window.SYS.inbox(S,{from:P.lab,t:"Compte rendu d'audience",b:txt,k:"rapport",reg:P.reg})}
       else if(k==="ordre"){if(sec(P)&&S.st)S.st[sec(P)]=clamp(S.st[sec(P)]+(comp-50)/40,0,100);if(g)g.loy=clamp(g.loy-2,0,100);if(S.minis&&P.min===S.minis.id)S.minis.perf=clamp(S.minis.perf+1,0,100);txt="Instructions transmises. "+(comp>60?"Elles seront appliquées rapidement.":"Leur application risque de traîner.")}
       else if(k==="bravo"){if(g)g.loy=clamp(g.loy+4,0,100);txt="Encouragé, "+(P.n||"votre interlocuteur")+" repart motivé."}
-      else if(k==="limoger"){if(P.k==="min"&&S.gov){const regs=CM.REGIONS;const r=pick(regs);S.gov.min[P.id]={n:window.SYS.nom(r.id),reg:r.id,comp:Math.round(G.rnd(50,80)),loy:75};txt="Décret signé : "+(P.n||"le ministre")+" est remplacé par "+S.gov.min[P.id].n+"."}else txt="Le Premier ministre remet sa démission."}
+      else if(k.startsWith("limoger")){if(P.k==="min"&&S.gov){const regs=CM.REGIONS;const r=pick(regs);S.gov.min[P.id]={n:window.SYS.nom(r.id,k.slice(-1)),reg:r.id,comp:Math.round(G.rnd(50,80)),loy:75};txt="Décret signé : "+(P.n||"le ministre")+" est remplacé par "+S.gov.min[P.id].n+"."}else txt="Le Premier ministre remet sa démission."}
       else if(k==="fiche"){VIE.openOrg(S,P.org);end();return}
       else if(k==="libre"){end();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n||P.lab,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:P.reg?CM.REG[P.reg].chef:"Yaoundé",lieu:S.mode==="pres"?"le palais d'Etoudi":"votre bureau",sujet:a.objet,bonjour:"Mes respects. Je suis à votre disposition."}),300);return}
       say(txt);G.toast(txt.slice(0,90));window.SYS.inbox(S,{from:"Cabinet",t:"Audience : "+(P.n||P.lab),b:txt,k:"info",read:true});end()});
@@ -5659,10 +5675,11 @@ function visit(S,v){if(v.hop&&window.VIE){say("Vous êtes arrivé à "+lc(v.name
 VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous : "+raw);
   const reply=m=>{log("Jeu : "+m);say(m)};
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
+  if(window.GENRE&&GENRE.handle(S,raw,reply))return;
   // directive politique claire (« je veux que… », « j'ordonne… »)
   if(window.DIR&&/^(je veux qu|j exige qu|j ordonne|ordonne|je decide|il faut qu|que tous|que toutes|je demande (a|aux|que))/.test(t)&&!/^je veux (aller|visiter|voir|rencontrer|parler)/.test(t)){DIR.handle(S,raw,reply);return}
   // qui est… / nom du…
-  if(/\b(qui est|qui sont|nom d|comment s appelle|c est qui|qui dirige|qui gere|qui est a la tete)/.test(t)&&!/convoqu|recevoir|audience/.test(t)){const P=findPerson(S,t);if(P&&P.k==="ent"&&P.n){const e=S.org.ent.find(x=>x.id===P.org.id);return reply("À la tête "+(/^[AEIOU]/.test(e.n)?"d'":"de ")+e.n+(e.act?" ("+e.act.replace(/\s*\(.*\)/,"")+")":"")+" : "+P.n+" (direction générale).")}if(P){const L=P.lab.charAt(0).toUpperCase()+P.lab.slice(1);return reply(P.n&&!/^le /.test(P.n)?L+" s'appelle "+P.n+".":L+" n'a pas encore été nommé, ou son nom n'est pas connu.")}
+  if(/\b(qui est|qui sont|nom d|comment s appelle|c est qui|qui dirige|qui gere|qui est a la tete)/.test(t)&&!/convoqu|recevoir|audience/.test(t)){const P=findPerson(S,t);if(P&&P.k==="ent"&&P.n){const e=S.org.ent.find(x=>x.id===P.org.id);return reply("À la tête "+(/^[AEIOU]/.test(e.n)?"d'":"de ")+e.n+(e.act?" ("+e.act.replace(/\s*\(.*\)/,"")+")":"")+" : "+P.n+(P.sexe==="f"?", directrice générale.":", directeur général."))}if(P){const L=P.lab.charAt(0).toUpperCase()+P.lab.slice(1);return reply(P.n&&!/^le /.test(P.n)?L+" s'appelle "+P.n+".":L+" n'a pas encore été nommé, ou son nom n'est pas connu.")}
     return reply("Je ne trouve pas cette personne parmi les responsables suivis dans le jeu. Je connais les ministres, le Premier ministre, les gouverneurs, préfets, commissaires, directeurs d'hôpitaux et les directeurs généraux de : "+S.org.ent.map(x=>x.n).join(", ")+".")}
   // temps
   if(/\b(pause|arrete le temps|stop le temps)\b/.test(t)){S.paused=true;G.render();return reply("Le temps est en pause.")}
@@ -5695,7 +5712,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     const can=S.mode==="pres"||(S.mode==="min"&&(P.min===S.minis.id||["prefet","police","gouverneur","hop","ent"].includes(P.k)&&P.min===S.minis.id));
     if(!can&&S.mode!=="pres"){const ok=Math.random()<(S.mode==="min"?.8:.35);if(!ok)return reply("Votre demande d'audience auprès "+deL(P.lab)+" a été enregistrée, mais son cabinet ne vous a pas encore proposé de créneau.");}
     agenda(S).push({id:nid(),type:"meet",at:w.at,who:P,objet:obj||"point de situation",lab:(can?"Audience : ":"Rendez-vous avec ")+(P.n?P.n+", ":"")+P.lab});G.render();
-    return reply((can?"Très bien. ":"Votre demande est acceptée. ")+(P.n?P.n+", "+P.lab+", ":P.lab.charAt(0).toUpperCase()+P.lab.slice(1)+" ")+(can?"est convoqué ":"vous recevra ")+w.label+(S.mode==="pres"?" au palais d'Etoudi.":"."))}
+    return reply((can?"Très bien. ":"Votre demande est acceptée. ")+(P.n?P.n+", "+P.lab+", ":P.lab.charAt(0).toUpperCase()+P.lab.slice(1)+" ")+(can?"est convoqué"+(P.sexe==="f"?"e ":" "):"vous recevra ")+w.label+(S.mode==="pres"?" au palais d'Etoudi.":"."))}
   // déplacement / visite
   if(/\b(aller|va|vais|rendre|deplacer|visite|visiter|partir|conduis|emmene|voyage)\b/.test(t)){if(!window.VOY)return reply("Les déplacements ne sont pas disponibles.");
     let to=null,visitInfo=null;const here=VOY.here(S);
@@ -6049,6 +6066,67 @@ RENC.bindOrg=function(S,el,k,o){const b=el.querySelector("[data-renc]");if(!b)re
 
 </script>
 <script>
+/* Chemin d'Etoudi — équilibre femmes-hommes : le jeu connaît le genre de chaque responsable (ministres, DG, gouverneurs,
+   préfets, directeurs d'hôpitaux, commissaires), affiche la parité, et permet de la corriger : nominations au choix,
+   remaniement ciblé, ou directive « je veux 30 % de femmes au gouvernement ». Au départ, comme dans la réalité, peu de femmes. */
+(function(){
+"use strict";
+const CM=window.CM,E=window.ETAT,G=window.GAME,A=window.Audio2;
+const esc=G.esc,clamp=G.clamp,pick=G.pick;
+const GENRE={};window.GENRE=GENRE;
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'\-]/g," ").replace(/\s+/g," ").trim();
+const sx=n=>window.SYS.sexe(n);const say=t=>{try{A.speak(t,{voix:"f"})}catch(e){}};
+const strip=n=>String(n||"").replace(/^(Colonel|Commissaire)\s+/,"");
+
+function groups(S){const G2=[];
+  if(S.gov){const L=Object.entries(S.gov.min).map(([id,g])=>({id,n:g.n,poste:(E.MINISTERES.find(m=>m.id===id)||{}).n||id,ref:g,champ:"n"}));if(S.gov.pm)L.unshift({id:"pm",n:S.gov.pm.n,poste:"Premier ministre",ref:S.gov.pm,champ:"n"});G2.push({k:"gouv",lab:"Gouvernement",L})}
+  if(S.org){const O=S.org;
+    G2.push({k:"dg",lab:"Directions générales des entreprises publiques",L:O.ent.map(e=>({id:e.id,n:e.dg,poste:e.n,ref:e,champ:"dg"}))});
+    G2.push({k:"gouverneurs",lab:"Gouverneurs de région",L:O.gouv.map(g=>({id:g.id,n:g.n,poste:CM.REG[g.reg].n,ref:g,champ:"n"}))});
+    G2.push({k:"prefets",lab:"Préfets",L:O.pref.map(p=>({id:p.id,n:p.n,poste:p.ville,ref:p,champ:"n"}))});
+    G2.push({k:"hop",lab:"Directions d'hôpitaux",L:O.hop.map(h=>({id:h.id,n:h.dir,poste:h.n,ref:h,champ:"dir"}))});
+    G2.push({k:"comm",lab:"Commissaires centraux",L:O.comm.map(c=>({id:c.id,n:strip(c.n),poste:c.ville,ref:c,champ:"n",pre:"Commissaire "}))})}
+  for(const g of G2){g.f=g.L.filter(x=>sx(x.n)==="f").length;g.t=g.L.length;g.pct=g.t?Math.round(g.f*100/g.t):0}return G2}
+GENRE.groups=groups;
+const pctC=p=>p>=40?"var(--ok,#43c47c)":p>=30?"var(--warn,#f0a93a)":"var(--bad,#ef5350)";
+
+GENRE.card=function(S){if(S.mode!=="pres"&&S.mode!=="min")return"";const Gs=groups(S);if(!Gs.length)return"";const g=Gs[0];
+  return '<div class="card"><div class="row" style="justify-content:space-between"><b>⚖️ Équilibre femmes-hommes</b><button class="btn small" data-genre>Détails</button></div><div class="small">'+
+   Gs.slice(0,3).map(x=>esc(x.lab.split(" ")[0])+' : <b style="color:'+pctC(x.pct)+'">'+x.f+'/'+x.t+' ('+x.pct+' %)</b>').join(" · ")+'</div></div>'};
+GENRE.bindCard=function(S,root){(root||document).querySelectorAll("[data-genre]").forEach(b=>b.onclick=()=>GENRE.sheet(S))};
+
+GENRE.sheet=function(S){const Gs=groups(S);const pres=S.mode==="pres";
+  G.sheet('<span class="eyebrow">Parité</span><h3 class="h2">Équilibre femmes-hommes</h3><p class="small muted">Objectif de référence : au moins 30 % de femmes aux postes de décision (engagements de l\'Union africaine, protocole de Maputo). La parité est à 50 %.</p>'+
+   Gs.map(g=>'<div><div class="row" style="justify-content:space-between"><span class="small"><b>'+esc(g.lab)+'</b></span><span class="small" style="color:'+pctC(g.pct)+'">'+g.f+' femmes sur '+g.t+' · '+g.pct+' %</span></div><div class="bar"><i style="width:'+g.pct+'%;background:'+pctC(g.pct)+'"></i></div></div>').join("")+
+   '<span class="eyebrow">Membres du gouvernement</span><div class="kv">'+Gs[0].L.map(x=>'<span>'+esc(x.poste)+'</span><b>'+(sx(x.n)==="f"?"♀ ":"♂ ")+esc(x.n)+'</b>').join("")+'</div>'+
+   (pres?'<div class="row"><button class="btn primary" data-gpar="30">Remanier pour atteindre 30 % de femmes</button><button class="btn" data-gpar="50">Viser la parité (50 %)</button></div>':'<p class="small muted">Seul le président de la République nomme les membres du gouvernement.</p>'),el=>{
+    el.querySelectorAll("[data-gpar]").forEach(b=>b.onclick=()=>{el.remove();GENRE.apply(S,"gouv",+b.dataset.gpar,m=>{say(m);G.toast(m.slice(0,120))})})})};
+
+/* rééquilibrage : on remplace, dans le groupe, les hommes les moins performants par des femmes jusqu'à la cible */
+GENRE.apply=function(S,k,cible,reply){const g=groups(S).find(x=>x.k===k);if(!g)return;const need=Math.ceil(g.t*cible/100)-g.f;
+  if(need<=0){reply(g.lab+" : déjà "+g.pct+" % de femmes, l'objectif de "+cible+" % est atteint.");return}
+  const score=x=>x.ref.comp!=null?x.ref.comp:x.ref.perf!=null?x.ref.perf:50;
+  const men=g.L.filter(x=>sx(x.n)==="m"&&x.id!=="pm").sort((a,b)=>score(a)-score(b)).slice(0,need);const noms=[];
+  for(const x of men){const r=x.ref.reg||pick(CM.REGIONS).id;const nn=window.SYS.nom(r,"f");x.ref[x.champ]=(x.pre||"")+nn;if(x.ref.comp!=null)x.ref.comp=Math.round(G.rnd(55,82));if(x.ref.perf!=null)x.ref.perf=Math.round(G.rnd(50,75));if(x.ref.loy!=null)x.ref.loy=78;noms.push(nn+" ("+x.poste+")")}
+  const g2=groups(S).find(x=>x.k===k);const big=k==="gouv";
+  if(S.st){S.st.pop=clamp(S.st.pop+(big?2:1),0,100);S.st.soc=clamp(S.st.soc+(big?1.5:.8),0,100)}for(const R of CM.REGIONS)window.SYS.cause(S,R.id,"Plus de femmes aux responsabilités",big?1:.5,"parite");
+  const msg=(big?"Remaniement ministériel : ":"Nominations : ")+men.length+" femme"+(men.length>1?"s":"")+" nommée"+(men.length>1?"s":"")+". "+g2.lab+" : "+g2.f+" femmes sur "+g2.t+" ("+g2.pct+" %).";
+  window.SYS.inbox(S,{from:"Secrétariat général de la Présidence",t:(big?"Décret portant réaménagement du gouvernement":"Décret de nominations")+" — parité",b:msg+"\nNouvelles nommées : "+noms.join(", ")+".\nLes associations de femmes saluent la décision ; certains barons du régime grincent des dents.",k:"info",read:true});
+  reply(msg);G.render()};
+
+/* commandes : « combien de femmes au gouvernement ? », « je veux 30 % de femmes au gouvernement » */
+const RE=/(parite|equilibre (du |de |des )?genre|equilibre hommes? femmes|combien de femmes|nombre de femmes|pourcentage de femmes|femmes (au|dans le|du) gouvernement|plus de femmes|\d+ ?% de femmes|quota)/;
+GENRE.matches=t=>RE.test(norm(t));
+GENRE.handle=function(S,raw,reply){if(!S||S.phase!=="play")return false;const t=norm(raw);if(!RE.test(t))return false;reply=reply||say;
+  const k=/\bdg\b|directeurs? generaux|entreprises/.test(t)?"dg":/gouverneur/.test(t)?"gouverneurs":/prefet/.test(t)?"prefets":/hopita/.test(t)?"hop":/commissaire/.test(t)?"comm":"gouv";
+  const imper=/je veux|j exige|j ordonne|ordonne|il faut|nommez|nommer|atteindre|remani|faites|que le gouvernement|que les/.test(t);
+  if(!imper){const Gs=groups(S);const g=Gs.find(x=>x.k===k);reply(g.lab+" : "+g.f+" femmes sur "+g.t+", soit "+g.pct+" %."+(k==="gouv"?" "+Gs.slice(1,3).map(x=>x.lab+" : "+x.pct+" %").join(" ; ")+".":""));return true}
+  if(S.mode!=="pres"){reply("Seul le président de la République peut décider de ces nominations. Votre proposition est transmise.");return true}
+  const m=t.match(/(\d{1,3}) ?%/);const cible=m?clamp(+m[1],1,100):/parite|moitie/.test(t)?50:30;GENRE.apply(S,k,cible,reply);return true};
+})();
+
+</script>
+<script>
 /* Chemin d'Etoudi — directives : toute décision politique donnée en clair (à la voix, par écrit, ou dans « Autre instruction »)
    devient une directive officielle, exécutée par l'administration avec des effets réalistes et un compte rendu à échéance.
    Ex. : « Je veux que tous les ministres déclarent leur patrimoine avec justificatifs » → article 66 de la Constitution,
@@ -6209,6 +6287,7 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
 INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
   const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
   const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
+  if(window.GENRE&&GENRE.matches(text)){el.remove();GENRE.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
   if(window.DIR&&DIR.matches(text)){el.remove();await DIR.handle(S,text,m=>{say(m);G.toast(m.slice(0,110))});return}
   if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");
     try{const j=await sample.json("Tu es le chef de cabinet du joueur dans un jeu de simulation politique réaliste au Cameroun. Situation affichée : « "+title+" ».\n"+body+"\n\nActions disponibles (index : libellé) :\n"+opts.map((o,i)=>i+" : "+o).join("\n")+

@@ -13,7 +13,16 @@ const lc1=x=>x.charAt(0).toLowerCase()+x.slice(1);
 const deR=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;
 
 /* ---------- noms ---------- */
-function nom(reg){return pick(E.PRENOMS)+" "+pick(E.NOMS[reg]||E.NOMS.CE)}
+function nom(reg,sexe){const s=sexe==="f"||sexe==="m"?sexe:Math.random()<.5?"f":"m";return pick(s==="f"?E.PRENOMS_F:E.PRENOMS_M)+" "+pick(E.NOMS[reg]||E.NOMS.CE)}
+/* genre d'une personne d'après son prénom (fonctionne aussi sur les parties anciennes) */
+const F_SET=new Set(E.PRENOMS_F.map(x=>x.toLowerCase())),M_SET=new Set(E.PRENOMS_M.map(x=>x.toLowerCase()));
+function sexe(n){if(!n)return null;const w=String(n).replace(/^(Colonel|Commissaire|Général|Dr|Pr|Me|Mgr|Madame|Monsieur|M\.|Mme)\s+/i,"").split(/\s+/)[0].toLowerCase();if(F_SET.has(w))return"f";if(M_SET.has(w))return"m";
+  if(/(ine|ette|elle|ienne|ée|a|ou)$/.test(w)&&!/(ou)$/.test(w))return"f";return"m"}
+/* accord d'une fonction selon le genre : « le ministre » → « la ministre », « le directeur général » → « la directrice générale »… */
+function accord(lab,s){if(s!=="f"||!lab)return lab;return String(lab).replace(/\ble directeur général\b/g,"la directrice générale").replace(/\bdirecteur général\b/g,"directrice générale").replace(/\ble directeur\b/g,"la directrice").replace(/\bdirecteur\b/g,"directrice")
+  .replace(/\ble ministre\b/g,"la ministre").replace(/\ble gouverneur\b/g,"la gouverneure").replace(/\ble préfet\b/g,"la préfète").replace(/\ble commissaire\b/g,"la commissaire").replace(/\ble délégué général\b/g,"la déléguée générale")
+  .replace(/\ble secrétaire général\b/g,"la secrétaire générale").replace(/\ble Premier ministre\b/g,"la Première ministre").replace(/\ble vice-président\b/g,"la vice-présidente").replace(/\ble chef\b/g,"la cheffe").replace(/\ble responsable\b/g,"la responsable")}
+SYS.sexe=sexe;SYS.accord=accord;
 function regAlea(){const t=Math.random()*30.36;let a=0;for(const r of CM.REGIONS){a+=r.pop;if(t<=a)return r.id}return"CE"}
 SYS.nom=nom;
 
@@ -39,7 +48,7 @@ function seedCauses(S){
 function initGov(S){
   const gov={min:{},pm:{n:"Joseph Dion Ngute",reg:"SW",comp:62,loy:80,reel:1},vp:null,sg:{n:nom("SU"),reg:"SU",comp:70,loy:85},alloc:{},fisc:{},smig:E.SALAIRES.smigPrive,indice:100,recrues:{},etat:[]};
   const regs=CM.REGIONS.map(r=>r.id);
-  E.MINISTERES.forEach((m,i)=>{const reg=regs[(i*7)%10];gov.min[m.id]={n:nom(reg),reg,comp:Math.round(rnd(45,78)),loy:Math.round(rnd(60,90))};gov.alloc[m.id]=m.b});
+  E.MINISTERES.forEach((m,i)=>{const reg=regs[(i*7)%10];gov.min[m.id]={n:nom(reg,Math.random()<.2?"f":"m"),reg,comp:Math.round(rnd(45,78)),loy:Math.round(rnd(60,90))};gov.alloc[m.id]=m.b});
   E.FISCAL.forEach(f=>gov.fisc[f.id]=f.v);
   for(const id in gov.min)tdvFor(gov.min[id]);
   gov.tdv=Object.fromEntries(E.TRAIN.map(t=>[t.id,"normal"]));
