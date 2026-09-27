@@ -182,6 +182,7 @@ li .vidbtn,.log .vidbtn{padding:2px 8px!important;font-size:.72rem!important;mar
 @media (max-width:560px){.gtahud{top:132px}.gtahud .clk{font-size:24px}.gtahud .cash{font-size:17px}.gtahud .bar{width:78px}.joy{width:100px;height:100px}}
 .gfxload{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(5,8,12,.82);color:#fff;text-align:center;padding:20px}
 .vxpanel{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;width:min(560px,calc(100vw - 24px));z-index:60;background:var(--card,#16181d);color:inherit;border:1px solid var(--line,#333);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.instr{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
 .vxlog{max-height:34vh;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .vxlog .me{align-self:flex-end;background:rgba(80,140,255,.18);padding:6px 10px;border-radius:10px;max-width:85%}
 .vxlog .it{align-self:flex-start;background:rgba(255,255,255,.07);padding:6px 10px;border-radius:10px;max-width:85%}
@@ -1881,7 +1882,7 @@ const GAME={};window.GAME=GAME;
 /* ---------- utilitaires d'interface ---------- */
 function toast(msg){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in">'+html+'<button class="btn" data-close>Fermer</button></div>';
-  el.addEventListener("click",e=>{if(e.target===el||e.target.hasAttribute("data-close")){el.remove()}});document.body.appendChild(el);if(after)after(el);if(window.VID)VID.bindAll(el);return el}
+  el.addEventListener("click",e=>{if(e.target===el||e.target.hasAttribute("data-close")){el.remove()}});document.body.appendChild(el);if(after)after(el);if(window.VID)VID.bindAll(el);if(window.INSTR)INSTR.attach(el);return el}
 GAME.dayLabel=dayLabel;GAME.toast=toast;GAME.sheet=sheet;GAME.esc=esc;GAME.fmt=fmt;GAME.monthLabel=monthLabel;GAME.pick=pick;GAME.rnd=rnd;GAME.clamp=clamp;
 
 let viewKey="";
@@ -5285,7 +5286,7 @@ VID.play=function(o){
   document.body.appendChild(el);
   const text=narration({type,text:o.text},R,city);$("fsub").textContent=text;
   if(!S3||!S3.ok){$("fview").innerHTML='<div class="nogl" style="position:absolute;inset:0;display:grid;place-items:center;padding:20px">Votre appareil n\'affiche pas la 3D : voici le reportage en texte.<br><br>'+esc(text)+'</div>'}
-  else{S3.attach($("fview"));S3.film({type,land:R.land,seed:(o.text||"").length+reg.charCodeAt(0),q,banner:o.banner,
+  else{S3.attach($("fview"));VID.filmOn($("fview"));S3.film({type,land:R.land,seed:(o.text||"").length+reg.charCodeAt(0),q,banner:o.banner,
     onProgress:(p,i)=>{const pr=$("fprog");if(pr)pr.style.width=(p*100).toFixed(1)+"%";const tc=$("ftc");if(tc){const s=Math.floor(p*20);tc.textContent="00:"+String(s).padStart(2,"0")}},
     onEnd:()=>{const b=$("fPause");if(b)b.textContent="Terminé"}})}
   const amb={greve:"meeting",emeute:"meeting",marche:"marche",incendie:"marche",hopital:"ville",village:"village"}[type]||"ville";try{A.ambient(amb)}catch(e){}
@@ -5293,7 +5294,7 @@ VID.play=function(o){
   let paused=false;
   $("fPause").onclick=()=>{paused=!paused;S3.filmPause&&S3.filmPause(paused);$("fPause").textContent=paused?"Lecture":"Pause";if(paused)A.stop()};
   $("fAgain").onclick=()=>{S3.filmReplay&&S3.filmReplay();paused=false;$("fPause").textContent="Pause";A.speak(text,{voix:"m"})};
-  const close=()=>{A.stop();if(S3&&S3.ok){S3.detach();S3.endFilm()}el.remove();document.removeEventListener("keydown",esck)};
+  const close=()=>{A.stop();if(S3&&S3.ok){S3.detach();S3.endFilm();VID.filmOff()}el.remove();document.removeEventListener("keydown",esck)};
   const esck=e=>{if(e.key==="Escape")close()};document.addEventListener("keydown",esck);
   $("fClose").onclick=close;
 };
@@ -5317,6 +5318,9 @@ setInterval(()=>{gtaHud();streetMini()},500);
 /* ---------- vue rue : commandes et mini-carte des rues ---------- */
 /* ---------- qualité graphique : classique (téléphone) ou Ultra (PC) ---------- */
 let ultraVis=false;
+/* les vidéos et trajets utilisent le moteur classique : on le réveille pendant le film, même si le mode Ultra est actif */
+VID.filmOn=function(box){if(!S3)return;S3.paused=false;const c=box&&box.querySelector("canvas");if(c)c.style.visibility="visible"};
+VID.filmOff=function(){VID.ultraView(ultraVis)};
 VID.ultraView=function(on){ultraVis=!!on;if(S3)S3.paused=ultraVis;const c=document.querySelector("#view > canvas:not(.ultra-canvas)");if(c)c.style.visibility=ultraVis?"hidden":"visible";const u=document.querySelector(".ultra-canvas");if(u)u.style.display=ultraVis?"block":"none"};
 VID.gfxPref=()=>{try{return localStorage.getItem("etoudi-gfx")}catch(e){return null}};
 VID.setGfx=async function(ultra){try{localStorage.setItem("etoudi-gfx",ultra?"ultra":"classic")}catch(e){}
@@ -5505,10 +5509,10 @@ function go(S,from,to,p,watch,horsNorme,cb){
   const sub=(M.work?"Pendant le trajet, vous travaillez sur vos dossiers. ":"")+(p.mode==="cortege"?"Les routes sont bouclées ; les motards de la Garde présidentielle ouvrent la voie.":p.mode==="convoi"?"Les motards de l'escorte ouvrent la voie, sirènes hurlantes.":p.mode==="moto"?"Le bendskin se faufile entre les voitures.":p.mode==="train"?"Le train Camrail traverse la campagne.":M.air?"Décollage, vol au-dessus des nuages, puis atterrissage.":p.mode==="helico"?"L'hélicoptère survole la région.":p.jam?"C'est l'heure de pointe : la circulation est dense.":"La route défile.");
   $("vySub").textContent=sub;
   const road=p.same?null:(p.d>250?CM.REG[pick([from.reg,to.reg])].land:RB.land);const insec=p.sec<30&&!M.esc&&!M.air&&!M.heli;
-  S3.attach($("fview"));S3.travel({mode:p.mode,local:p.same,seed:Math.floor(S.day),from:{land:RA.land,pop:city(from.v).pop,profile:VOY.profile(from.reg),name:from.v,apt:AIR[from.v]},to:{land:RB.land,pop:city(to.v).pop,profile:VOY.profile(to.reg),apt:AIR[to.v],name:to.v},road,insec,
+  S3.attach($("fview"));if(window.VID&&VID.filmOn)VID.filmOn($("fview"));S3.travel({mode:p.mode,local:p.same,seed:Math.floor(S.day),from:{land:RA.land,pop:city(from.v).pop,profile:VOY.profile(from.reg),name:from.v,apt:AIR[from.v]},to:{land:RB.land,pop:city(to.v).pop,profile:VOY.profile(to.reg),apt:AIR[to.v],name:to.v},road,insec,
     onProgress:q=>{const b=$("fprog");if(b)b.style.width=(q*100).toFixed(1)+"%"},onEnd:()=>setTimeout(close,700)});
   if(RA)try{A.ambient(p.mode==="avion"||p.mode==="avionp"||p.mode==="jet"?"conseil":"ville")}catch(e){}
-  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();el.remove();arrive()}
+  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();if(window.VID&&VID.filmOff)VID.filmOff();el.remove();arrive()}
   $("vySkip").onclick=close;
 }
 function arrival(S,from,to,p,horsNorme){
@@ -5595,7 +5599,7 @@ function findPerson(S,t){
   if(/commissaire|commissariat/.test(t)){const c=findCity(t);const o=S.org&&c&&S.org.comm.find(p=>norm(p.ville)===norm(c.n));return{k:"police",lab:"le commissaire"+(c?" de "+c.n:""),n:o?o.n:"le commissaire",org:o&&{k:"police",id:o.id},reg:c&&c.reg}}
   if(/\b(dg|directeur general|directrice generale)\b/.test(t)&&S.org){const e=S.org.ent.find(x=>t.includes(norm(x.id))||t.includes(norm(x.n)));if(e)return{k:"ent",lab:"le directeur général de "+e.n,n:e.dg,org:{k:"ent",id:e.id},min:e.tut}}
   if(/directeur|directrice/.test(t)&&/hopital/.test(t)&&S.org){const h=findHospital(S,t);if(h)return{k:"hop",lab:"le directeur "+deL(lc(h.n).replace(/^(h[oô]pital|centre|clinique)/i,m=>"l'"+m).replace(/^l'centre/,"le centre").replace(/^l'clinique/,"la clinique")),n:h.dir,org:{k:"hop",id:h.id},reg:h.reg,min:"MINSANTE"}}
-  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
+  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":/^\S+s\b/.test(m.n)?"des ":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
   return null}
 const de=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;const lc=t=>t.charAt(0).toLowerCase()+t.slice(1);
 function findHospital(S,t){if(!S.org)return null;const c=findCity(t),r=findRegion(t);let L=S.org.hop.filter(h=>t.includes(norm(h.n).replace(/^hopital (general|central|regional|de district) (de |d )?/,"")));
@@ -5861,11 +5865,11 @@ ACTU.mailBind=function(S,it,el){if(!it.actu)return;const a=items.find(x=>x.id===
     if(k==="terrain"){el.remove();done.push(k);const to=place(a);const p=window.VOY?VOY.goTo(S,to,null,true,()=>{good(2,"Visite de terrain après : "+a.titre);if(S.st)S.st.pop=clamp(S.st.pop+.6,0,100);if(S.opp)S.opp.noto=clamp(S.opp.noto+2,0,100);
         if(window.RENC)setTimeout(()=>RENC.open(S,{kind:who(a),reg:to.reg,ville:to.v,sujet:a.titre,contexte:a.resume}),700);G.render()}):"voyage indisponible";
       if(p){G.toast("Déplacement impossible : "+p);done.pop()}return}
-    if(k==="ministre"){good(1.5,"Le ministre dépêché sur place : "+a.titre);if(am&&am.g)am.g.loy=clamp(am.g.loy+1,0,100);msg=(am?(am.g&&am.g.n?am.g.n+", ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":"de la ")+am.m.n:"Le ministre compétent"):"Le ministre compétent")+" se rend à "+(a.ville||"l'endroit concerné")+" dès demain."}
+    if(k==="ministre"){good(1.5,"Le ministre dépêché sur place : "+a.titre);if(am&&am.g)am.g.loy=clamp(am.g.loy+1,0,100);msg=(am?(am.g&&am.g.n?am.g.n+", ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":/^\S+s\b/.test(am.m.n)?"des ":"de la ")+am.m.n:"Le ministre compétent"):"Le ministre compétent")+" se rend à "+(a.ville||"l'endroit concerné")+" dès demain."}
     else if(k==="aide"){const md=S.mode==="pres"?1:S.mode==="min"?.1:.005;if(!pay(S,md))return G.toast("Fonds insuffisants.");good(3,"Aide d'urgence : "+a.titre);if(S.st)S.st.soc=clamp(S.st.soc+.5,0,100);if(S.minis)S.minis.perf=clamp(S.minis.perf+2,0,100);msg="L'aide d'urgence est débloquée et acheminée vers "+(a.ville||"les zones touchées")+"."}
     else if(k==="enquete"){good(1.5,"Enquête ordonnée : "+a.titre);if(S.st)S.st.int=clamp(S.st.int+.8,0,100);msg="Une enquête est ouverte. Le parquet vous rendra compte."}
     else if(k==="convoque"){if(!am)return G.toast("Aucun ministre identifié.");const at=Math.floor(S.day+1/3)+1+9/24-1/3;S.agenda=S.agenda||[];
-      S.agenda.push({id:"a"+Date.now(),type:"meet",at,who:{k:"min",id:am.id,lab:(am.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":"de la ")+am.m.n),n:am.g?am.g.n:null,min:am.id},objet:a.titre,lab:"Audience : "+a.titre.slice(0,50)});msg="Audience fixée demain à 9 h."}
+      S.agenda.push({id:"a"+Date.now(),type:"meet",at,who:{k:"min",id:am.id,lab:(am.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(am.m.n)?"de l'":/^\S+s\b/.test(am.m.n)?"des ":"de la ")+am.m.n),n:am.g?am.g.n:null,min:am.id},objet:a.titre,lab:"Audience : "+a.titre.slice(0,50)});msg="Audience fixée demain à 9 h."}
     else if(k==="communique"){good(1,"Message officiel : "+a.titre);if(S.st)S.st.pop=clamp(S.st.pop+.4,0,100);if(S.opp)S.opp.noto=clamp(S.opp.noto+1,0,100);msg="Votre message est repris par les médias."}
     else if(k==="rapport"){if(S.minis)S.minis.conf=clamp(S.minis.conf+2,0,100);msg="Rapport transmis à la Présidence."}
     else if(k==="saisir"){good(.8,"La mairie saisit les autorités : "+a.titre);msg="Le préfet et le gouverneur sont saisis."}
@@ -6025,6 +6029,61 @@ RENC.orgBtn=function(){return '<button class="btn" data-renc="1">💬 S\'entrete
 RENC.bindOrg=function(S,el,k,o){const b=el.querySelector("[data-renc]");if(!b)return;b.onclick=()=>{el.remove();
   const lab=k==="hop"?"directeur de "+o.n:k==="ent"?"directeur général de "+o.n:k==="police"?"commissaire central":k==="prefet"?"préfet":k==="gouverneur"?"gouverneur de la région":"commandant de légion";
   RENC.open(S,{kind:k==="hop"?"medecin":"officiel",n:k==="hop"?o.dir:k==="ent"?o.dg:o.n,lab,reg:o.reg,ville:o.ville||(o.reg?CM.REG[o.reg].chef:null),lieu:k==="hop"?"son bureau à l'hôpital":"son bureau",sujet:"point sur "+(k==="hop"?"l'hôpital":k==="ent"?"l'entreprise":"la situation")})}};
+})();
+
+</script>
+<script>
+/* Chemin d'Etoudi — « Autre instruction » : sous chaque fenêtre de décision, on peut écrire ou dicter sa propre consigne
+   au lieu de choisir un bouton. Le jeu choisit l'action correspondante, exécute une commande (convoquer, se déplacer…)
+   ou transmet la consigne à vos services. En ligne, Claude interprète les consignes libres ; ailleurs, un moteur intégré. */
+(function(){
+"use strict";
+const G=window.GAME,A=window.Audio2;
+const esc=G.esc;
+const INSTR={};window.INSTR=INSTR;
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'\-]/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+const STOP=new Set("les des une pour avec dans sur par que qui mon mes son ses leur vous nous tout tous plus faire fais faites veux voudrais aller donner donne mettre cette ceci cela etre avoir".split(" "));
+const toks=t=>norm(t).split(" ").filter(w=>w.length>2&&!STOP.has(w)).map(w=>w.slice(0,5));
+const SYN=[["urgence","aide","secours","debloq","fonds","argent","financ"],["enquet","investig","justice","parquet","poursuiv"],["place","rendre","terrain","deplac","visite","aller"],["ministr","depech","envoy"],["convoq","recevo","audien"],["messag","condol","nation","discou","communi","declar"],["region","carte"],["ecout","lire"],["sanct","limog","revoq","suspen","renvoy"],["nomme","remplac"],["felic","bravo","encour"]];
+const syn=w=>{for(const g of SYN)if(g.some(x=>w.startsWith(x)||x.startsWith(w)))return g[0];return w};
+let sample=null;(async()=>{try{if(window.claude&&claude.use)sample=await claude.use("sample")}catch(e){}})();let refused=false;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const say=t=>{try{A.speak(t,{voix:"f"})}catch(e){}};
+
+function options(el){return [...el.querySelectorAll("button.choice,button.btn")].filter(b=>!b.hasAttribute("data-close")&&!b.closest(".instr")&&b.id!=="mRead"&&!b.disabled&&b.offsetParent!==null&&b.textContent.trim().length>1)}
+function label(b){return b.textContent.replace(/\s+/g," ").trim()}
+function best(el,text){const T=toks(text).map(syn);let top=null,sc=0,second=0;
+  for(const b of options(el)){const L=toks(label(b)).map(syn);let s=0;for(const w of T)if(L.includes(w))s+=1;if(s>sc){second=sc;sc=s;top=b}else if(s>second)second=s}
+  return sc>=1&&sc>second?top:null}
+const CMD=/(convoqu|recevoir|recois|audience|aller a|va a|vais a|visite|visiter|rencontr|rendre visite|avance|video|montre|ouvre|marcher|parler avec|discuter avec|quelle heure|quel jour|situation|qui est)/;
+
+INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttribute("data-noinstr"))return;if(!G.S||G.S.phase!=="play")return;
+  if(!options(el).length)return;const box=el.querySelector(".in")||el;const close=box.querySelector("[data-close]");
+  const d=document.createElement("div");d.className="instr";
+  d.innerHTML='<span class="eyebrow">Autre instruction</span><div class="row" style="gap:6px;flex-wrap:nowrap"><input type="text" placeholder="Écrivez votre propre consigne…" aria-label="Autre instruction" style="flex:1;min-width:0">'+
+   (SR?'<button class="btn" data-imic aria-label="Dicter la consigne" title="Dicter la consigne">🎙</button>':'')+'<button class="btn primary" data-igo>OK</button></div><p class="small muted" data-ihint></p>';
+  box.insertBefore(d,close||null);
+  const inp=d.querySelector("input"),hint=t=>{d.querySelector("[data-ihint]").textContent=t||""};
+  const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";await INSTR.run(el,v,hint)};
+  d.querySelector("[data-igo]").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
+  const mic=d.querySelector("[data-imic]");if(mic)mic.onclick=()=>{try{A.stop()}catch(e){}const r=new SR();r.lang="fr-FR";r.interimResults=true;mic.textContent="⏹";hint("J'écoute…");
+    r.onresult=e=>{let f="",t="";for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)f+=x[0].transcript;else t+=x[0].transcript}if(t)hint(t);if(f){inp.value=f;try{r.stop()}catch(x){}go()}};
+    r.onerror=e=>{hint(e.error==="not-allowed"||e.error==="service-not-allowed"?"Micro bloqué ici : autorisez-le dans Chrome, ou écrivez la consigne.":"Micro : "+e.error)};r.onend=()=>{mic.textContent="🎙"};try{r.start()}catch(e){mic.textContent="🎙"}}};
+
+INSTR.run=async function(el,text,hint){hint=hint||(()=>{});const S=G.S;
+  const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
+  const b=best(el,text);if(b){const l=label(b);hint("→ « "+l+" »");say("Très bien : "+l+".");setTimeout(()=>b.click(),250);return}
+  if(sample&&!refused){const opts=options(el).map(label);const title=(el.querySelector(".h2")||{}).textContent||"";const body=((el.querySelector(".in")||el).innerText||"").slice(0,1200);hint("…");
+    try{const j=await sample.json("Tu es le chef de cabinet du joueur dans un jeu de simulation politique réaliste au Cameroun. Situation affichée : « "+title+" ».\n"+body+"\n\nActions disponibles (index : libellé) :\n"+opts.map((o,i)=>i+" : "+o).join("\n")+
+      "\n\nConsigne du joueur : « "+text+" ».\nSi une action disponible correspond à la consigne, choisis-la. Sinon, choix = -1 et résume en une phrase ce que tes services vont faire. Réponds uniquement en JSON : {\"choix\": nombre, \"reponse\": \"une phrase en français, à la 2e personne du pluriel\"}",{modelTier:"quick",cache:false});
+      const i=+j.choix;const L=options(el);if(i>=0&&L[i]){hint("→ « "+label(L[i])+" »");say(String(j.reponse||("Très bien : "+label(L[i]))));setTimeout(()=>L[i].click(),250);return}
+      return custom(el,text,String(j.reponse||""),hint)}catch(e){if(e&&e.code==="not_granted")refused=true}}
+  if(CMD.test(norm(text))&&window.VOIX){el.remove();VOIX.handle(text);return}
+  custom(el,text,"",hint)};
+function custom(el,text,rep,hint){const S=G.S;const title=(el.querySelector(".h2")||{}).textContent||"Dossier";
+  const msg=rep||"Consigne transmise à vos services : « "+text+" ». Un compte rendu vous sera adressé.";
+  hint(msg);say(msg);window.SYS.inbox(S,{from:"Cabinet",t:"Instruction : "+title.slice(0,70),b:"Votre consigne : « "+text+" »\n"+msg,k:"info",read:true});
+  S.consignes=S.consignes||[];S.consignes.push({t:text,sur:title.slice(0,80),day:S.day});S.consignes=S.consignes.slice(-50);G.toast("Instruction enregistrée")}
 })();
 
 </script>

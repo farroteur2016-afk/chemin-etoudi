@@ -63,7 +63,7 @@ VID.play=function(o){
   document.body.appendChild(el);
   const text=narration({type,text:o.text},R,city);$("fsub").textContent=text;
   if(!S3||!S3.ok){$("fview").innerHTML='<div class="nogl" style="position:absolute;inset:0;display:grid;place-items:center;padding:20px">Votre appareil n\'affiche pas la 3D : voici le reportage en texte.<br><br>'+esc(text)+'</div>'}
-  else{S3.attach($("fview"));S3.film({type,land:R.land,seed:(o.text||"").length+reg.charCodeAt(0),q,banner:o.banner,
+  else{S3.attach($("fview"));VID.filmOn($("fview"));S3.film({type,land:R.land,seed:(o.text||"").length+reg.charCodeAt(0),q,banner:o.banner,
     onProgress:(p,i)=>{const pr=$("fprog");if(pr)pr.style.width=(p*100).toFixed(1)+"%";const tc=$("ftc");if(tc){const s=Math.floor(p*20);tc.textContent="00:"+String(s).padStart(2,"0")}},
     onEnd:()=>{const b=$("fPause");if(b)b.textContent="Terminé"}})}
   const amb={greve:"meeting",emeute:"meeting",marche:"marche",incendie:"marche",hopital:"ville",village:"village"}[type]||"ville";try{A.ambient(amb)}catch(e){}
@@ -71,7 +71,7 @@ VID.play=function(o){
   let paused=false;
   $("fPause").onclick=()=>{paused=!paused;S3.filmPause&&S3.filmPause(paused);$("fPause").textContent=paused?"Lecture":"Pause";if(paused)A.stop()};
   $("fAgain").onclick=()=>{S3.filmReplay&&S3.filmReplay();paused=false;$("fPause").textContent="Pause";A.speak(text,{voix:"m"})};
-  const close=()=>{A.stop();if(S3&&S3.ok){S3.detach();S3.endFilm()}el.remove();document.removeEventListener("keydown",esck)};
+  const close=()=>{A.stop();if(S3&&S3.ok){S3.detach();S3.endFilm();VID.filmOff()}el.remove();document.removeEventListener("keydown",esck)};
   const esck=e=>{if(e.key==="Escape")close()};document.addEventListener("keydown",esck);
   $("fClose").onclick=close;
 };
@@ -95,6 +95,9 @@ setInterval(()=>{gtaHud();streetMini()},500);
 /* ---------- vue rue : commandes et mini-carte des rues ---------- */
 /* ---------- qualité graphique : classique (téléphone) ou Ultra (PC) ---------- */
 let ultraVis=false;
+/* les vidéos et trajets utilisent le moteur classique : on le réveille pendant le film, même si le mode Ultra est actif */
+VID.filmOn=function(box){if(!S3)return;S3.paused=false;const c=box&&box.querySelector("canvas");if(c)c.style.visibility="visible"};
+VID.filmOff=function(){VID.ultraView(ultraVis)};
 VID.ultraView=function(on){ultraVis=!!on;if(S3)S3.paused=ultraVis;const c=document.querySelector("#view > canvas:not(.ultra-canvas)");if(c)c.style.visibility=ultraVis?"hidden":"visible";const u=document.querySelector(".ultra-canvas");if(u)u.style.display=ultraVis?"block":"none"};
 VID.gfxPref=()=>{try{return localStorage.getItem("etoudi-gfx")}catch(e){return null}};
 VID.setGfx=async function(ultra){try{localStorage.setItem("etoudi-gfx",ultra?"ultra":"classic")}catch(e){}

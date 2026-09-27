@@ -147,10 +147,10 @@ function go(S,from,to,p,watch,horsNorme,cb){
   const sub=(M.work?"Pendant le trajet, vous travaillez sur vos dossiers. ":"")+(p.mode==="cortege"?"Les routes sont bouclées ; les motards de la Garde présidentielle ouvrent la voie.":p.mode==="convoi"?"Les motards de l'escorte ouvrent la voie, sirènes hurlantes.":p.mode==="moto"?"Le bendskin se faufile entre les voitures.":p.mode==="train"?"Le train Camrail traverse la campagne.":M.air?"Décollage, vol au-dessus des nuages, puis atterrissage.":p.mode==="helico"?"L'hélicoptère survole la région.":p.jam?"C'est l'heure de pointe : la circulation est dense.":"La route défile.");
   $("vySub").textContent=sub;
   const road=p.same?null:(p.d>250?CM.REG[pick([from.reg,to.reg])].land:RB.land);const insec=p.sec<30&&!M.esc&&!M.air&&!M.heli;
-  S3.attach($("fview"));S3.travel({mode:p.mode,local:p.same,seed:Math.floor(S.day),from:{land:RA.land,pop:city(from.v).pop,profile:VOY.profile(from.reg),name:from.v,apt:AIR[from.v]},to:{land:RB.land,pop:city(to.v).pop,profile:VOY.profile(to.reg),apt:AIR[to.v],name:to.v},road,insec,
+  S3.attach($("fview"));if(window.VID&&VID.filmOn)VID.filmOn($("fview"));S3.travel({mode:p.mode,local:p.same,seed:Math.floor(S.day),from:{land:RA.land,pop:city(from.v).pop,profile:VOY.profile(from.reg),name:from.v,apt:AIR[from.v]},to:{land:RB.land,pop:city(to.v).pop,profile:VOY.profile(to.reg),apt:AIR[to.v],name:to.v},road,insec,
     onProgress:q=>{const b=$("fprog");if(b)b.style.width=(q*100).toFixed(1)+"%"},onEnd:()=>setTimeout(close,700)});
   if(RA)try{A.ambient(p.mode==="avion"||p.mode==="avionp"||p.mode==="jet"?"conseil":"ville")}catch(e){}
-  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();el.remove();arrive()}
+  function close(){if(!el.parentNode)return;S3.detach();S3.endFilm();if(window.VID&&VID.filmOff)VID.filmOff();el.remove();arrive()}
   $("vySkip").onclick=close;
 }
 function arrival(S,from,to,p,horsNorme){

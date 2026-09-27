@@ -23,7 +23,7 @@ const GAME={};window.GAME=GAME;
 /* ---------- utilitaires d'interface ---------- */
 function toast(msg){document.querySelectorAll(".toast").forEach(x=>x.remove());const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sheet(html,after){const el=document.createElement("div");el.className="sheet";el.innerHTML='<div class="in">'+html+'<button class="btn" data-close>Fermer</button></div>';
-  el.addEventListener("click",e=>{if(e.target===el||e.target.hasAttribute("data-close")){el.remove()}});document.body.appendChild(el);if(after)after(el);if(window.VID)VID.bindAll(el);return el}
+  el.addEventListener("click",e=>{if(e.target===el||e.target.hasAttribute("data-close")){el.remove()}});document.body.appendChild(el);if(after)after(el);if(window.VID)VID.bindAll(el);if(window.INSTR)INSTR.attach(el);return el}
 GAME.dayLabel=dayLabel;GAME.toast=toast;GAME.sheet=sheet;GAME.esc=esc;GAME.fmt=fmt;GAME.monthLabel=monthLabel;GAME.pick=pick;GAME.rnd=rnd;GAME.clamp=clamp;
 
 let viewKey="";

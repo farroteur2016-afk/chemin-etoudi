@@ -51,7 +51,7 @@ function findPerson(S,t){
   if(/commissaire|commissariat/.test(t)){const c=findCity(t);const o=S.org&&c&&S.org.comm.find(p=>norm(p.ville)===norm(c.n));return{k:"police",lab:"le commissaire"+(c?" de "+c.n:""),n:o?o.n:"le commissaire",org:o&&{k:"police",id:o.id},reg:c&&c.reg}}
   if(/\b(dg|directeur general|directrice generale)\b/.test(t)&&S.org){const e=S.org.ent.find(x=>t.includes(norm(x.id))||t.includes(norm(x.n)));if(e)return{k:"ent",lab:"le directeur général de "+e.n,n:e.dg,org:{k:"ent",id:e.id},min:e.tut}}
   if(/directeur|directrice/.test(t)&&/hopital/.test(t)&&S.org){const h=findHospital(S,t);if(h)return{k:"hop",lab:"le directeur "+deL(lc(h.n).replace(/^(h[oô]pital|centre|clinique)/i,m=>"l'"+m).replace(/^l'centre/,"le centre").replace(/^l'clinique/,"la clinique")),n:h.dir,org:{k:"hop",id:h.id},reg:h.reg,min:"MINSANTE"}}
-  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
+  if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":/^\S+s\b/.test(m.n)?"des ":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
   return null}
 const de=r=>(/^[AEÉIOU]/.test(r.n)?"de l'":"du ")+r.n;const lc=t=>t.charAt(0).toLowerCase()+t.slice(1);
 function findHospital(S,t){if(!S.org)return null;const c=findCity(t),r=findRegion(t);let L=S.org.hop.filter(h=>t.includes(norm(h.n).replace(/^hopital (general|central|regional|de district) (de |d )?/,"")));
