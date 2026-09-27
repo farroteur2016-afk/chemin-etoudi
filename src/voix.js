@@ -41,6 +41,8 @@ const ALIAS={MINDEF:"defense armee militaire forces armees",DGSN:"police surete"
 function findMinistry(t){let best=null,sc=0;for(const m of E.MINISTERES){const al=(ALIAS[m.id]||"")+" "+norm(m.n);let s=0;for(const w of al.split(" "))if(w.length>3&&new RegExp("\\b"+w+"\\b").test(t))s+=w.length;if(s>sc){sc=s;best=m}}return best}
 function findRegion(t){for(const r of CM.REGIONS){if(t.includes(norm(r.n))||t.includes(norm(r.chef)))return r}return null}
 function findCity(t){const L=window.VOY?VOY.CITIES.slice().sort((a,b)=>b.n.length-a.n.length):[];for(const c of L)if(new RegExp("\\b"+norm(c.n)+"\\b").test(t))return c;return null}
+const ENT_AL={SOPECAM:"cameroon tribune",PAD:"port de douala|port autonome de douala",PAK:"port de kribi",CRTV:"television|radio nationale",CAMRAIL:"chemin de fer|chemins de fer|rail",ADC:"aeroports?",ENEO:"electricite",CAMWATER:"eau potable",CNPS:"securite sociale|caisse de prevoyance",SNH:"hydrocarbures|petrole",SONARA:"raffinerie","Camair-Co":"camair|compagnie aerienne",CAMPOST:"la poste",FEICOM:"fonds special",ONCC:"office du cacao|office national du cacao"};
+function findEnt(S,t){for(const x of S.org.ent){const id=norm(x.id);if(new RegExp("\\b"+id.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b").test(t))return x;const al=ENT_AL[x.id];if(al&&new RegExp("\\b("+al+")\\b").test(t))return x}return null}
 function findPerson(S,t){
   if(/premier ministre/.test(t))return{k:"pm",lab:"le Premier ministre",n:S.gov&&S.gov.pm?S.gov.pm.n:"le Premier ministre"};
   if(/vice president/.test(t))return{k:"vp",lab:"le vice-président",n:S.gov&&S.gov.vp?S.gov.vp.n:null};
@@ -49,7 +51,7 @@ function findPerson(S,t){
   if(/gouverneur/.test(t)){const r=findRegion(t)||CM.REG[VOY.here(S).reg];const o=S.org&&S.org.gouv.find(g=>g.reg===r.id);return{k:"gouverneur",lab:"le gouverneur de la région "+de(r),n:o?o.n:"le gouverneur",org:o&&{k:"gouverneur",id:o.id},reg:r.id}}
   if(/prefet/.test(t)){const c=findCity(t);const o=S.org&&c&&S.org.pref.find(p=>norm(p.ville)===norm(c.n));return{k:"prefet",lab:"le préfet"+(c?" de "+c.n:""),n:o?o.n:"le préfet",org:o&&{k:"prefet",id:o.id},reg:c&&c.reg}}
   if(/commissaire|commissariat/.test(t)){const c=findCity(t);const o=S.org&&c&&S.org.comm.find(p=>norm(p.ville)===norm(c.n));return{k:"police",lab:"le commissaire"+(c?" de "+c.n:""),n:o?o.n:"le commissaire",org:o&&{k:"police",id:o.id},reg:c&&c.reg}}
-  if(/\b(dg|directeur general|directrice generale)\b/.test(t)&&S.org){const e=S.org.ent.find(x=>t.includes(norm(x.id))||t.includes(norm(x.n)));if(e)return{k:"ent",lab:"le directeur général de "+e.n,n:e.dg,org:{k:"ent",id:e.id},min:e.tut}}
+  if(/\b(dg|pdg|directeur|directrice|patron|patronne|administrateur|responsable|chef|dirige|gere|tete)\b/.test(t)&&S.org&&!/hopital|clinique/.test(t)){const e=findEnt(S,t);if(e)return{k:"ent",lab:"le directeur général "+(/^[AEIOU]/.test(e.n)?"d'":"de ")+e.n+(e.act?" ("+e.act.replace(/\s*\(.*\)/,"")+")":""),n:e.dg,org:{k:"ent",id:e.id},min:e.tut}}
   if(/directeur|directrice/.test(t)&&/hopital/.test(t)&&S.org){const h=findHospital(S,t);if(h)return{k:"hop",lab:"le directeur "+deL(lc(h.n).replace(/^(h[oô]pital|centre|clinique)/i,m=>"l'"+m).replace(/^l'centre/,"le centre").replace(/^l'clinique/,"la clinique")),n:h.dir,org:{k:"hop",id:h.id},reg:h.reg,min:"MINSANTE"}}
   if(/ministre|ministere/.test(t)){const m=findMinistry(t);if(m){const g=S.gov&&S.gov.min[m.id];return{k:"min",id:m.id,lab:(m.id==="DGSN"?"le délégué général à la Sûreté nationale":"le ministre "+(/^[AEÉIOU]/.test(m.n)?"de l'":/^\S+s\b/.test(m.n)?"des ":"de la ")+m.n),n:g?g.n:null,min:m.id}}}
   return null}
@@ -102,7 +104,8 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
   // directive politique claire (« je veux que… », « j'ordonne… »)
   if(window.DIR&&/^(je veux qu|j exige qu|j ordonne|ordonne|je decide|il faut qu|que tous|que toutes|je demande (a|aux|que))/.test(t)&&!/^je veux (aller|visiter|voir|rencontrer|parler)/.test(t)){DIR.handle(S,raw,reply);return}
   // qui est… / nom du…
-  if(/\b(qui est|qui sont|nom d|comment s appelle|c est qui)/.test(t)&&!/convoqu|recevoir|audience/.test(t)){const P=findPerson(S,t);if(P){const L=P.lab.charAt(0).toUpperCase()+P.lab.slice(1);return reply(P.n&&!/^le /.test(P.n)?L+" s'appelle "+P.n+".":L+" n'a pas encore été nommé, ou son nom n'est pas connu.")}}
+  if(/\b(qui est|qui sont|nom d|comment s appelle|c est qui|qui dirige|qui gere|qui est a la tete)/.test(t)&&!/convoqu|recevoir|audience/.test(t)){const P=findPerson(S,t);if(P&&P.k==="ent"&&P.n){const e=S.org.ent.find(x=>x.id===P.org.id);return reply("À la tête "+(/^[AEIOU]/.test(e.n)?"d'":"de ")+e.n+(e.act?" ("+e.act.replace(/\s*\(.*\)/,"")+")":"")+" : "+P.n+" (direction générale).")}if(P){const L=P.lab.charAt(0).toUpperCase()+P.lab.slice(1);return reply(P.n&&!/^le /.test(P.n)?L+" s'appelle "+P.n+".":L+" n'a pas encore été nommé, ou son nom n'est pas connu.")}
+    return reply("Je ne trouve pas cette personne parmi les responsables suivis dans le jeu. Je connais les ministres, le Premier ministre, les gouverneurs, préfets, commissaires, directeurs d'hôpitaux et les directeurs généraux de : "+S.org.ent.map(x=>x.n).join(", ")+".")}
   // temps
   if(/\b(pause|arrete le temps|stop le temps)\b/.test(t)){S.paused=true;G.render();return reply("Le temps est en pause.")}
   if(/reprends le temps|relance le temps|continue le temps/.test(t)){S.paused=false;S.lastReal=Date.now();return reply("Le temps reprend.")}
@@ -129,7 +132,7 @@ VOIX.handle=function(raw){const S=G.S;const t=norm(raw);if(!t)return;log("Vous :
     if(to.v===here.v){reply("Très bien, je vous emmène rencontrer "+un+kd.lab+" à "+to.v+".");closeP();setTimeout(()=>RENC.open(S,renc),600);return}
     reply("Je prépare votre visite chez "+un+kd.lab+" à "+to.v+".");setTimeout(closeP,1500);const err=VOY.goTo(S,to,mode,true,()=>setTimeout(()=>RENC.open(G.S,renc),700));if(err)reply("Impossible : "+err+".");return}}
   // convocation / audience
-  if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)){const P=findPerson(S,t);if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
+  if(/convoqu|recevoir|recois|rencontrer|voir le|voir la|rendez vous|audience|faire venir|appelle/.test(t)&&!/s appelle/.test(t)){const P=findPerson(S,t);if(!P)return reply("Qui voulez-vous recevoir ? Par exemple : le ministre de la Défense, le Premier ministre, le gouverneur de l'Ouest, le directeur général d'ENEO.");
     const w=parseWhen(S,t)||{at:S.day+.1,label:"dans environ deux heures"};const obj=(t.match(/pour (parler de|discuter de|le point sur|evoquer) (.+)$/)||[])[2];
     const can=S.mode==="pres"||(S.mode==="min"&&(P.min===S.minis.id||["prefet","police","gouverneur","hop","ent"].includes(P.k)&&P.min===S.minis.id));
     if(!can&&S.mode!=="pres"){const ok=Math.random()<(S.mode==="min"?.8:.35);if(!ok)return reply("Votre demande d'audience auprès "+deL(P.lab)+" a été enregistrée, mais son cabinet ne vous a pas encore proposé de créneau.");}

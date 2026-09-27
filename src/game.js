@@ -372,7 +372,7 @@ function start(){
   if(!S.media)MEDIA.init(S);
   if(window.JUS&&!S.jus)JUS.init(S);
   if(window.EMP&&S.centre)setTimeout(()=>EMP.afterMinister(S),1500);
-  if(window.VIE&&!S.org)VIE.init(S);
+  if(window.VIE)VIE.init(S);
   if(window.WORLD){if(WORLD._pendingCode){const c=WORLD._pendingCode;WORLD._pendingCode=null;WORLD.connect(c).then(()=>{tab="marche";render();toast("Vous avez rejoint le monde "+c)}).catch(()=>{})}else WORLD.autoConnect(S)}
   if(S.day==null){S.day=S.m*30;S.lastReal=Date.now();S.speed=1}
   if(S3.setHour)S3.setHour(((S.day%1)*24+8)%24);if(window.Ultra)Ultra.setHour(((S.day%1)*24+8)%24);

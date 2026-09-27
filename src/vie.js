@@ -51,10 +51,17 @@ VIE.checkIdentity=function(idN,idA,min,poste){
 
 /* ---------- constitution des organes ---------- */
 const HOPITAUX=[["hgy","Hôpital général de Yaoundé","CE",300,.18],["hcy","Hôpital central de Yaoundé","CE",650,.3],["chu","Centre hospitalier universitaire de Yaoundé","CE",250,.15],["hgd","Hôpital général de Douala","LT",320,.25],["laq","Hôpital Laquintinie de Douala","LT",700,.45]];
-const ENTREPRISES=[["ENEO","Électricité","MINEE",38],["CAMWATER","Eau potable","MINEE",40],["SONARA","Raffinerie de Limbé (incendie de 2019, réhabilitation)","MINMIDT",30],["SNH","Hydrocarbures","MINMIDT",60],["CAMTEL","Télécommunications","MINPOSTEL",45],["Camair-Co","Transport aérien","MINT",25],["PAD","Port autonome de Douala","MINT",55],["CAMPOST","Poste","MINPOSTEL",35],["CNPS","Sécurité sociale","MINTSS",50],["SODECOTON","Coton","MINADER",50],["CDC","Plantations du Sud-Ouest","MINADER",30]];
+const ENTREPRISES=[["ENEO","Électricité","MINEE",38],["CAMWATER","Eau potable","MINEE",40],["SONARA","Raffinerie de Limbé (incendie de 2019, réhabilitation)","MINMIDT",30],["SNH","Hydrocarbures","MINMIDT",60],["CAMTEL","Télécommunications","MINPOSTEL",45],["Camair-Co","Transport aérien","MINT",25],["PAD","Port autonome de Douala","MINT",55],["CAMPOST","Poste","MINPOSTEL",35],["CNPS","Sécurité sociale","MINTSS",50],["SODECOTON","Coton","MINADER",50],["CDC","Plantations du Sud-Ouest","MINADER",30],
+ ["CAMRAIL","Chemin de fer (concession de l'État)","MINT",40],["PAK","Port autonome de Kribi","MINT",50],["ADC","Aéroports du Cameroun","MINT",40],["SIC","Société immobilière du Cameroun","MINHDU",35],
+ ["MAETUR","Aménagement des terrains urbains et ruraux","MINHDU",35],["CFC","Crédit foncier du Cameroun","MINHDU",40],["FEICOM","Fonds spécial d'équipement des communes","MINDDEVEL",45],
+ ["CRTV","Radio-télévision publique","MINCOM",40],["SOPECAM","Presse publique (Cameroon Tribune)","MINCOM",35],["ALUCAM","Aluminium d'Édéa","MINMIDT",40],["SONAMINES","Société nationale des mines","MINMIDT",30],
+ ["SODEPA","Développement des productions animales","MINEPIA",30],["MAGZI","Zones industrielles","MINMIDT",35],["SODECAO","Développement du cacao","MINADER",35],["ONCC","Office national du cacao et du café","MINCOMMERCE",45],
+ ["ART","Agence de régulation des télécommunications","MINPOSTEL",45],["ARSEL","Régulation du secteur de l'électricité","MINEE",45],["EDC","Electricity Development Corporation (barrages)","MINEE",45],
+ ["CSPH","Caisse de stabilisation des prix des hydrocarbures","MINCOMMERCE",40],["SNI","Société nationale d'investissement","MINFI",40]];
+const mkEnt=e=>({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nom(pick(CM.REGIONS).id),pl:0});
 const MALADIES=[["palu","Paludisme",.263,.012],["ira","Infections respiratoires",.12,.01],["diar","Diarrhées et fièvre typhoïde",.12,.008],["cardio","Hypertension et diabète",.08,.03],["trauma","Accidents et traumatismes",.07,.03],["mat","Grossesses et accouchements",.1,.004],["vih","VIH et tuberculose",.05,.05],["malnut","Malnutrition",.02,.03],["menin","Méningite",.005,.1],["autres","Autres pathologies",.172,.01]];
 VIE.init=function(S){
-  if(S.org)return;
+  if(S.org){for(const e of ENTREPRISES)if(!S.org.ent.find(x=>x.id===e[0]))S.org.ent.push(mkEnt(e));return}
   const O={gouv:[],pref:[],comm:[],gend:[],hop:[],ent:[],aud:[],nextAud:(S.day||0)+1,nextPl:(S.day||0)+2,quot:null};
   for(const r of CM.REGIONS){
     O.gouv.push({id:"g"+r.id,reg:r.id,n:nom(r.id===pick(["CE","SU"])?"CE":regX(r.id)),perf:rnd(40,70),integ:rnd(40,80),pl:0});
@@ -64,7 +71,7 @@ VIE.init=function(S){
     O.hop.push(mkHop("hd"+r.id,"Hôpitaux de district de la région "+deR(r),r.id,900,r.pop/30.36*.9));
   }
   for(const h of HOPITAUX)O.hop.push(mkHop(h[0],h[1],h[2],h[3],h[4]));
-  for(const e of ENTREPRISES)O.ent.push({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nom(pick(CM.REGIONS).id),pl:0});
+  for(const e of ENTREPRISES)O.ent.push(mkEnt(e));
   S.org=O;
 };
 function regX(r){return Math.random()<.6?r:pick(CM.REGIONS).id}
