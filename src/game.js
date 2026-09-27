@@ -116,6 +116,7 @@ function advanceDays(d,auto){
   if(window.CAB)CAB.tick(S);
   if(window.DOSS)DOSS.tick(S);
   if(window.REC)REC.tick(S);
+  if(window.SUIVI)SUIVI.tick(S);
   if(window.CTR){CTR.tick(S);CTR.offerTick(S)}
   if(window.PB&&PB.tick)PB.tick(S);
   if(window.VOIX)VOIX.tick(S);
@@ -425,7 +426,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.REC?REC.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"));if(window.REC)REC.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.SUIVI?SUIVI.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.REC?REC.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.SUIVI)SUIVI.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"));if(window.REC)REC.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */

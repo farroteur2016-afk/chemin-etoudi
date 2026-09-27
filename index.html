@@ -2054,6 +2054,7 @@ function advanceDays(d,auto){
   if(window.CAB)CAB.tick(S);
   if(window.DOSS)DOSS.tick(S);
   if(window.REC)REC.tick(S);
+  if(window.SUIVI)SUIVI.tick(S);
   if(window.CTR){CTR.tick(S);CTR.offerTick(S)}
   if(window.PB&&PB.tick)PB.tick(S);
   if(window.VOIX)VOIX.tick(S);
@@ -2363,7 +2364,7 @@ function render(){
   if(["bureau","qg","mairie","ent","minis","assemblee","pro","annuaire"].includes(tab))vieTop();
 }
 /* le quotidien et les audiences en tête des onglets principaux */
-function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.REC?REC.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"));if(window.REC)REC.bindCard(S,$("vieTop"))}
+function vieTop(){if(!window.VIE||!S||$("vieTop"))return;const h=(window.AG?AG.card(S):"")+(window.SUIVI?SUIVI.card(S):"")+(window.CAB?CAB.card(S):"")+(window.DOSS?DOSS.card(S):"")+(window.PB?PB.card(S):"")+(window.REC?REC.card(S):"")+(window.RENC?RENC.card(S):"")+(window.DIR?DIR.card(S):"")+(window.GENRE?GENRE.card(S):"")+(window.ACTU?ACTU.card(S):"")+(window.EMP?EMP.card(S):"")+VIE.quotCard(S)+VIE.audCard(S);if(!h)return;$("panel").insertAdjacentHTML("afterbegin",'<div id="vieTop" style="display:flex;flex-direction:column;gap:10px">'+h+'</div>');VIE.bindAud(S);if(window.EMP)EMP.bind(S);if(window.VOIX)VOIX.bindAgenda(S,$("vieTop"));if(window.RENC)RENC.bindCard(S,$("vieTop"));if(window.ACTU)ACTU.bindCard(S,$("vieTop"));if(window.GENRE)GENRE.bindCard(S,$("vieTop"));if(window.DIR&&DIR.bindCard)DIR.bindCard(S,$("vieTop"));if(window.CAB)CAB.bind(S,$("vieTop"));if(window.DOSS)DOSS.bindCard(S,$("vieTop"));if(window.AG)AG.bindCard(S,$("vieTop"));if(window.SUIVI)SUIVI.bindCard(S,$("vieTop"));if(window.PB)PB.bindCard(S,$("vieTop"));if(window.REC)REC.bindCard(S,$("vieTop"))}
 GAME.render=()=>{if(S&&S.mode!=="multi")render()};
 GAME.setTab=t=>{tab=t;render()};
 /* reprendre un état sauvegardé (retour au profil d'avant un poste de ministre) */
@@ -3301,7 +3302,7 @@ SYS.renderGouv=function(S){
   }else{
     h+='<div class="card"><span class="eyebrow">Fiscalité</span>'+E.FISCAL.map(f=>'<div class="row" style="justify-content:space-between"><div style="flex:1;min-width:0"><b>'+esc(f.n)+'</b><br><span class="small muted">'+esc(f.d)+'</span></div><div class="row" style="flex-wrap:nowrap"><button class="btn small" data-fm="'+f.id+'">−</button><b style="font-family:var(--mono);min-width:64px;text-align:center">'+fmt(g.fisc[f.id],2)+' %</b><button class="btn small" data-fp="'+f.id+'">+</button></div></div>').join("")+'<span class="small muted">Recettes fiscales 2026 : 3 446,2 Mds ; recettes douanières : 1 243,2 Mds. Nouveauté 2026 : les plateformes numériques étrangères paient la TVA.</span></div>'+
      '<div class="card"><span class="eyebrow">Salaires</span><div class="kv"><span>SMIG secteur privé non agricole</span><b>'+fmt(g.smig)+' FCFA</b><span>SMIG secteur agricole</span><b>'+fmt(E.SALAIRES.smigAgricole)+' FCFA</b><span>SMIG agents de l\'État (Code du travail)</span><b>'+fmt(E.SALAIRES.smigEtat)+' FCFA</b><span>Indice des salaires de la fonction publique</span><b>'+g.indice+'</b><span>Masse salariale 2026</span><b>'+fmt(E.BUDGET.personnel*g.indice/100,1)+' Mds</b></div><div class="row"><button class="btn small" id="smigP">SMIG +5 000 FCFA</button><button class="btn small" id="indP">Fonctionnaires +2 %</button><button class="btn small" id="indM">Fonctionnaires −2 %</button></div></div>'+
-     '<div class="card"><span class="eyebrow">Recrutements dans la fonction publique</span><span class="small muted">Budget 2026 des nouveaux recrutements plafonné à 15 milliards FCFA. Chaque lot pèse sur le déficit chaque année.</span>'+E.SALAIRES.recrues.map(r=>'<div class="row" style="justify-content:space-between"><span>'+esc(r.n)+' : '+fmt((g.recrues[r.id]||0)*r.lot)+' recrutés</span><button class="btn small" data-rec="'+r.id+'">Recruter '+fmt(r.lot)+' ('+fmt(r.cout,1)+' Mds/an)</button></div>').join("")+'</div>';
+     '<div class="card"><span class="eyebrow">Recrutements dans la fonction publique</span><span class="small muted">Budget 2026 des nouveaux recrutements plafonné à 15 milliards FCFA. Chaque lot pèse sur le déficit chaque année.</span>'+E.SALAIRES.recrues.map(r=>'<div class="row" style="justify-content:space-between"><span>'+esc(r.n)+' : '+fmt((g.recrues[r.id]||0)*r.lot)+' recrutés'+((g.recruesAtt&&g.recruesAtt[r.id])?' <b>(+'+fmt(g.recruesAtt[r.id]*r.lot)+' en cours)</b>':'')+'</span><button class="btn small" data-rec="'+r.id+'">Recruter '+fmt(r.lot)+' ('+fmt(r.cout,1)+' Mds/an)</button></div>').join("")+'</div>';
   }
   panel().innerHTML=h;
   const P=panel();
@@ -3320,7 +3321,9 @@ SYS.renderGouv=function(S){
   const sp=$("smigP");if(sp)sp.onclick=()=>{g.smig+=5000;S.st.pop=clamp(S.st.pop+2,0,100);S.st.soc=clamp(S.st.soc+2,0,100);S.st.eco=clamp(S.st.eco-1.5,0,100);S.nums.inflation+=.2;G.toast("SMIG porté à "+fmt(g.smig)+" FCFA");rerender()};
   const ip=$("indP");if(ip)ip.onclick=()=>{g.indice+=2;S.nums.deficit+=E.BUDGET.personnel*.02;S.st.soc=clamp(S.st.soc+1.5,0,100);S.st.pop=clamp(S.st.pop+1,0,100);rerender()};
   const im=$("indM");if(im)im.onclick=()=>{g.indice-=2;S.nums.deficit-=E.BUDGET.personnel*.02;S.st.soc=clamp(S.st.soc-3,0,100);S.st.pop=clamp(S.st.pop-2,0,100);SYS.cause(S,"CE","Baisse des salaires des fonctionnaires",-4,"emploi");rerender()};
-  P.querySelectorAll("[data-rec]").forEach(b=>b.onclick=()=>{const r=E.SALAIRES.recrues.find(x=>x.id===b.dataset.rec);g.recrues[r.id]=(g.recrues[r.id]||0)+1;S.nums.deficit+=r.cout;if(r.id==="sol")S.def.eff+=r.lot;G.toast(fmt(r.lot)+" "+r.n.toLowerCase()+" recrutés");rerender()});
+  P.querySelectorAll("[data-rec]").forEach(b=>b.onclick=()=>{const r=E.SALAIRES.recrues.find(x=>x.id===b.dataset.rec);g.recruesAtt=g.recruesAtt||{};g.recruesAtt[r.id]=(g.recruesAtt[r.id]||0)+1;
+    const form=r.id==="sol"?[[0,"Décret de recrutement signé"],[15,"Sélection dans les centres de recrutement"],[45,"Incorporation"],[120,"Fin de la formation militaire, affectation dans les unités"]]:r.id==="pol"?[[0,"Arrêté de lancement du concours"],[25,"Concours de la Sûreté nationale"],[50,"Résultats publiés"],[140,"Fin de la formation à l'École de police, affectation"]]:[[0,"Arrêté de lancement du recrutement"],[25,"Concours ou dépôt des dossiers"],[55,"Résultats publiés"],[85,"Prise de fonction dans les formations sanitaires et les écoles"]];
+    if(window.SUIVI)SUIVI.add(S,{t:"Recrutement de "+fmt(r.lot)+" "+r.n.toLowerCase(),cat:"Recrutement",qui:"Ministère de la Fonction publique",et:form,k:"recrue",data:{id:r.id}});else{g.recrues[r.id]=(g.recrues[r.id]||0)+1;S.nums.deficit+=r.cout}rerender()});
 };
 function appoint(S,post){
   const g=S.gov;const cands=SYS.candidats(S,post);const label=post==="vp"?"Vice-président de la République":post==="pm"?"Premier ministre":(E.MINISTERES.find(m=>m.id===post)||{n:post}).n;
@@ -3937,7 +3940,11 @@ VIE.audCard=function(S){
   return'<div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">Audiences demandées</span>'+pill(L.length+" en attente","warn")+'</div>'+L.slice(0,3).map(a=>'<div class="card" style="gap:6px;background:var(--panel3)"><b>'+esc(a.qui)+'</b><span class="small muted">'+esc(a.objet)+' Reçu le '+esc(G.dayLabel(a.day))+', à recevoir avant le '+esc(G.dayLabel(a.exp))+'.</span><div class="choices">'+a.c.map((c,i)=>'<button class="choice" data-aud="'+a.id+'" data-i="'+i+'" style="padding:8px 10px"><span class="t" style="font-weight:600">'+esc(c[0])+'</span></button>').join("")+'</div></div>').join("")+'</div>';
 };
 /* répondre à une demande d'audience (depuis l'agenda ou au rendez-vous fixé) */
-VIE.audChoice=function(S,id,i){const a=S.org.aud.find(x=>x.id===id);if(!a||a.done)return;const c=a.c[+i];a.done=1;a.held=S.day;a.rep=c[0];applyAud(S,a,c[1]);
+VIE.audChoice=function(S,id,i){const a=S.org.aud.find(x=>x.id===id);if(!a||a.done)return;const c=a.c[+i];a.done=1;a.held=S.day;a.rep=c[0];const eff=Object.assign({},c[1]);
+  if(eff.dette>0&&window.SUIVI&&S.mode==="pres"){const md=eff.dette,fx={};if(eff.eco){fx.eco=eff.eco;delete eff.eco}if(eff.soc){fx.soc=eff.soc;delete eff.soc}delete eff.dette;
+    SUIVI.add(S,{t:c[0]+" ("+a.qui+")",cat:"Paiement",qui:"Ministère des Finances",et:[[0,"Annonce faite en audience"],[4,"Ordonnancement au ministère des Finances"],[12,"Visa du contrôle financier"],[25,"Paiement effectué par le Trésor"]],k:"paiement",data:{md,fx}})}
+  else if(window.SUIVI)SUIVI.add(S,{t:"Audience "+a.qui+" : "+c[0],cat:"Audience",qui:"Secrétariat particulier"});
+  applyAud(S,a,eff);
   G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":S.mode==="min"?"Cabinet du ministre":S.profil==="maire"?"Hôtel de ville":"Bureau","Audience");
   G.toast("Audience : "+lcP(c[0]));window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Audience accordée : "+a.qui,b:"Objet : "+a.objet+" Suite donnée : « "+c[0]+" ».",k:"info",read:true});G.render()};
 VIE.audSheet=function(S,id){const a=S.org&&S.org.aud.find(x=>x.id===id);if(!a||a.done)return G.toast("Cette demande d'audience n'est plus d'actualité.");
@@ -3945,9 +3952,7 @@ VIE.audSheet=function(S,id){const a=S.org&&S.org.aud.find(x=>x.id===id);if(!a||a
     el.querySelectorAll("[data-audc]").forEach(b=>b.onclick=()=>{el.remove();VIE.audChoice(S,id,b.dataset.audc)})})};
 VIE.bindAud=function(S){
   const qc=$("quotCard");if(qc)qc.ontoggle=()=>{S.org.quotOpen=qc.open};
-  document.querySelectorAll("[data-aud]").forEach(b=>b.onclick=()=>{const a=S.org.aud.find(x=>x.id===b.dataset.aud);const c=a.c[+b.dataset.i];a.done=1;applyAud(S,a,c[1]);
-    G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":S.mode==="min"?"Cabinet du ministre":S.profil==="maire"?"Hôtel de ville":"Bureau","Audience");
-    G.toast("Audience : "+lcP(c[0]));window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Audience accordée : "+a.qui,b:"Objet : "+a.objet+" Suite donnée : « "+c[0]+" ».",k:"info",read:true});G.render()});
+  document.querySelectorAll("[data-aud]").forEach(b=>b.onclick=()=>VIE.audChoice(S,b.dataset.aud,+b.dataset.i));
 };
 
 /* ---------- le quotidien ---------- */
@@ -6072,6 +6077,7 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
   if(window.SAV&&SAV.handle(S,raw,reply))return;
   if(S.mode==="pres"&&S.cur!=null&&/\bnegoci|(ouvre|ouvrir|montre|voir) (le|ce) dossier|dossier (du|sur le) bureau/.test(t)){const d=CM.DOSSIERS[S.cur];closeP();if(/negoci/.test(t)&&window.NEGO){NEGO.open(S,d);reply("J'ouvre la négociation : "+d.t+".")}else{G.dossierSheet();reply("Voici le dossier sur votre bureau : "+d.t+".")}return}
+  if(window.SUIVI&&SUIVI.isAsk(t)){closeP();SUIVI.sheet(S);reply(SUIVI.summary(S));return}
   if(window.AG&&AG.isAsk(t)){closeP();AG.sheet(S);reply(AG.summary(S));return}
   if(window.PB&&PB.voice(S,t,reply,closeP))return;
   // appel téléphonique immédiat
@@ -8327,6 +8333,56 @@ const _tick=CTR.tick;CTR.tick=function(S){_tick(S);const D=S&&S.def;if(!D||!D.es
 
 CTR.mailActs=it=>it.ctr?'<button class="btn primary" data-ctx>📄 Examiner et négocier le contrat</button>':"";
 CTR.mailBind=(S,it,el)=>{const b=el.querySelector("[data-ctx]");if(b)b.onclick=()=>{el.remove();CTR.contrat(S,it.ctr)}};
+})();
+
+</script>
+<script>
+/* Chemin d'Etoudi — suivi de mes décisions : tout ce que le joueur décide (recrutements, paiements, directives,
+   commandes, contrats, missions, recettes…) apparaît au même endroit avec son statut réel :
+   en attente de validation, en cours (étape atteinte, date de fin), exécuté, annulé. Les recrutements et les
+   paiements ne sont plus instantanés : concours, ordonnancement, paiement par le Trésor, prise de fonction. */
+(function(){
+"use strict";
+const G=window.GAME,E=window.ETAT;
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SUIVI={};window.SUIVI=SUIVI;
+const L=S=>S.suivi||(S.suivi=[]);
+const f0=n=>Math.round(n).toLocaleString("fr-FR").replace(/ | /g," ");
+/* étapes : [jours après la décision, libellé] ; la dernière étape = exécution */
+SUIVI.add=function(S,o){const a={id:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,4),t:o.t,cat:o.cat||"Décision",qui:o.qui||"",day:S.day,et:(o.et||[[0,"Décision prise"]]).map(([j,l])=>({j:S.day+j,l,ok:j<=0})),st:"en cours",k:o.k||null,data:o.data||{}};
+  if(a.et.every(x=>x.ok)){a.st="exécuté";a.fin=S.day}L(S).push(a);S.suivi=L(S).slice(-150);
+  G.toast("📋 "+a.t+" — "+(a.st==="exécuté"?"exécuté":"en cours, fin prévue le "+G.dayLabel(a.et[a.et.length-1].j))+" · voir le suivi",()=>SUIVI.sheet(S));return a};
+/* effets à l'exécution (les fonctions ne sont pas sauvegardées : on passe par un type) */
+const DONE={
+ recrue(S,a){const g=S.gov;if(!g)return;const R=E.SALAIRES.recrues.find(x=>x.id===a.data.id);if(!R)return;g.recruesAtt=g.recruesAtt||{};g.recruesAtt[R.id]=Math.max(0,(g.recruesAtt[R.id]||0)-1);g.recrues[R.id]=(g.recrues[R.id]||0)+1;S.nums.deficit+=R.cout;if(R.id==="sol")S.def.eff+=R.lot;if(R.id==="pol"&&S.st)S.st.sec=Math.min(100,S.st.sec+.5)},
+ paiement(S,a){if(S.nums)S.nums.dette+=a.data.md||0;if(S.st&&a.data.fx)for(const k in a.data.fx)if(S.st[k]!=null)S.st[k]=Math.max(0,Math.min(100,S.st[k]+a.data.fx[k]))}};
+SUIVI.tick=function(S){for(const a of L(S)){if(a.st!=="en cours")continue;let ch=false;for(const e of a.et)if(!e.ok&&S.day>=e.j){e.ok=true;ch=true}
+  if(ch&&a.et.every(x=>x.ok)){a.st="exécuté";a.fin=S.day;if(a.k&&DONE[a.k])DONE[a.k](S,a);window.SYS.inbox(S,{from:a.qui||"Secrétariat général",t:"✅ Exécuté : "+a.t,b:a.et.map(e=>G.dayLabel(e.j)+" — "+e.l).join("\n"),k:"bonne"})}}};
+SUIVI.cancel=function(S,id){const a=L(S).find(x=>x.id===id);if(!a||a.st!=="en cours")return;a.st="annulé";a.fin=S.day;if(a.k==="recrue"&&S.gov&&S.gov.recruesAtt)S.gov.recruesAtt[a.data.id]=Math.max(0,(S.gov.recruesAtt[a.data.id]||0)-1);G.toast("Annulé : "+a.t);G.render()};
+/* vue d'ensemble : suivi propre + directives, commandes, missions, contrats, recettes, notes */
+function all(S){const R=[];const push=(t,cat,st,det,fin,id)=>R.push({t,cat,st,det,fin,id});
+  for(const a of L(S)){const next=a.et.find(e=>!e.ok);const done=a.et.filter(e=>e.ok).slice(-1)[0];push(a.t,a.cat,a.st,(done?"Étape atteinte : "+done.l+". ":"")+(next?"Prochaine étape : "+next.l+" le "+G.dayLabel(next.j)+".":""),a.st==="en cours"?a.et[a.et.length-1].j:a.fin,a.st==="en cours"?a.id:null)}
+  for(const d of S.directives||[])push(d.titre,"Directive",d.done?(/Annulée|rejeté|Non approuvée/.test(d.res||"")?"annulé":"exécuté"):d.phase==="valid"?"attente":d.phase==="plan"||d.phase==="presid"?"préparation":"en cours",
+    d.done?(d.res||"Terminée"):d.phase==="valid"?"Plan à valider (agenda ou courrier).":d.phase==="plan"?"Plan d'exécution attendu le "+G.dayLabel(d.planDue)+".":d.phase==="presid"?"En attente de l'approbation de la Présidence.":"Compte rendu attendu le "+G.dayLabel(d.due)+".",d.done?null:d.due);
+  for(const o of S.cmds||[])push("Commande : "+o.qty+" × "+o.n.toLowerCase(),"Achat",o.st==="livré"?"exécuté":"en cours",o.f+" · "+(o.st==="livré"?"livré":"livraison le "+G.dayLabel(o.arr)),o.st==="livré"?null:o.arr);
+  if(S.def&&S.def.esp){const x=E.ESPIONNAGE.find(y=>y.id===S.def.esp.id);push("Mission : "+(x?x.n:""),"Renseignement","en cours","Compte rendu le "+G.dayLabel(S.def.esp.fin),S.def.esp.fin)}
+  if(S.ctr)for(const k in S.ctr.deals){const d=S.ctr.deals[k];const o=window.CTR&&CTR.OFFRES.find(x=>x.id===k);if(o)push("Contrat : "+o.t,"Contrat",d.fin==="signé"?"exécuté":d.fin?"annulé":"négociation",d.fin==="signé"?"Signé":d.fin?"Offre "+d.fin:"Négociation en cours",null)}
+  if(S.rec)for(const p of S.rec.props){if(p.st==="attente")continue;const x=window.REC&&REC.L.find(y=>y.id===p.id);if(x)push("Recettes : "+x.t,"Recettes",p.st==="approuvee"?"exécuté":p.st==="etude"?"préparation":"annulé",p.st==="approuvee"?"Approuvée (voir la directive)":p.st==="etude"?"Étude complémentaire en cours":"Écartée",null)}
+  for(const n of S.notes||[])push("Note demandée : "+String(n.texte).slice(0,70),"Note",n.done?"exécuté":"en cours",n.done?"Note reçue au courrier":"Attendue le "+G.dayLabel(n.due),n.done?null:n.due);
+  return R}
+const LAB={"en cours":["🟡","En cours"],"préparation":["🟠","En préparation"],"attente":["⏳","À valider par vous"],"négociation":["🤝","En négociation"],"exécuté":["✅","Exécuté"],"annulé":["⛔","Annulé ou rejeté"]};
+SUIVI.counts=S=>{const c={};for(const r of all(S))c[r.st]=(c[r.st]||0)+1;return c};
+SUIVI.card=function(S){if(!S||S.phase!=="play")return"";const c=SUIVI.counts(S);const n=(c["en cours"]||0)+(c["préparation"]||0)+(c["attente"]||0)+(c["négociation"]||0);if(!n&&!c["exécuté"])return"";
+  return'<div class="card" data-suivi role="button" tabindex="0" style="cursor:pointer"><div class="row" style="justify-content:space-between"><b>📋 Suivi de mes décisions</b><span class="small muted">Ouvrir ▸</span></div><div class="small">'+["en cours","attente","préparation","exécuté"].filter(k=>c[k]).map(k=>LAB[k][0]+" "+c[k]+" "+LAB[k][1].toLowerCase()).join(" · ")+'</div></div>'};
+SUIVI.bindCard=function(S,root){(root||document).querySelectorAll("[data-suivi]").forEach(c=>{c.onclick=()=>SUIVI.sheet(S);c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();SUIVI.sheet(S)}}})};
+SUIVI.sheet=function(S,f){document.querySelectorAll(".sheet[data-suivis]").forEach(x=>x.remove());const R=all(S);f=f||"actif";
+  const act=R.filter(r=>/en cours|préparation|attente|négociation/.test(r.st)).sort((a,b)=>(a.st==="attente"?-1:0)-(b.st==="attente"?-1:0)||(a.fin||1e9)-(b.fin||1e9));const fin=R.filter(r=>/exécuté|annulé/.test(r.st)).reverse();
+  const row=r=>'<div class="card" style="gap:4px;background:var(--panel3)"><div class="row" style="justify-content:space-between;gap:8px;align-items:flex-start"><b>'+esc(r.t)+'</b><span class="small" style="white-space:nowrap">'+LAB[r.st][0]+' '+LAB[r.st][1]+'</span></div><span class="small muted">'+esc(r.cat)+' · '+esc(r.det)+'</span>'+(r.id?'<div class="row"><button class="btn small ghost" data-sx="'+r.id+'">Annuler</button></div>':"")+'</div>';
+  G.sheet('<span class="eyebrow">Suivi</span><h3 class="h2">Mes décisions</h3><div class="row" style="gap:6px"><button class="btn small'+(f==="actif"?" primary":"")+'" data-sf="actif">En cours ('+act.length+')</button><button class="btn small'+(f==="fini"?" primary":"")+'" data-sf="fini">Exécutées et annulées ('+fin.length+')</button></div>'+
+   ((f==="actif"?act:fin).map(row).join("")||'<p class="small muted">Rien pour l\'instant.</p>')+'<p class="small muted">Chaque décision exécutée vous est aussi confirmée par un message dans le courrier.</p>',el=>{el.dataset.suivis="1";el.setAttribute("data-noinstr","");
+    el.querySelectorAll("[data-sf]").forEach(b=>b.onclick=()=>SUIVI.sheet(S,b.dataset.sf));el.querySelectorAll("[data-sx]").forEach(b=>b.onclick=()=>{SUIVI.cancel(S,b.dataset.sx);SUIVI.sheet(S,f)})})};
+SUIVI.isAsk=t=>/(suivi|mes decisions|ou en (sont|est) (mes|ma|mon|le|la|les)|est ce que (c est|ca a ete) (fait|execute)|a t il ete (fait|execute)|etat d avancement|en cours d execution)/.test(t);
+SUIVI.summary=function(S){const R=all(S);const a=R.filter(r=>/en cours|préparation|attente/.test(r.st));return a.length?a.length+" décision"+(a.length>1?"s":"")+" en cours : "+a.slice(0,4).map(r=>r.t+" ("+LAB[r.st][1].toLowerCase()+(r.fin?", fin le "+G.dayLabel(r.fin):"")+")").join(" ; ")+".":"Aucune décision en cours ; tout ce que vous avez décidé est exécuté ou annulé."};
 })();
 
 </script>

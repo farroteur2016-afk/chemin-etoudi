@@ -187,7 +187,11 @@ VIE.audCard=function(S){
   return'<div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">Audiences demandées</span>'+pill(L.length+" en attente","warn")+'</div>'+L.slice(0,3).map(a=>'<div class="card" style="gap:6px;background:var(--panel3)"><b>'+esc(a.qui)+'</b><span class="small muted">'+esc(a.objet)+' Reçu le '+esc(G.dayLabel(a.day))+', à recevoir avant le '+esc(G.dayLabel(a.exp))+'.</span><div class="choices">'+a.c.map((c,i)=>'<button class="choice" data-aud="'+a.id+'" data-i="'+i+'" style="padding:8px 10px"><span class="t" style="font-weight:600">'+esc(c[0])+'</span></button>').join("")+'</div></div>').join("")+'</div>';
 };
 /* répondre à une demande d'audience (depuis l'agenda ou au rendez-vous fixé) */
-VIE.audChoice=function(S,id,i){const a=S.org.aud.find(x=>x.id===id);if(!a||a.done)return;const c=a.c[+i];a.done=1;a.held=S.day;a.rep=c[0];applyAud(S,a,c[1]);
+VIE.audChoice=function(S,id,i){const a=S.org.aud.find(x=>x.id===id);if(!a||a.done)return;const c=a.c[+i];a.done=1;a.held=S.day;a.rep=c[0];const eff=Object.assign({},c[1]);
+  if(eff.dette>0&&window.SUIVI&&S.mode==="pres"){const md=eff.dette,fx={};if(eff.eco){fx.eco=eff.eco;delete eff.eco}if(eff.soc){fx.soc=eff.soc;delete eff.soc}delete eff.dette;
+    SUIVI.add(S,{t:c[0]+" ("+a.qui+")",cat:"Paiement",qui:"Ministère des Finances",et:[[0,"Annonce faite en audience"],[4,"Ordonnancement au ministère des Finances"],[12,"Visa du contrôle financier"],[25,"Paiement effectué par le Trésor"]],k:"paiement",data:{md,fx}})}
+  else if(window.SUIVI)SUIVI.add(S,{t:"Audience "+a.qui+" : "+c[0],cat:"Audience",qui:"Secrétariat particulier"});
+  applyAud(S,a,eff);
   G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":S.mode==="min"?"Cabinet du ministre":S.profil==="maire"?"Hôtel de ville":"Bureau","Audience");
   G.toast("Audience : "+lcP(c[0]));window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Audience accordée : "+a.qui,b:"Objet : "+a.objet+" Suite donnée : « "+c[0]+" ».",k:"info",read:true});G.render()};
 VIE.audSheet=function(S,id){const a=S.org&&S.org.aud.find(x=>x.id===id);if(!a||a.done)return G.toast("Cette demande d'audience n'est plus d'actualité.");
@@ -195,9 +199,7 @@ VIE.audSheet=function(S,id){const a=S.org&&S.org.aud.find(x=>x.id===id);if(!a||a
     el.querySelectorAll("[data-audc]").forEach(b=>b.onclick=()=>{el.remove();VIE.audChoice(S,id,b.dataset.audc)})})};
 VIE.bindAud=function(S){
   const qc=$("quotCard");if(qc)qc.ontoggle=()=>{S.org.quotOpen=qc.open};
-  document.querySelectorAll("[data-aud]").forEach(b=>b.onclick=()=>{const a=S.org.aud.find(x=>x.id===b.dataset.aud);const c=a.c[+b.dataset.i];a.done=1;applyAud(S,a,c[1]);
-    G.setView({overlay:"conseil"},S.mode==="pres"?"Palais de l'Unité":S.mode==="min"?"Cabinet du ministre":S.profil==="maire"?"Hôtel de ville":"Bureau","Audience");
-    G.toast("Audience : "+lcP(c[0]));window.SYS.inbox(S,{from:"Secrétariat particulier",t:"Audience accordée : "+a.qui,b:"Objet : "+a.objet+" Suite donnée : « "+c[0]+" ».",k:"info",read:true});G.render()});
+  document.querySelectorAll("[data-aud]").forEach(b=>b.onclick=()=>VIE.audChoice(S,b.dataset.aud,+b.dataset.i));
 };
 
 /* ---------- le quotidien ---------- */
