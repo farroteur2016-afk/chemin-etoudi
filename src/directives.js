@@ -60,7 +60,7 @@ DIR.handle=async function(S,raw,reply){if(!S||S.phase!=="play")return false;cons
   if(!sc.ok){if(sc.opp){S.opp.noto=clamp(S.opp.noto+1.5,0,100)}window.SYS.inbox(S,{from:sc.opp?"Votre parti":"Pétitions",t:"Proposition : "+raw.slice(0,80),b:sc.msg,k:"info",read:true});reply(sc.msg);G.render();return true}
   let d={id:nid(),resp:S.mode==="pres"&&window.CAB?CAB.resp(c.id):null,cat:c.id,titre:c.titre,texte:raw,cible:cb,reg:region(t),qui:sc.qui,start:S.day,due:S.day+c.delai,cout:c.cout,fx:{...c.fx},loy:c.loy||0,done:false};
   if(c.id==="construire"&&d.reg){d.titre+=" : "+CM.REG[d.reg].n}
-  if(c===GENERIC){const x=raw.trim().replace(/^(je veux (que|qu')|j'exige (que|qu')|j'ordonne (que|qu')?|il faut (que|qu')?|faites (en sorte (que|qu'))?)\s*/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}
+  if(c===GENERIC){const x=raw.trim().replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites)\s+/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}
   if(sample&&!refused&&(c===GENERIC||c.id==="construire"||c.id==="interdire")){try{const j=await sample.json(
     "Jeu de simulation politique réaliste au Cameroun (2026). Le joueur ("+sc.qui+") donne cette directive : « "+raw+" ».\n"+
     "Qualifie-la de façon réaliste. Réponds uniquement en JSON : {\"titre\": \"titre officiel court\", \"base_legale\": \"texte camerounais applicable ou chaîne vide\", \"delai_jours\": 7-365, \"cout_milliards_fcfa\": 0-500, "+
@@ -123,7 +123,7 @@ DIR.edit=function(S,id){const d=(S.directives||[]).find(x=>x.id===id);if(!d||d.d
     el.querySelector("#deNo").onclick=()=>{el.remove();DIR.sheet(S)};
     el.querySelector("#deOk").onclick=()=>{const tx=el.querySelector("#deTx").value.trim();if(!tx)return G.toast("L'instruction ne peut pas être vide.");const j=Math.max(1,Math.min(720,+el.querySelector("#deJ").value||rest));const rg=el.querySelector("#deReg").value||null;
       const ch=[];if(tx!==d.texte){const t=norm(tx);const c=CAT.find(x=>x.re.test(t))||GENERIC;const oldCost=d.cout||0;d.texte=tx;d.cat=c.id;d.fx={...c.fx};d.base=c.base||"";
-        if(c===GENERIC){const x=tx.replace(/^(je veux (que|qu')|j'exige (que|qu')|j'ordonne (que|qu')?|il faut (que|qu')?|faites (en sorte (que|qu'))?)\s*/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}else d.titre=c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");
+        if(c===GENERIC){const x=tx.replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites)\s+/i,"");d.titre=(x.charAt(0).toUpperCase()+x.slice(1)).slice(0,80)}else d.titre=c.titre+(c.id==="construire"&&rg?" : "+CM.REG[rg].n:"");
         d.cout=c.cout;const extra=Math.max(0,d.cout-oldCost)*.25;if(extra){if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000)}ch.push("instruction")}
       if(rg!==d.reg){d.reg=rg;ch.push("région")}
       if(j!==rest){const faster=j<rest;d.due=S.day+j;if(faster){const extra=(d.cout||2)*.25*(rest/j-1)*.3;if(S.mode==="pres")S.nums.dette+=extra;else if(S.mode==="min")S.minis.fonds=Math.max(0,S.minis.fonds-extra*1000);d.cout=Math.round((d.cout||0)*(1+.3*(rest/j-1)))}ch.push("délai")}
