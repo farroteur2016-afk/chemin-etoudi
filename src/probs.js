@@ -63,7 +63,7 @@ function authority(S,p){const A=[];if(S.mode!=="pres"&&S.mode!=="min")return A;
   return A}
 PB.item=function(S,p,back){const lieu=p.ville?p.ville+" ("+regName(p.reg)+")":p.reg?"région "+regName(p.reg):"tout le pays";const Au=authority(S,p);
   const lvl=own(p)?PB.esc(S,p):null;const P=PB.prop(S,p);const canDir=(S.mode==="pres"||S.mode==="min")&&!p.bureau;
-  const acts=(canDir?[["okp","✅ Approuver la proposition du ministre ("+String(P.cout).replace(".",",")+" Md)"]]:[]).concat(lvl&&lvl.l>=4&&S.mode==="pres"?[["backm","↩️ Renvoyer au ministre (qu'il règle à son niveau)"]]:[]).concat([["dir","📜 Donner une autre instruction"],["note","📝 Demander une note chiffrée avec propositions"]]).concat(Au.map((a,i)=>["call"+i,"📞 Appeler "+a.lab+" ("+a.n+")"]));
+  const acts=(canDir?[["okp","✅ Approuver la proposition du ministre ("+String(P.cout).replace(".",",")+" Md)"]]:[]).concat(canDir?[["modp","✏️ Modifier la proposition du ministre avant validation"]]:[]).concat(lvl&&lvl.l>=4&&S.mode==="pres"?[["backm","↩️ Renvoyer au ministre (qu'il règle à son niveau)"]]:[]).concat([["dir","📜 Donner une autre instruction"],["note","📝 Demander une note chiffrée avec propositions"]]).concat(Au.map((a,i)=>["call"+i,"📞 Appeler "+a.lab+" ("+a.n+")"]));
   if(p.reg&&window.VOY)acts.push(["go","🚗 Se rendre sur place ("+(p.ville||CM.REG[p.reg].chef)+")"]);
   if(p.actu)acts.push(["actu","📰 Ouvrir l'article et ses options"]);if(p.doss)acts.push(["doss","🗂️ Ouvrir le dossier"]);if(p.hop)acts.push(["hop","🏥 Ouvrir la fiche de l'hôpital"]);if(p.bureau)acts.push(["bur","🗂️ Voir les décisions proposées sur le bureau"]);
   G.sheet('<span class="eyebrow">'+esc(p.src)+' · '+esc(lieu)+'</span><h3 class="h2">'+esc(p.t)+'</h3><p>'+esc(p.d)+'</p>'+(lvl?'<p class="small"><b>Niveau de traitement :</b> '+(lvl.l>=4?"🔺 remonté à la Présidence":esc(authName(S,p,lvl.l)))+' depuis le '+esc(G.dayLabel(lvl.t0))+(lvl.l<4?" ; s\'il n\'est pas réglé, il remontera au niveau supérieur.":"")+'</p>':"")+
@@ -71,7 +71,8 @@ PB.item=function(S,p,back){const lieu=p.ville?p.ville+" ("+regName(p.reg)+")":p.
    '<div class="choices">'+acts.map(([k,l])=>'<button class="btn" data-pa="'+k+'">'+esc(l)+'</button>').join("")+'</div><button class="btn ghost" data-pback>← Retour à la liste</button>',el=>{el.dataset.pb="1";el.setAttribute("data-noinstr","");
     el.querySelector("[data-pback]").onclick=()=>{el.remove();PB.sheet(S,back||{reg:p.reg})};
     el.querySelectorAll("[data-pa]").forEach(b=>b.onclick=()=>{const k=b.dataset.pa;el.remove();const rep=m=>{say(m);G.toast(m.slice(0,120))};
-      if(k==="okp")return PB.approve(S,p);if(k==="backm")return PB.back(S,p);
+      if(k==="okp")return PB.approve(S,p);
+      if(k==="modp"&&window.EDIT)return EDIT.sheet(S,{titre:p.t,from:"Proposition du "+P.lab,info:p.d,texte:P.text,cout:P.cout,resp:P.min,reg:p.reg,ville:p.ville,ctx:p.t,onDone:d=>{if(d){const e=PB.esc(S,p);e.dir=d.id}}});if(k==="backm")return PB.back(S,p);
       if(k==="dir")return PB.compose(S,{p,reg:p.reg,ville:p.ville,back});
       if(k==="note"&&window.NOTE)return NOTE.handle(S,"Je veux une note chiffrée avec des propositions sur : "+p.t+" ("+lieu+")",rep,{ctx:p.t});
       if(k.startsWith("call")){const a=Au[+k.slice(4)];if(window.CAB&&a.k==="min"){const st=CAB.status(S,a);if(st&&!st.ok)return CAB.unavailable(S,a,st,{objet:p.t,when:"maintenant"})}

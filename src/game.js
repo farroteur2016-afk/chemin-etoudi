@@ -524,7 +524,8 @@ function applyEffects(e,n,reg){
 /* le dossier du bureau dans une fenêtre (depuis le journal de 20 h, n'importe quel onglet) */
 function dossierSheet(){const d=S&&S.cur!=null?CM.DOSSIERS[S.cur]:null;if(!d)return toast("Aucun dossier sur votre bureau pour l'instant.");
   sheet('<span class="eyebrow">Dossier sur votre bureau · '+esc(d.f)+'</span><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.PB&&PB.adviceHTML?PB.adviceHTML(S,d):"")+
-   '<div class="choices">'+d.c.map((c,i)=>'<button class="choice" data-dsi="'+i+'"><span class="t">'+esc(c.t)+'</span>'+hintsHTML(c)+'</button>').join("")+'</div>'+(window.NEGO?NEGO.btn(d):""),el=>{
+   '<div class="choices">'+d.c.map((c,i)=>'<button class="choice" data-dsi="'+i+'"><span class="t">'+esc(c.t)+'</span>'+hintsHTML(c)+'</button>').join("")+'</div>'+(window.NEGO?NEGO.btn(d):"")+'<button class="btn" data-dsautre>✍️ Autre proposition (votre propre décision)</button>',el=>{
+    el.querySelector("[data-dsautre]").onclick=()=>{el.remove();if(window.EDIT)EDIT.sheet(S,{titre:d.t,from:"Dossier du bureau · "+d.f,info:d.x,ctx:d.t,reg:d.lieu,onDone:()=>{S.cur=null;S.nextDossier=S.day+rnd(3,7);save();render()}})};
     el.querySelectorAll("[data-dsi]").forEach(b=>b.onclick=()=>{el.remove();choose(+b.dataset.dsi)});
     const n=el.querySelector("[data-nego]");if(n)n.onclick=()=>{el.remove();NEGO.open(S,d)}})}
 GAME.dossierSheet=dossierSheet;GAME.choose=i=>{if(S&&S.cur!=null)choose(i)};

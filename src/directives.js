@@ -47,7 +47,7 @@ const GENERIC={id:"generique",titre:"Directive",fx:{pop:.5},delai:30,cout:0};
 const IMPER=/je veux|j exige|j ordonne|ordonne|exige|il faut|faites|demande[zr]? (a|aux|que)|je demande|qu on|que (tous|toutes|les|le|la)|instruis|instruction|decret|decide|je decide|mettez|lancez|prenez/;
 
 const cut=(s,n)=>s.length<=n?s:s.slice(0,Math.max(20,s.lastIndexOf(" ",n)))+"…";
-const stripTxt=raw=>{const x=String(raw).trim().replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites|je veux|je souhaite|je demande)\s+/i,"");return x.charAt(0).toUpperCase()+x.slice(1)};
+const stripTxt=raw=>{const x=String(raw).trim().replace(/[,;]?\s*(et\s+)?(soumett?e[sz]?|pr[ée]sente[sz]?|envoye[sz]?|transmette[sz]?)[- ]?(moi|nous)\b.*$/i,"").replace(/[,;]?\s*(pour|avant)\s+(validation|accord|avis)\b.*$/i,"").replace(/^(je veux|j'exige|j'ordonne|il faut|je demande|faites en sorte)\s+(?=(que|qu'))/i,"").replace(/^(j'ordonne|il faut|faites|je veux|je souhaite|je demande)\s+/i,"");return x.charAt(0).toUpperCase()+x.slice(1)};
 const NBW={un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,dix:10,quinze:15,vingt:20,trente:30};
 /* délai donné dans la consigne : « dans 48 h », « sous 72 heures », « d'ici une semaine », « dans 15 jours », « d'ici 3 mois », « immédiatement » */
 function delai(S,t){const num=x=>/^\d+$/.test(x)?+x:NBW[x]||null;let m=t.match(/(?:dans|sous|d ici|en|avant|au plus tard dans|delai de)\s+(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|dix|quinze|vingt|trente)\s*(h|heures?|jours?|j|semaines?|mois)\b/);
@@ -89,7 +89,7 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};const orig=String(raw);if
   const gate=DIR.gate(S,d,opt);
   if(gate.need){d.why=gate.why;d.execJ=Math.max(.25,d.due-S.day);d.phase=gate.need==="pres"?"plan":"presid";const pj=planDays(S,d);d.planDue=S.day+pj;d.due=d.planDue+d.execJ;
     S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);const R=DIR.resp(S,d);
-    const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». Comme elle a un "+gate.why+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation."+(d.cout?" Coût estimé à ce stade : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":d.cat==="economies"?" Cette mesure ne coûte rien : elle doit faire économiser de l'argent à l'État.":" Le coût sera chiffré dans le plan.")
+    const txt=gate.need==="pres"?"Instruction transmise à "+R.n+" ("+R.lab+") : « "+d.titre+" ». "+(/^vous/.test(gate.why)?"Comme "+gate.why:"Comme elle a un "+gate.why)+", rien ne sera exécuté sans votre accord : "+R.n+" vous soumettra un plan d'exécution chiffré le "+G.dayLabel(d.planDue)+(d.planDue-S.day<1?" vers "+Math.round(((d.planDue%1)*24+8)%24)+" h":"")+", pour validation."+(d.cout?" Coût estimé à ce stade : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":d.cat==="economies"?" Cette mesure ne coûte rien : elle doit faire économiser de l'argent à l'État.":" Le coût sera chiffré dans le plan.")
       :"Votre décision « "+d.titre+" » a un "+gate.why+" : elle est transmise à la Présidence de la République pour approbation avant exécution. Réponse attendue vers le "+G.dayLabel(d.planDue)+".";
     window.SYS.inbox(S,{from:sc.qui,t:"En attente de validation : "+d.titre.slice(0,70),b:"Votre instruction : « "+orig+" »\n"+txt,k:"info",read:true,reg:d.reg});reply(txt);G.render();return true}
   // coût (en milliards : État, ministère ou commune)
@@ -101,7 +101,7 @@ DIR.handle=async function(S,raw,reply,opt){opt=opt||{};const orig=String(raw);if
   S.directives=S.directives||[];S.directives.push(d);S.directives=S.directives.slice(-60);
   const when=G.dayLabel(d.due);
   const txt=(S.mode==="pres"?"Directive présidentielle":"Décision")+" enregistrée : « "+d.titre+" »"+(c.id==="patrimoine"?", pour "+cb.lab:"")+". Domaine : "+d.domaine.toLowerCase()+"."+(d.dossier?" Dossier : "+d.dossier+".":"")+(d.base?" Base légale : "+d.base+".":"")+
-    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":"")+(d.cr==="audience"?" "+DIR.resp(S,d).n+" viendra vous présenter le compte rendu en audience.":" Compte rendu par écrit ; vous pouvez choisir de recevoir le responsable en audience dans « Vos directives » ou votre agenda.");
+    (S.mode==="pres"?" Le secrétaire général de la Présidence la notifie aux intéressés.":"")+""+(S.mode==="pres"&&d.resp&&S.gov&&S.gov.min[d.resp]?" Exécution immédiate confiée à "+S.gov.min[d.resp].n+", "+window.SYS.accord("le ministre",window.SYS.sexe(S.gov.min[d.resp].n)).replace(/^l[ea] /,"")+" "+window.SYS.deM(CAB.minName(S,d.resp))+CAB.minName(S,d.resp)+", dans le délai fixé.":S.mode==="pres"?" Exécution immédiate, dans le délai fixé.":"")+" Rapport attendu le "+when+(d.due-S.day<2?" à "+Math.round(((d.due%1)*24+8)%24)+" h":"")+"."+(d.cout?" Coût estimé : "+String(d.cout).replace(".",",")+" milliard"+(d.cout>=2?"s":"")+" de FCFA.":"")+(d.cr==="audience"?" "+DIR.resp(S,d).n+" viendra vous présenter le compte rendu en audience.":" Compte rendu par écrit ; vous pouvez choisir de recevoir le responsable en audience dans « Vos directives » ou votre agenda.");
   window.SYS.inbox(S,{from:sc.qui,t:d.titre,b:"Votre instruction : « "+orig+" »\n"+txt+(d.reaction?"\n"+d.reaction:c.id==="patrimoine"?"\nLa presse salue une décision attendue depuis 1996 ; plusieurs ministres s'inquiètent en privé.":""),k:"info",read:true,reg:d.reg});
   reply(txt);G.render();return true};
 
@@ -110,8 +110,9 @@ const capOf=id=>{const m=id&&E.MINISTERES.find(x=>x.id===id);return m?Math.max(1
 DIR.cap=capOf;
 DIR.gate=function(S,d,opt){opt=opt||{};if(d.cat==="patrimoine"||opt.direct)return{};
   const nat=opt.nat!=null?!!opt.nat:(!d.reg&&!d.ville);
-  if(S.mode==="pres"){const cap=capOf(d.resp);const over=(d.cout||0)>cap;if(!nat&&!over)return{};
-    return{need:"pres",why:[nat?"impact national":"",over?"coût ("+String(d.cout).replace(".",",")+" milliards) au-delà de ce que "+(d.resp?"le ministère":"les services")+" peut gérer seul ("+String(cap).replace(".",",")+" milliards)":""].filter(Boolean).join(" et un ")}}
+  /* le président décide : son instruction s'exécute directement, sauf s'il demande lui-même un plan ou des propositions */
+  if(S.mode==="pres"){const t0=norm(d.texte||"");if(!opt.plan&&!/(soumet|soumett|propos|un plan|me revenir|revenez|pour (validation|accord|avis)|avant (execution|de lancer|toute execution)|a valider|valid(er|ation) par moi)/.test(t0))return{};const cap=capOf(d.resp);const over=(d.cout||0)>cap;
+    return{need:"pres",why:"vous avez demandé à valider le plan avant exécution"+(over?" (coût estimé : "+String(d.cout).replace(".",",")+" milliards)":"")}}
   if(S.mode==="min"&&S.minis){const cap=capOf(S.minis.id);const over=(d.cout||0)>cap;if(!nat&&!over)return{};
     return{need:"presidence",why:[nat?"impact national":"",over?"coût ("+String(d.cout).replace(".",",")+" milliards) au-delà des marges de votre ministère ("+String(cap).replace(".",",")+" milliards)":""].filter(Boolean).join(" et un ")}}
   return{}};

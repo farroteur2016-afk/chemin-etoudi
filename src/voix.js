@@ -109,7 +109,7 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
   if(!S||S.phase!=="play")return reply("Aucune partie n'est encore lancée. Sur l'écran d'accueil, choisissez votre profil (président, ministre, maire, médecin…) ou cliquez sur Reprendre, puis parlez-moi à nouveau.");
   if(window.SAV&&SAV.handle(S,raw,reply))return;
   if(S.mode==="pres"&&S.cur!=null&&/\bnegoci|(ouvre|ouvrir|montre|voir) (le|ce) dossier|dossier (du|sur le) bureau/.test(t)){const d=CM.DOSSIERS[S.cur];closeP();if(/negoci/.test(t)&&window.NEGO){NEGO.open(S,d);reply("J'ouvre la négociation : "+d.t+".")}else{G.dossierSheet();reply("Voici le dossier sur votre bureau : "+d.t+".")}return}
-  if(window.SUIVI&&SUIVI.isAsk(t)){closeP();SUIVI.sheet(S);reply(SUIVI.summary(S));return}
+  if(window.SUIVI&&(SUIVI.isAsk(t)||/centre de decision|a traiter|en attente de (ma|mon) (decision|avis)|filtre/.test(t))){closeP();window.HUB?HUB.sheet(S):SUIVI.sheet(S);reply(SUIVI.summary(S));return}
   if(window.AG&&AG.isAsk(t)){closeP();AG.sheet(S);reply(AG.summary(S));return}
   if(window.PB&&PB.voice(S,t,reply,closeP))return;
   // appel téléphonique immédiat
