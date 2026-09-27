@@ -58,10 +58,10 @@ GAME.viewRegion=viewRegion;
 
 function subs(who,text,opts){
   opts=opts||{};const el=$("subs");
-  el.innerHTML='<div class="who"><span>'+esc(who)+'</span><button class="sheet-x" id="subsX" aria-label="Fermer" title="Fermer" style="margin:0;position:static;width:30px;height:30px;font-size:15px">✕</button></div><div class="txt">'+esc(text)+'</div>';
+  el.innerHTML='<div class="who"><span>'+esc(who)+'</span>'+(opts.open?'<button class="btn small" id="subsOpen" style="margin-left:auto;margin-right:8px">📂 Ouvrir le dossier</button>':"")+'<button class="sheet-x" id="subsX" aria-label="Fermer" title="Fermer" style="margin:0;position:static;width:30px;height:30px;font-size:15px">✕</button></div><div class="txt"'+(opts.open?' style="cursor:pointer" title="Ouvrir le dossier"':"")+'>'+esc(text)+'</div>';
   el.hidden=false;$("place").hidden=true;
   const close=()=>{el.hidden=true;$("place").hidden=false;A.stop()};
-  $("subsX").onclick=close;
+  $("subsX").onclick=close;if(opts.open){const f=()=>{close();opts.open()};$("subsOpen").onclick=f;el.querySelector(".txt").onclick=f}
   const spoke=A.speak(text,{voix:opts.voix||"m",rate:opts.rate||1,pitch:opts.pitch||1,onend:()=>{setTimeout(()=>{if(!A.speaking){el.hidden=true;$("place").hidden=false}},1800)}});
   if(!spoke)setTimeout(()=>{el.hidden=true;$("place").hidden=false},Math.min(14000,3000+text.length*45));
 }
@@ -485,17 +485,18 @@ function renderBureau(){
     '<button class="choice" data-rep="1"><span class="t">Reporter d\'un an par une loi de prorogation</span><div class="hints"><span class="hint big">Diplomatie</span><span class="hint big">Popularité</span><span class="hint loi">Vote au Parlement</span></div></button></div></div>'}
   else if(!d)dossier='<div class="card"><span class="eyebrow">Bureau</span><p>Aucun dossier urgent sur votre bureau. Prochain dossier attendu vers le '+esc(dayLabel(S.nextDossier||S.day))+'.</p><button class="btn" id="bNextD">Avancer jusqu\'au prochain dossier</button></div>';
   else dossier='<div class="card"><div class="stamp"><span>'+esc(d.f)+'</span><button class="btn small ghost" id="bListen">Écouter</button></div><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.PB&&PB.advice?PB.adviceHTML(S,d):"")+(window.VID?'<div class="row">'+VID.btn(d.t+". "+d.x,d.lieu||null,"Voir la vidéo sur place")+'</div>':"")+'<div class="choices">'+
-    d.c.map((c,i)=>'<button class="choice" data-i="'+i+'"><span class="t">'+esc(c.t)+(window.PB&&PB.advice&&PB.advice(S,d).i===i?' <span class="pill ok" style="font-size:11px">recommandé par le ministre</span>':"")+'</span>'+hintsHTML(c)+'</button>').join("")+'</div></div>';
+    (window.NEGO?'<div class="row">'+NEGO.btn(d)+'</div>':"")+d.c.map((c,i)=>'<button class="choice" data-i="'+i+'"><span class="t">'+esc(c.t)+(window.PB&&PB.advice&&PB.advice(S,d).i===i?' <span class="pill ok" style="font-size:11px">recommandé par le ministre</span>':"")+'</span>'+hintsHTML(c)+'</button>').join("")+'</div></div>';
   const acts=presActions();
   $("panel").innerHTML=news+SYS.mailCard(S)+'<div class="row" style="justify-content:space-between"><span class="eyebrow">Dossiers · '+esc(dayLabel(S.day))+'</span>'+(next?'<span class="pill '+(next.m-S.m<=2?"warn":"ok")+'">'+esc(CM.CALENDRIER.find(c=>c.id===next.id).t)+' : '+esc(monthLabel(next.m))+'</span>':"")+'</div>'+dossier+
    '<div class="card"><span class="eyebrow">Action présidentielle (facultative, une par mois)</span><div class="grid2">'+acts.map(a=>'<button class="btn small" data-a="'+a.id+'"'+(a.dis?" disabled":"")+' title="'+esc(a.d)+'">'+esc(a.n)+'</button>').join("")+'</div>'+(S.used.m===S.m?'<span class="small muted">Action du mois effectuée.</span>':"")+'</div>';
   SYS.bindMail(S);
   $("panel").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>choose(+b.dataset.i));
+  {const nb=$("panel").querySelector("[data-nego]");if(nb&&window.NEGO&&S.cur!=null)nb.onclick=()=>NEGO.open(S,CM.DOSSIERS[S.cur])}
   $("panel").querySelectorAll("[data-rep]").forEach(b=>b.onclick=()=>decideReport(+b.dataset.rep));
   $("panel").querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>presAction(b.dataset.a));
   const nd=$("bNextD");if(nd)nd.onclick=()=>advanceDays(Math.max(.1,(S.nextDossier||S.day)-S.day+.01),false);
   const bl=$("bListen");if(bl)bl.onclick=()=>subs(d.f,d.t+". "+d.x,{voix:"f"});
-  if(!report&&d&&A.auto&&ui.readFor!==S.m+":"+S.cur){ui.readFor=S.m+":"+S.cur;setTimeout(()=>{if(tab==="bureau")subs("Journal de 20 h",d.t+". "+d.x,{voix:"f"})},400)}
+  if(!report&&d&&A.auto&&ui.readFor!==S.m+":"+S.cur){ui.readFor=S.m+":"+S.cur;setTimeout(()=>{if(tab==="bureau")subs("Journal de 20 h",d.t+". "+d.x,{voix:"f",open:dossierSheet})},400)}
 }
 function presActions(){
   const used=S.used.m===S.m,cd=k=>(S.cool[k]||-99)>S.m;
@@ -518,6 +519,13 @@ function applyEffects(e,n,reg){
   if(reg)for(const r in reg){shift(S.sup,r,S.power,reg[r]*.6,S.power);S.regs[r].sec=clamp(S.regs[r].sec+(reg[r]>0?1:-1),0,100)}
   return d;
 }
+/* le dossier du bureau dans une fenêtre (depuis le journal de 20 h, n'importe quel onglet) */
+function dossierSheet(){const d=S&&S.cur!=null?CM.DOSSIERS[S.cur]:null;if(!d)return toast("Aucun dossier sur votre bureau pour l'instant.");
+  sheet('<span class="eyebrow">Dossier sur votre bureau · '+esc(d.f)+'</span><h3 class="h2">'+esc(d.t)+'</h3><p>'+esc(d.x)+'</p>'+(window.PB&&PB.adviceHTML?PB.adviceHTML(S,d):"")+
+   '<div class="choices">'+d.c.map((c,i)=>'<button class="choice" data-dsi="'+i+'"><span class="t">'+esc(c.t)+'</span>'+hintsHTML(c)+'</button>').join("")+'</div>'+(window.NEGO?NEGO.btn(d):""),el=>{
+    el.querySelectorAll("[data-dsi]").forEach(b=>b.onclick=()=>{el.remove();choose(+b.dataset.dsi)});
+    const n=el.querySelector("[data-nego]");if(n)n.onclick=()=>{el.remove();NEGO.open(S,d)}})}
+GAME.dossierSheet=dossierSheet;GAME.choose=i=>{if(S&&S.cur!=null)choose(i)};
 function choose(i){
   const d=CM.DOSSIERS[S.cur],ch=d.c[i];A.click();
   let rejected=false;
