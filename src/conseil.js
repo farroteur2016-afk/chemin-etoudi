@@ -25,25 +25,52 @@ CAB.resp=cat=>RESP[cat]||null;
 CAB.minName=(S,id)=>{const m=E.MINISTERES.find(x=>x.id===id);return m?m.n:id};
 
 /* ---------- où se trouve un responsable, que fait-il ? ---------- */
-const SIEGE={PAD:"Douala",SONARA:"Limbé",CAMRAIL:"Douala",CDC:"Limbé",SODECOTON:"Garoua",ALUCAM:"Édéa",PAK:"Kribi",ADC:"Douala",SODECAO:"Yaoundé",ONCC:"Douala"};
-CAB.where=function(S,P){if(!P||!P.n)return null;const n=P.n,day=Math.floor(S.day+1/3),h=((S.day%1)*24+8)%24;const wd=(new Date(2026,9,1).getDay()+day)%7;const r=hash(n+"|"+day)%12;const who=(P.n?P.n+", "+P.lab+",":P.lab);
-  const fonc=P.k==="min"?"à son ministère, à Yaoundé":P.k==="pm"?"à l'Immeuble Étoile (Primature), à Yaoundé":P.k==="sg"?"au palais d'Etoudi":P.k==="vp"?"à Yaoundé":
-    P.k==="gouverneur"?"à ses services, à "+(P.reg?CM.REG[P.reg].chef:"son chef-lieu"):P.k==="prefet"||P.k==="police"?"à son bureau, à "+(P.lab.split(" de ").pop()):P.k==="hop"?"à l'hôpital":P.k==="ent"?"au siège, à "+(SIEGE[P.org&&P.org.id]||"Yaoundé"):"à son bureau";
-  const base=P.k==="min"||P.k==="pm"||P.k==="sg"?"Yaoundé":P.k==="ent"?(SIEGE[P.org&&P.org.id]||"Yaoundé"):P.reg?CM.REG[P.reg].chef:"Yaoundé";
-  const mis=(S.missions||[]).find(m=>m.min===(P.min||P.id)&&S.day>=m.from-.5&&S.day<=m.until);
-  if(mis)return who+" est en mission à "+mis.ville+" sur vos instructions (dossier : « "+mis.objet+" »). Retour prévu le "+G.dayLabel(mis.until)+".";
-  const rdv=(S.agenda||[]).find(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===n&&a.at-S.day<2);
-  const F=P.sexe==="f";const tail=rdv?" "+(F?"Elle est attendue":"Il est attendu")+" à votre audience le "+G.dayLabel(rdv.at)+".":"";
-  if(h>=21||h<6)return who+" est à son domicile, à "+base+" (il est "+Math.floor(h)+" h)."+tail;
-  if(wd===0||wd===6)return who+" est en week-end à "+base+", joignable par téléphone."+tail;
-  const tr=CAB.trait(n);if(tr==="negligent"&&r===11)return who+" est injoignable depuis ce matin ; son secrétariat assure que "+(F?"elle":"il")+" « arrive »."+tail;
-  if(r===0){const R=CM.REGIONS[hash(n+day)%10];return who+" est en tournée dans la région "+R.n+", à "+R.chef+", jusqu'à ce soir."+tail}
-  if(r===1&&P.k==="min")return who+" participe à un conseil de cabinet à la Primature."+tail;
-  if(r===2&&(P.id==="MINREX"||P.id==="MINFI"||P.id==="MINEPAT"||P.k==="ent"))return who+" est en déplacement à l'étranger ("+["Paris","Addis-Abeba","Libreville","Washington","Pékin"][hash(n)%5]+"), retour dans deux jours."+tail;
-  if(r===3)return who+" est en réunion avec ses collaborateurs, "+fonc+"."+tail;
-  if(r===4)return who+" reçoit des audiences, "+fonc+"."+tail;
-  return who+" est "+fonc+(h<12?(F?", arrivée ce matin":", arrivé ce matin"):", au travail")+"."+tail};
-
+const SIEGE={AFRILAND:"Yaoundé",BICEC:"Douala",SGC:"Douala",UBA:"Douala",ECOBANK:"Douala",CCA:"Yaoundé",BGFI:"Douala",SCB:"Douala",SABC:"Douala",MTN:"Douala",ORANGE:"Douala",DANGOTE:"Douala",CIMENCAM:"Douala",PAD:"Douala",SONARA:"Limbé",CAMRAIL:"Douala",CDC:"Limbé",SODECOTON:"Garoua",ALUCAM:"Édéa",PAK:"Kribi",ADC:"Douala",SODECAO:"Yaoundé",ONCC:"Douala"};
+/* emploi du temps suivi : où est la personne à un instant donné (tâches de fond du jeu + vos décisions) */
+const ABROAD=["Paris","Addis-Abeba","Libreville","Washington","Pékin","Bruxelles","Abidjan","Genève"];
+CAB.status=function(S,P,at){if(!P||!P.n)return null;at=at==null?S.day:at;const n=P.n,day=Math.floor(at+1/3),h=((at%1)*24+8)%24;const wd=(new Date(2026,9,1).getDay()+day)%7;
+  const base=P.k==="min"||P.k==="pm"||P.k==="sg"||P.k==="vp"?"Yaoundé":P.k==="ent"?(SIEGE[P.org&&P.org.id]||"Yaoundé"):P.reg?CM.REG[P.reg].chef:"Yaoundé";
+  const fonc=P.k==="min"?"à son ministère, à Yaoundé":P.k==="pm"?"à l'Immeuble Étoile (Primature), à Yaoundé":P.k==="sg"?"au palais d'Etoudi":P.k==="vp"?"à Yaoundé":P.k==="gouverneur"?"à ses services, à "+base:P.k==="prefet"||P.k==="police"?"à son bureau, à "+(P.lab.split(" de ").pop()):P.k==="hop"?"à l'hôpital":P.k==="ent"?"au siège, à "+base:"à son bureau";
+  const mk=(st,ok,txt,o)=>Object.assign({st,ok,txt,base,fonc},o||{});
+  // 1) vos décisions : missions ordonnées
+  const mis=(S.missions||[]).find(m=>m.min===(P.min||P.id)&&at>=m.from-.5&&at<=m.until);if(mis)return mk("mission",false,"est en mission à "+mis.ville+" sur vos instructions (dossier : « "+mis.objet+" »)",{ville:mis.ville,back:mis.until,rappel:true});
+  const own=(S.moves||[]).find(m=>m.n===n&&at>=m.from&&at<=m.until);if(own)return mk(own.st,false,own.txt,{ville:own.ville,back:own.until,rappel:true});
+  // 2) tâches de fond : séjours à l'étranger (blocs de 3 jours) et tournées
+  const blk=Math.floor(day/3),goesAbroad=(P.id==="MINREX"||P.id==="MINFI"||P.id==="MINEPAT"||P.k==="ent"||P.k==="pm")?hash(n+"|"+blk)%7===0:hash(n+"|"+blk)%23===0;
+  if(goesAbroad&&!(blk===0&&day<1)){const city=ABROAD[hash(n+blk)%ABROAD.length];return mk("etranger",false,"est en déplacement à l'étranger, à "+city,{ville:city,back:(blk+1)*3+9/24-1/3,rappel:true})}
+  if(hash(n+"#"+day)%13===0){const R=CM.REGIONS[hash(n+day)%10];return mk("tournee",false,"est en tournée dans la région "+R.n+", à "+R.chef+", jusqu'à ce soir",{ville:R.chef,back:day+1+9/24-1/3,rappel:true})}
+  if(h>=21||h<6)return mk("domicile",false,"est à son domicile, à "+base+" (il est "+Math.floor(h)+" h)",{back:(h>=21?day+1:day)+9/24-1/3,soft:true});
+  if(wd===0||wd===6)return mk("weekend",false,"est en week-end à "+base+", joignable par téléphone",{back:day+(wd===6?2:1)+9/24-1/3,soft:true});
+  if(CAB.trait(n)==="negligent"&&hash(n+"!"+day)%9===0)return mk("injoignable",false,"est injoignable ; son secrétariat assure qu'il « arrive »",{back:day+1+9/24-1/3});
+  const r=hash(n+"|"+day)%6;
+  if(r===1&&P.k==="min")return mk("conseil",true,"participe à un conseil de cabinet à la Primature");
+  if(r===3)return mk("reunion",true,"est en réunion avec ses collaborateurs, "+fonc);
+  if(r===4)return mk("audiences",true,"reçoit des audiences, "+fonc);
+  return mk("bureau",true,"est "+fonc+(h<12?", arrivé ce matin":", au travail"))};
+CAB.where=function(S,P){const st=CAB.status(S,P);if(!st)return null;const F=P.sexe==="f";const who=(P.n?P.n+", "+P.lab+",":P.lab);
+  let txt=who+" "+st.txt.replace("arrivé ce matin",F?"arrivée ce matin":"arrivé ce matin").replace("qu'il « arrive »",F?"qu'elle « arrive »":"qu'il « arrive »")+(st.back&&!st.ok&&!st.soft?". Retour prévu le "+G.dayLabel(st.back):"")+".";
+  const rdv=(S.agenda||[]).filter(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===P.n).sort((a,b)=>a.at-b.at)[0];if(rdv)txt+=" "+(F?"Elle est attendue":"Il est attendu")+" à votre audience le "+G.dayLabel(rdv.at)+".";return txt};
+/* qui peut exiger le retour immédiat ? le président pour tous, un ministre pour ceux de sa tutelle */
+const PRIVE=["AFRILAND","BICEC","SGC","UBA","ECOBANK","CCA","BGFI","SCB","SABC","MTN","ORANGE","DANGOTE","CIMENCAM"];
+const canRecall=(S,P)=>!(P.org&&PRIVE.includes(P.org.id))&&(S.mode==="pres"||(S.mode==="min"&&P.min&&S.minis&&P.min===S.minis.id&&P.k!=="min"));
+/* fenêtre « indisponible » : reporter, appeler, exiger le retour */
+CAB.unavailable=function(S,P,st,o){o=o||{};const F=P.sexe==="f";const who=(P.n?P.n+", "+P.lab:P.lab);let back=st.back||S.day+1;{const hh=((back%1)*24+8)%24;if(hh<9||hh>17)back=Math.floor(back+1/3)+(hh>17?1:0)+9/24-1/3}const bh=Math.round((((back%1)*24+8)%24));
+  const who2=P.n?P.n+", "+P.lab+",":P.lab;const msg=who2.charAt(0).toUpperCase()+who2.slice(1)+" "+st.txt+(st.back&&!st.soft?", retour prévu le "+G.dayLabel(st.back):"")+". "+(F?"Elle":"Il")+" ne pourra pas vous recevoir"+(o.when?" "+o.when:"")+". Voulez-vous reporter le rendez-vous, "+(F?"l'":"l'")+"appeler"+(canRecall(S,P)&&st.rappel?", ou exiger son retour":"")+" ?";
+  say(msg);
+  G.sheet('<span class="eyebrow">Indisponible</span><h3 class="h2">'+esc(P.n||P.lab)+'</h3><p>'+esc(msg)+'</p><div class="choices">'+
+   '<button class="choice" data-un="rep"><span class="t">📅 Reporter au '+esc(G.dayLabel(back))+' à '+bh+' h</span></button>'+
+   '<button class="choice" data-un="tel"><span class="t">📞 '+(F?"L'":"L'")+'appeler maintenant</span><span class="small muted">Entretien au téléphone : voix, texte ou choix</span></button>'+
+   (canRecall(S,P)&&st.rappel?'<button class="choice" data-un="now"><span class="t">⚡ Exiger son retour immédiat</span><span class="small muted">'+(F?"Elle":"Il")+' écourte son déplacement ; rendez-vous demain. Sa loyauté en pâtit.</span></button>':"")+
+   '<button class="choice" data-un="non"><span class="t">Annuler</span></button></div>',el=>{el.setAttribute("data-noinstr","");
+    el.querySelectorAll("[data-un]").forEach(b=>b.onclick=()=>{const k=b.dataset.un;el.remove();
+      if(k==="rep"){S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now().toString(36),type:"meet",at:back,who:P,objet:o.objet||"point de situation",lab:"Audience : "+(P.n?P.n+", ":"")+P.lab});const m="Rendez-vous reporté au "+G.dayLabel(back)+".";say(m);G.toast(m);G.render()}
+      else if(k==="tel"&&window.RENC){RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:st.ville||st.base,lieu:"au téléphone",sujet:o.objet||"point de situation",tel:true,bonjour:"Allô ? Oui, "+(S.mode==="pres"?"Excellence":"bonjour")+", je vous écoute."})}
+      else if(k==="now"){S.missions=(S.missions||[]).map(m=>m.min===(P.min||P.id)&&m.until>S.day?Object.assign(m,{until:S.day}):m);S.moves=S.moves||[];S.moves.push({n:P.n,st:"retour",txt:"rentre précipitamment à "+st.base,ville:st.base,from:S.day,until:S.day+.9});
+        S.recalls=S.recalls||{};S.recalls[P.n]=S.day;const at=Math.floor(S.day+1/3)+1+9/24-1/3;S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now().toString(36),type:"meet",at,who:P,objet:o.objet||"convocation d'urgence",lab:"Audience d'urgence : "+(P.n||P.lab),force:true});
+        if(P.k==="min"&&S.gov&&S.gov.min[P.id])S.gov.min[P.id].loy=clamp(S.gov.min[P.id].loy-5,0,100);const m=(P.n||"Votre interlocuteur")+" écourte son déplacement : audience demain à 9 h.";say(m);G.toast(m);G.render()}
+      if(o.done)o.done(k)})})};
+/* les séjours à l'étranger interrompus sur ordre restent interrompus */
+const _st=CAB.status;CAB.status=function(S,P,at){const r=_st(S,P,at);if(r&&r.st==="etranger"&&S.recalls&&S.recalls[P.n]!=null&&(at==null?S.day:at)>=S.recalls[P.n]&&(at==null?S.day:at)<r.back)return Object.assign(r,{st:"bureau",ok:true,txt:"est rentré à "+r.base+" à votre demande",back:null});return r};
 /* ---------- le collaborateur ---------- */
 function conseiller(S){if(S.conseiller)return S.conseiller;const reg=window.VOY?VOY.here(S).reg:"CE";let titre,n;
   if(S.mode==="pres"){titre="secrétaire général de la Présidence";n=S.gov&&S.gov.sg?S.gov.sg.n:window.SYS.nom("SU")}

@@ -59,8 +59,13 @@ const ENTREPRISES=[["ENEO","Électricité","MINEE",38],["CAMWATER","Eau potable"
  ["CRTV","Radio-télévision publique","MINCOM",40],["SOPECAM","Presse publique (Cameroon Tribune)","MINCOM",35],["ALUCAM","Aluminium d'Édéa","MINMIDT",40],["SONAMINES","Société nationale des mines","MINMIDT",30],
  ["SODEPA","Développement des productions animales","MINEPIA",30],["MAGZI","Zones industrielles","MINMIDT",35],["SODECAO","Développement du cacao","MINADER",35],["ONCC","Office national du cacao et du café","MINCOMMERCE",45],
  ["ART","Agence de régulation des télécommunications","MINPOSTEL",45],["ARSEL","Régulation du secteur de l'électricité","MINEE",45],["EDC","Electricity Development Corporation (barrages)","MINEE",45],
- ["CSPH","Caisse de stabilisation des prix des hydrocarbures","MINCOMMERCE",40],["SNI","Société nationale d'investissement","MINFI",40]];
-const mkEnt=e=>({id:e[0],n:e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nomT(pick(CM.REGIONS).id,.15),pl:0});
+ ["CSPH","Caisse de stabilisation des prix des hydrocarbures","MINCOMMERCE",40],["SNI","Société nationale d'investissement","MINFI",40],
+ ["AFRILAND","Banque privée (Afriland First Bank)","MINFI",60],["BICEC","Banque privée (BICEC)","MINFI",55],["SGC","Banque privée (Société Générale Cameroun)","MINFI",60],["UBA","Banque privée (UBA Cameroun)","MINFI",55],
+ ["ECOBANK","Banque privée (Ecobank Cameroun)","MINFI",55],["CCA","Banque privée (CCA Bank)","MINFI",50],["BGFI","Banque privée (BGFIBank Cameroun)","MINFI",55],["SCB","Banque (SCB Cameroun)","MINFI",50],
+ ["SABC","Brasseries (Société anonyme des brasseries du Cameroun)","MINCOMMERCE",65],["MTN","Téléphonie mobile (MTN Cameroon)","MINPOSTEL",65],["ORANGE","Téléphonie mobile (Orange Cameroun)","MINPOSTEL",65],
+ ["DANGOTE","Cimenterie (Dangote Cement Cameroon)","MINMIDT",55],["CIMENCAM","Cimenterie (CIMENCAM)","MINMIDT",55]];
+const PRETTY={AFRILAND:"Afriland First Bank",BICEC:"BICEC",SGC:"Société Générale Cameroun",UBA:"UBA Cameroun",ECOBANK:"Ecobank Cameroun",CCA:"CCA Bank",BGFI:"BGFIBank Cameroun",SCB:"SCB Cameroun",SABC:"Brasseries du Cameroun",MTN:"MTN Cameroon",ORANGE:"Orange Cameroun",DANGOTE:"Dangote Cement Cameroon",CIMENCAM:"CIMENCAM"};
+const mkEnt=e=>({id:e[0],n:PRETTY[e[0]]||e[0],act:e[1],tut:e[2],perf:e[3]+rnd(-5,5),dg:nomT(pick(CM.REGIONS).id,.15),pl:0});
 const MALADIES=[["palu","Paludisme",.263,.012],["ira","Infections respiratoires",.12,.01],["diar","Diarrhées et fièvre typhoïde",.12,.008],["cardio","Hypertension et diabète",.08,.03],["trauma","Accidents et traumatismes",.07,.03],["mat","Grossesses et accouchements",.1,.004],["vih","VIH et tuberculose",.05,.05],["malnut","Malnutrition",.02,.03],["menin","Méningite",.005,.1],["autres","Autres pathologies",.172,.01]];
 VIE.init=function(S){
   if(S.org){for(const e of ENTREPRISES)if(!S.org.ent.find(x=>x.id===e[0]))S.org.ent.push(mkEnt(e));return}

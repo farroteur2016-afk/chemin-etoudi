@@ -97,8 +97,8 @@ RENC.open=function(S,o){if(!S||S.phase!=="play")return;const k=K[o.kind]||K.habi
   const turns=[];let mood=0,eng=null,cost=false,ended=false,busy=false;
   let mode="choix";try{mode=localStorage.getItem("etoudi-renc-mode")||"choix"}catch(e){}
   const vp=$("vxPanel");if(vp)vp.remove();
-  G.setView&&G.setView({overlay:"conseil"},ville,"Rencontre");
-  G.sheet('<span class="eyebrow">Rencontre · '+esc(ville)+' · '+esc(G.dayLabel(S.day))+'</span><h3 class="h2">'+esc(P.n)+'</h3><p class="small muted">'+esc(P.lab.charAt(0).toUpperCase()+P.lab.slice(1))+' · '+esc(P.lieu)+(P.sujet?' · Objet : '+esc(P.sujet):"")+'</p>'+
+  if(!o.tel)G.setView&&G.setView({overlay:"conseil"},ville,"Rencontre");
+  G.sheet('<span class="eyebrow">'+(o.tel?"📞 Appel téléphonique · ":"Rencontre · ")+esc(ville)+' · '+esc(G.dayLabel(S.day))+'</span><h3 class="h2">'+esc(P.n)+'</h3><p class="small muted">'+esc(P.lab.charAt(0).toUpperCase()+P.lab.slice(1))+' · '+esc(P.lieu)+(P.sujet?' · Objet : '+esc(P.sujet):"")+'</p>'+
    '<div class="row" role="tablist" style="gap:6px"><button class="btn small" data-rm="voix">🎙 Voix</button><button class="btn small" data-rm="texte">⌨ Texte</button><button class="btn small" data-rm="choix">☑ Choix</button></div>'+
    '<div class="vxlog" id="rnLog" style="flex:none;min-height:140px;max-height:38vh;margin:8px 0"></div><div id="rnIn"></div><p class="small muted" id="rnHint"></p>'+
    '<div class="row"><button class="btn ghost" id="rnEnd">Terminer l\'entretien</button></div>',el=>{
@@ -139,6 +139,8 @@ function fem(l){return l.replace(/^producteur/,"productrice").replace(/^planteur
 /* boutons « S'entretenir » dans les fiches d'organisations */
 RENC.orgBtn=function(){return '<button class="btn" data-renc="1">💬 S\'entretenir (voix, texte ou choix)</button>'};
 RENC.bindOrg=function(S,el,k,o){const b=el.querySelector("[data-renc]");if(!b)return;b.onclick=()=>{el.remove();
+  if(window.CAB){const n=k==="hop"?o.dir:k==="ent"?o.dg:o.n;const P={k:k==="hop"?"hop":k==="ent"?"ent":k==="prefet"?"prefet":k==="police"?"police":k==="gouverneur"?"gouverneur":"org",n:String(n||"").replace(/^(Colonel|Commissaire)\s+/,""),lab:k==="hop"?"le directeur de "+o.n:k==="ent"?"le directeur général de "+o.n:"le responsable",reg:o.reg,org:{k,id:o.id},min:k==="hop"?"MINSANTE":o.tut};
+    P.sexe=window.SYS.sexe(P.n);P.lab=window.SYS.accord(P.lab,P.sexe);const st=CAB.status(S,P);if(st&&!st.ok){CAB.unavailable(S,P,st,{objet:"point sur "+(k==="hop"?"l'hôpital":k==="ent"?"l'entreprise":"la situation"),when:"maintenant"});return}}
   const lab=k==="hop"?"directeur de "+o.n:k==="ent"?"directeur général de "+o.n:k==="police"?"commissaire central":k==="prefet"?"préfet":k==="gouverneur"?"gouverneur de la région":"commandant de légion";
   RENC.open(S,{kind:k==="hop"?"medecin":"officiel",n:k==="hop"?o.dir:k==="ent"?o.dg:o.n,lab,reg:o.reg,ville:o.ville||(o.reg?CM.REG[o.reg].chef:null),lieu:k==="hop"?"son bureau à l'hôpital":"son bureau",sujet:"point sur "+(k==="hop"?"l'hôpital":k==="ent"?"l'entreprise":"la situation")})}};
 })();
