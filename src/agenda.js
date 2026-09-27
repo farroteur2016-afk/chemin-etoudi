@@ -52,5 +52,10 @@ AG.sheet=function(S){if(!S)return;document.querySelectorAll(".sheet[data-ag]").f
     el.querySelectorAll("[data-agcr]").forEach(b=>b.onclick=()=>{const d=(S.directives||[]).find(x=>x.id===b.dataset.id);if(!d)return;d.cr=b.dataset.agcr;G.toast(d.cr==="audience"?"Le responsable viendra vous présenter le compte rendu.":"Compte rendu par écrit, pour exploitation.");re()});
     el.querySelectorAll("[data-agvok]").forEach(b=>b.onclick=()=>{DIR.approve(S,b.dataset.agvok);re()});el.querySelectorAll("[data-agveco]").forEach(b=>b.onclick=()=>{DIR.econ(S,b.dataset.agveco);re()});el.querySelectorAll("[data-agvno]").forEach(b=>b.onclick=()=>{DIR.reject(S,b.dataset.agvno);re()});
   })};
+/* pastille sur le bouton agenda : plans à valider + demandes d'audience */
+setInterval(()=>{const b=document.getElementById("bAg");const S=G.S;if(!b)return;let n=0;if(S&&S.phase==="play"){const L=lists(S);n=L.valid.length+L.req.length}
+  let d=b.querySelector(".agbadge");if(!n){if(d)d.remove();b.setAttribute("aria-label","Mon agenda");return}
+  if(!d){d=document.createElement("span");d.className="agbadge";d.style.cssText="position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#c42b1c;color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center;pointer-events:none";b.style.position="relative";b.appendChild(d)}
+  d.textContent=n;b.setAttribute("aria-label","Mon agenda : "+n+" élément"+(n>1?"s":"")+" à traiter")},1000);
 AG.isAsk=t=>/(mon agenda|mes rendez vous|mes rdv|mes audiences|audiences? (du jour|d aujourd hui|prevues?)|programme (du jour|de la journee|d aujourd hui)|emploi du temps|qui (dois je|je dois) recevoir|demandes? d audience|rapports? (attendus?|du jour)|comptes? rendus? (attendus?|du jour)|plans? a valider)/.test(t);
 })();
