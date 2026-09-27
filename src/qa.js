@@ -30,7 +30,8 @@ function actuPoint(S,a){const fait=(S.actuFait||{})[a.id]||[];const lab={terrain
   return a.titre+". "+a.resume+(fait.length?" Vos décisions : "+fait.map(k=>lab[k]||k).join(", ")+".":" Vous n'avez encore pris aucune décision sur ce dossier : il est dans votre courrier.")+(r!=null?" L'humeur de la région "+CM.REG[a.reg].n+" est à "+r+" sur 100.":"")}
 function dirPoint(S,d){return d.titre+(d.titre.startsWith("Directive")?"":" — « "+d.texte+" »")+". "+(d.done?"Échéance passée : le compte rendu est dans votre courrier.":"Rapport attendu le "+G.dayLabel(d.due)+" ("+jours(d.due-S.day)+").")}
 
-QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);const pl=place(t);
+QA.handle=function(S,raw,reply,opt){opt=opt||{};if(!S||S.phase!=="play")return false;const t=norm(raw);
+  if(window.DOSS&&DOSS.isAsk(raw)){reply(DOSS.summary(S));return true}const pl=place(t);
   if(/(quelle heure|quel jour|quelle date|qui est|qui dirige|comment s appelle)/.test(t)&&!opt.final)return false;
   // où est / que fait un responsable
   if(/\b(ou est|ou se trouve|ou se trouvent|que fait|il est ou|elle est ou|ou sont|ou est ce que se trouve|joignable)\b/.test(t)&&window.VOIX&&VOIX.findPerson&&window.CAB){const P=VOIX.findPerson(S,raw);if(P&&P.n&&!/^le /.test(P.n)){const w=CAB.where(S,P);if(w){const f=P.sexe==="f";const rdv=(S.agenda||[]).some(a=>!a.done&&a.type==="meet"&&a.who&&a.who.n===P.n);if(rdv){reply(w);QA._last=P;return true}reply(w+" Voulez-vous "+(f?"la":"le")+" convoquer ? Dites par exemple : « convoque-"+(f?"la":"le")+" demain à 9 h ».");QA._last=P;return true}}}

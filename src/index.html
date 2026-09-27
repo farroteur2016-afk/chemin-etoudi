@@ -181,6 +181,9 @@ textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px
 .sheet-x{position:sticky;top:0;align-self:flex-end;margin:-8px -6px -30px 0;z-index:5;width:36px;height:36px;flex:none;border-radius:8px;border:1px solid var(--line);background:var(--panel3);color:var(--ink);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
 .sheet-x:hover{background:#c42b1c;border-color:#c42b1c;color:#fff}
 .sheet .in>.eyebrow:first-of-type,.sheet .in>.h2:first-of-type{padding-right:44px}
+.micon{background:#c42b1c !important;border-color:#c42b1c !important;color:#fff !important;animation:micp 1.6s ease-in-out infinite}
+@keyframes micp{50%{box-shadow:0 0 0 6px rgba(196,43,28,.25)}}
+@media (prefers-reduced-motion:reduce){.micon{animation:none}}
 .instr{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
 .vxlog{max-height:34vh;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .vxlog .me{align-self:flex-end;background:rgba(80,140,255,.18);padding:6px 10px;border-radius:10px;max-width:85%}
@@ -222,6 +225,7 @@ textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px
 <script src="map.js"></script>
 <script src="scene3d.js"></script>
 <script src="audio.js"></script>
+<script src="mic.js"></script>
 <script src="etat.js"></script>
 <script src="game.js"></script>
 <script src="systems.js"></script>
@@ -244,6 +248,7 @@ textarea[data-grow]{resize:none;overflow-y:auto;min-height:46px;max-height:220px
 <script src="conseil.js"></script>
 <script src="directives.js"></script>
 <script src="notes.js"></script>
+<script src="dossiers.js"></script>
 <script src="instr.js"></script>
 <script src="musique.js"></script>
 <script src="ultra.js"></script>

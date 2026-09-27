@@ -76,7 +76,7 @@ VOIX.agendaCard=function(S){const L=agenda(S).filter(a=>!a.done).sort((a,b)=>a.a
 VOIX.bindAgenda=function(S,root){(root||document).querySelectorAll("[data-agx]").forEach(b=>b.onclick=()=>{const a=agenda(S).find(x=>x.id===b.dataset.agx);if(a){a.done=1;G.toast("Rendez-vous annulé");G.render()}})};
 let busy=false;
 VOIX.tick=function(S){if(!S||busy||S.phase!=="play")return;const due=agenda(S).filter(a=>!a.done&&S.day>=a.at).sort((a,b)=>a.at-b.at)[0];if(!due)return;due.done=1;busy=true;setTimeout(()=>{run(S,due);},200)};
-function closeP(){try{stop()}catch(e){}const e=$("vxPanel");if(e)e.remove()}
+function closeP(){const e=$("vxPanel");if(e)e.remove()}
 function run(S,a){closeP();const end=()=>{busy=false;G.render();setTimeout(()=>VOIX.tick(G.S),400)};
   if(a.type==="trip"){const err=VOY.goTo(S,a.to,a.mode,true,()=>{if(a.visit)visit(S,a.visit);end()},end);if(err){say("Le déplacement prévu n'a pas pu avoir lieu : "+err+".");end()}return}
   if(a.type==="meet")return meeting(S,a,end);
@@ -95,7 +95,7 @@ function meeting(S,a,end){const P=a.who;if(P&&P.n&&!P.sexe&&window.SYS)P.sexe=wi
       else if(k==="bravo"){if(g)g.loy=clamp(g.loy+4,0,100);txt="Encouragé, "+(P.n||"votre interlocuteur")+" repart motivé."}
       else if(k.startsWith("limoger")){if(P.k==="min"&&S.gov){const regs=CM.REGIONS;const r=pick(regs);S.gov.min[P.id]={n:window.SYS.nom(r.id,k.slice(-1)),reg:r.id,comp:Math.round(G.rnd(50,80)),loy:75};txt="Décret signé : "+(P.n||"le ministre")+" est remplacé par "+S.gov.min[P.id].n+"."}else txt="Le Premier ministre remet sa démission."}
       else if(k==="fiche"){VIE.openOrg(S,P.org);end();return}
-      else if(k==="libre"){end();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n||P.lab,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:P.reg?CM.REG[P.reg].chef:"Yaoundé",lieu:S.mode==="pres"?"le palais d'Etoudi":"votre bureau",sujet:a.objet,bonjour:"Mes respects. Je suis à votre disposition."}),300);return}
+      else if(k==="libre"){end();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",min:P.min||(P.k==="min"?P.id:null),org:P.org||null,sexe:P.sexe||undefined,n:P.n||P.lab,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:P.reg?CM.REG[P.reg].chef:"Yaoundé",lieu:S.mode==="pres"?"le palais d'Etoudi":"votre bureau",sujet:a.objet,bonjour:"Mes respects. Je suis à votre disposition."}),300);return}
       say(txt);G.toast(txt.slice(0,90));window.SYS.inbox(S,{from:"Cabinet",t:"Audience : "+(P.n||P.lab),b:txt,k:"info",read:true});end()});
     const cl=el.querySelector("[data-close]");if(cl)cl.addEventListener("click",end);});
   function sec(P){return P.min?(E.MINISTERES.find(m=>m.id===P.min)||{}).s:null}
@@ -112,7 +112,7 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
     const st=window.CAB?CAB.status(S,P):null;const F=P.sexe==="f";
     if(st&&st.st==="injoignable"){reply((P.n)+" ne répond pas au téléphone. Son secrétariat prend le message."+"");return}
     reply("J'appelle "+P.n+", "+P.lab+"."+(st&&st.st==="domicile"?" "+(F?"Elle":"Il")+" est chez "+(F?"elle":"lui")+" à cette heure-ci ; "+(F?"elle":"il")+" décroche quand même.":st&&st.st==="etranger"?" "+(F?"Elle":"Il")+" est à "+st.ville+", l'appel passe par l'international.":""));
-    closeP();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:(st&&(st.ville||st.base))||"Yaoundé",lieu:"au téléphone",sujet:"appel du "+(S.mode==="pres"?"président de la République":"cabinet"),tel:true,bonjour:(st&&st.st==="domicile"?"Allô… Oui, ":"Allô ? Oui, ")+(S.mode==="pres"?"Excellence, Monsieur le Président":"bonjour")+", je vous écoute."}),500);QA._last=P;return}
+    closeP();setTimeout(()=>RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",min:P.min||(P.k==="min"?P.id:null),org:P.org||null,sexe:P.sexe||undefined,n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:(st&&(st.ville||st.base))||"Yaoundé",lieu:"au téléphone",sujet:"appel du "+(S.mode==="pres"?"président de la République":"cabinet"),tel:true,bonjour:(st&&st.st==="domicile"?"Allô… Oui, ":"Allô ? Oui, ")+(S.mode==="pres"?"Excellence, Monsieur le Président":"bonjour")+", je vous écoute."}),500);QA._last=P;return}
   if(window.NOTE&&NOTE.matches(raw)){NOTE.handle(S,raw,reply);return}
   if(window.GENRE&&GENRE.handle(S,raw,reply))return;
   if(window.QA&&QA.isQuestion(raw)&&QA.handle(S,raw,reply))return;
@@ -178,23 +178,21 @@ VOIX.handle=function(raw0){const S=G.S;if(!norm(raw0))return;log("Vous : "+raw0)
   reply("Je n'ai pas compris. Essayez par exemple : « convoque le ministre de la Défense demain à 9 h », « je veux visiter l'hôpital de Maroua sans cortège », « avance d'une semaine », « montre-moi la vidéo de la route de Kribi », « fais le point sur la situation ».")};
 
 /* ---------- interface : micro et saisie ---------- */
-let rec=null,listening=false;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let unbind=null;
 function log(t){const l=$("vxLog");if(!l)return;const d=document.createElement("div");d.textContent=t;d.className=t.startsWith("Vous")?"me":"it";l.appendChild(d);l.scrollTop=l.scrollHeight}
-VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.driving));let el=$("vxPanel");if(el){el.remove();if(!o.driving)return}
+function micUi(st,x){const b=$("vxMic"),h=$("vxHint");if(b){b.textContent=MIC.want?"⏹ Couper le micro":"🎙 Activer le micro";b.setAttribute("aria-pressed",MIC.want?"true":"false");b.classList.toggle("micon",MIC.want)}
+  if(h){if(st==="tmp")h.textContent=x;else if(st==="on"||st==="wait")h.textContent="Micro activé : parlez quand vous voulez. Il reste ouvert jusqu'à ce que vous le coupiez.";else if(st==="pause")h.textContent="Micro en pause pendant la réponse… il reprend tout seul.";
+    else if(st==="blocked"||st==="err")h.textContent=window.VOY&&VOY.driving?"Micro indisponible : au volant, vous ne pouvez pas écrire. Autorisez le micro dans Chrome, ou passez la vidéo pour arriver.":MIC.msg(st);else if(st==="off")h.textContent=SR?"Micro coupé. Appuyez sur 🎙 pour le réactiver, ou tapez votre consigne.":MIC.msg("off")}}
+VOIX.fromMic=function(t){if(!$("vxPanel"))VOIX.open({});VOIX.handle(t)};
+VOIX.open=function(o){o=o||{};const driving=!!(o.driving||(window.VOY&&VOY.driving));let el=$("vxPanel");if(el){el.remove();if(unbind){unbind();unbind=null}if(!o.driving)return}
   el=document.createElement("div");el.id="vxPanel";el.className="vxpanel";
   el.innerHTML='<div class="row" style="justify-content:space-between"><b>Assistant vocal</b><button class="sheet-x" id="vxX" aria-label="Fermer" title="Fermer" style="margin:0;position:static">✕</button></div><div class="vxlog" id="vxLog"></div>'+
-   '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Parler</button><textarea data-grow rows="1" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"></textarea><button class="btn" id="vxGo">OK</button></div>'+
-   '<span class="small muted" id="vxHint">'+(SR?"Appuyez sur Parler, puis dites votre consigne.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
-  document.body.appendChild(el);$("vxX").onclick=()=>{stop();el.remove()};
-  if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Appuyez sur Parler et donnez vos consignes à la voix.";setTimeout(()=>{if(SR)start()},300)}
+   '<div class="row" style="gap:6px"><button class="btn primary" id="vxMic" aria-pressed="false">🎙 Activer le micro</button><textarea data-grow rows="1" id="vxIn" placeholder="…ou tapez votre consigne" style="flex:1;min-width:0"></textarea><button class="btn" id="vxGo">OK</button></div>'+
+   '<span class="small muted" id="vxHint">'+(SR?"Activez le micro : il reste ouvert jusqu'à ce que vous le coupiez.":"La reconnaissance vocale n'est pas disponible dans ce navigateur : tapez votre consigne (Chrome la prend en charge).")+'</span>';
+  document.body.appendChild(el);$("vxX").onclick=()=>{el.remove();if(unbind){unbind();unbind=null}};
+  unbind=MIC.bind({onText:t=>VOIX.handle(t),onState:micUi,alive:()=>el.isConnected});micUi(MIC.state);
+  if(driving){const inp=$("vxIn"),go=$("vxGo");if(inp){inp.disabled=true;inp.placeholder="Au volant : écrire est interdit, parlez"}if(go)go.disabled=true;const h=$("vxHint");if(h)h.textContent="Vous conduisez : téléphone interdit. Le micro est ouvert : donnez vos consignes à la voix.";setTimeout(()=>{if(SR)MIC.start()},300)}
   const send=()=>{if(window.VOY&&VOY.driving){G.toast("Au volant, uniquement à la voix.");return}const v=$("vxIn").value.trim();if(v){$("vxIn").value="";$("vxIn").style.height="";VOIX.handle(v)}};$("vxGo").onclick=send;$("vxIn").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}};
-  $("vxMic").onclick=()=>listening?stop():start();
-
+  $("vxMic").onclick=()=>{if(!SR){G.toast("Reconnaissance vocale indisponible ici : tapez la consigne.");return}MIC.toggle();micUi(MIC.state)};
 };
-function start(){if(!SR){G.toast("Reconnaissance vocale indisponible ici : tapez la consigne.");return}try{A.stop()}catch(e){}
-  rec=new SR();rec.lang="fr-FR";rec.interimResults=true;rec.maxAlternatives=1;listening=true;const b=$("vxMic");if(b){b.textContent="⏹ J'écoute…";b.setAttribute("aria-pressed","true")}
-  rec.onresult=e=>{let fin="",tmp="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)fin+=r[0].transcript;else tmp+=r[0].transcript}const h=$("vxHint");if(h)h.textContent=tmp||fin;if(fin){stop();VOIX.handle(fin)}};
-  rec.onerror=e=>{stop();const h=$("vxHint");if(h)h.textContent=window.VOY&&VOY.driving?"Micro indisponible : au volant, vous ne pouvez pas écrire. Autorisez le micro dans Chrome, ou passez la vidéo pour arriver.":e.error==="not-allowed"||e.error==="service-not-allowed"?"Le micro est bloqué ici (autorisez-le, ou utilisez la version hors ligne dans Chrome). Vous pouvez taper la consigne.":"Micro : "+e.error+". Réessayez ou tapez la consigne."};
-  rec.onend=()=>stop();try{rec.start()}catch(e){stop()}}
-function stop(){listening=false;try{rec&&rec.stop()}catch(e){}const b=$("vxMic");if(b){b.textContent="🎙 Parler";b.setAttribute("aria-pressed","false")}}
 })();

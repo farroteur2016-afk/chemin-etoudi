@@ -64,7 +64,7 @@ CAB.unavailable=function(S,P,st,o){o=o||{};const F=P.sexe==="f";const who=(P.n?P
    '<button class="choice" data-un="non"><span class="t">Annuler</span></button></div>',el=>{el.setAttribute("data-noinstr","");
     el.querySelectorAll("[data-un]").forEach(b=>b.onclick=()=>{const k=b.dataset.un;el.remove();
       if(k==="rep"){S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now().toString(36),type:"meet",at:back,who:P,objet:o.objet||"point de situation",lab:"Audience : "+(P.n?P.n+", ":"")+P.lab});const m="Rendez-vous reporté au "+G.dayLabel(back)+".";say(m);G.toast(m);G.render()}
-      else if(k==="tel"&&window.RENC){RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:st.ville||st.base,lieu:"au téléphone",sujet:o.objet||"point de situation",tel:true,bonjour:"Allô ? Oui, "+(S.mode==="pres"?"Excellence":"bonjour")+", je vous écoute."})}
+      else if(k==="tel"&&window.RENC){RENC.open(S,{kind:P.k==="hop"?"medecin":"officiel",min:P.min||(P.k==="min"?P.id:null),org:P.org||null,sexe:P.sexe||undefined,n:P.n,lab:P.lab.replace(/^(le|la) /,""),reg:P.reg||"CE",ville:st.ville||st.base,lieu:"au téléphone",sujet:o.objet||"point de situation",tel:true,bonjour:"Allô ? Oui, "+(S.mode==="pres"?"Excellence":"bonjour")+", je vous écoute."})}
       else if(k==="now"){S.missions=(S.missions||[]).map(m=>m.min===(P.min||P.id)&&m.until>S.day?Object.assign(m,{until:S.day}):m);S.moves=S.moves||[];S.moves.push({n:P.n,st:"retour",txt:"rentre précipitamment à "+st.base,ville:st.base,from:S.day,until:S.day+.9});
         S.recalls=S.recalls||{};S.recalls[P.n]=S.day;const at=Math.floor(S.day+1/3)+1+9/24-1/3;S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now().toString(36),type:"meet",at,who:P,objet:o.objet||"convocation d'urgence",lab:"Audience d'urgence : "+(P.n||P.lab),force:true});
         if(P.k==="min"&&S.gov&&S.gov.min[P.id])S.gov.min[P.id].loy=clamp(S.gov.min[P.id].loy-5,0,100);const m=(P.n||"Votre interlocuteur")+" écourte son déplacement : audience demain à 9 h.";say(m);G.toast(m);G.render()}
@@ -107,6 +107,9 @@ CAB.scan=function(S){if(!S||S.phase!=="play")return;S.cab=S.cab||{props:[],seen:
   if(S.mode==="pres"&&window.GENRE){const g=GENRE.groups(S)[0];if(g&&g.pct<25)add(S,"parite:"+Math.floor(S.day/60),{t:"Peu de femmes au gouvernement",why:"Le gouvernement ne compte que "+g.f+" femmes sur "+g.t+" ("+g.pct+" %). Les associations de femmes s'impatientent.",act:"un réaménagement pour atteindre 30 % de femmes.",x:{type:"genre"}})}
   // 6) engagements de terrain oubliés
   for(const e of S.engagements||[]){if(e.done||e.late||e.due-S.day>15)continue;add(S,"eng:"+e.id,{t:"Promesse à tenir : "+e.t.slice(0,60),why:"Vous avez promis à "+(e.ville||"la population")+" : « "+e.t+" ». L'échéance approche ("+G.dayLabel(e.due)+").",act:"tenir l'engagement maintenant.",x:{type:"eng",id:e.id},reg:e.reg})}
+  // 8) dossiers du portefeuille urgents et sans action
+  if(window.DOSS){for(const d of DOSS.open(S)){if(d.urg<3||d.cours||d.dir||(d.suivi&&d.suivi.length))continue;const k=S.mode==="pres"||S.mode==="min"?"dir":S.mode==="ing"&&/impay/.test(d.kw||"")?"relance":"traiter";
+    add(S,"doss:"+d.id,{t:d.t.slice(0,80),why:d.d+" Blocage : "+d.cause+".",act:(k==="dir"?"une directive : "+(d.dem||"régler le dossier"):k==="relance"?"une relance écrite au maître d'ouvrage et au Trésor":"prendre le dossier en main")+".",x:{type:"doss",id:d.id,k}});break}}
   // 7) ministre : secteur en difficulté
   if(S.mode==="min"&&S.minis&&S.st){const sec=S.minis.s;if(S.st[sec]!=null&&S.st[sec]<35)add(S,"secteur:"+Math.floor(S.day/30),{t:"Votre secteur est en difficulté",why:"L'indicateur de votre secteur est à "+Math.round(S.st[sec])+" sur 100.",act:"un plan d'action du ministère sur 60 jours.",x:{type:"dir",text:"Je veux un plan d'action d'urgence de mon ministère sur 60 jours pour redresser la situation"}})}
 };
@@ -118,6 +121,7 @@ function run(S,p){const x=p.x;S.cab.stats.ok=(S.cab.stats.ok||0)+1;
   if(x.type==="trip"&&window.VOY){VOY.ask(S,x.to,{});return null}
   if(x.type==="hop"&&window.VIE){VIE.openOrg(S,{k:"hop",id:x.id});const b=document.querySelector('.sheet [data-m="med"]');if(b){b.click();return null}return"Vous n'avez pas autorité sur cet hôpital."}
   if(x.type==="relance"){const d=(S.directives||[]).find(y=>y.id===x.id);if(!d)return"Directive introuvable.";d.done=false;d.due=S.day+30;d.res="";if(d.resp&&S.gov&&S.gov.min[d.resp]){const g=S.gov.min[d.resp];S.agenda=S.agenda||[];S.agenda.push({id:"a"+Date.now(),type:"meet",at:Math.floor(S.day+1/3)+1+9/24-1/3,who:{k:"min",id:d.resp,lab:"le ministre "+window.SYS.deM(CAB.minName(S,d.resp))+CAB.minName(S,d.resp),n:g.n,min:d.resp},objet:"relance : "+d.titre,lab:"Audience : relance "+d.titre.slice(0,40)})}G.toast("Directive relancée pour 30 jours.");return null}
+  if(x.type==="doss"&&window.DOSS){if(!DOSS.find(S,x.id))return"Dossier introuvable.";DOSS.act(S,x.id,x.k);return null}
   if(x.type==="genre"&&window.GENRE){GENRE.apply(S,"gouv",30,m=>{say(m);G.toast(m.slice(0,110))});return null}
   if(x.type==="eng"&&window.RENC){const b=document.querySelector('[data-eng="'+x.id+'"]');if(b){b.click();return null}return"Engagement introuvable."}
   return"Action non disponible."}
@@ -132,6 +136,7 @@ CAB.alt=function(S,id){const p=(S.cab&&S.cab.props||[]).find(y=>y.id===id);if(!p
   if(x.type==="hop")opts.push(["hop","🏥 Ouvrir la fiche de l'hôpital (toutes les mesures)"]);
   if(x.type==="relance")opts.push(["dirs","📜 Ouvrir mes directives"]);
   if(x.type==="genre")opts.push(["par","⚖️ Voir la fiche parité"]);
+  if(x.type==="doss")opts.push(["doss","🗂️ Ouvrir le dossier (toutes les actions possibles)"]);
   if(p.reg)opts.push(["voir","🗺️ Voir la région"]);
   opts.push(["conv","📅 Convoquer le ministre compétent demain à 9 h"]);
   const done=()=>{if(p.st==="attente"){p.st="autre";p.dv=S.day}};
@@ -144,6 +149,7 @@ CAB.alt=function(S,id){const p=(S.cab&&S.cab.props||[]).find(y=>y.id===id);if(!p
       else if(k==="voy"&&window.VOY)VOY.open(x.to&&x.to.reg,x.to&&x.to.v);
       else if(k==="hop"&&window.VIE)VIE.openOrg(S,{k:"hop",id:x.id});
       else if(k==="dirs"&&window.DIR)DIR.sheet(S);
+      else if(k==="doss"&&window.DOSS)DOSS.sheet(S,x.id);
       else if(k==="par"&&window.GENRE)GENRE.sheet(S);
       else if(k==="voir")G.viewRegion(p.reg);
       else if(k==="conv"&&window.VOIX){VOIX.handle("convoque le ministre "+(x.type==="hop"?"de la santé":p.reg?"de l'administration territoriale":"de la communication")+" demain à 9h")}

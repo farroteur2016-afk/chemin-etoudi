@@ -10,7 +10,7 @@ const nf=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 const BASE=("essence gasoil gazole carburant carburants pétrole lampant structure structuration coût coûts prix pompe carcérale prison prisons prisonnier prisonniers détenu détenus parquet procureur "+
  "enquête enquêtes audition auditions tribunal justice ministre ministres ministère ministères gouverneur gouverneurs préfet préfets commissaire directeur directrice général générale généraux "+
  "hôpital hôpitaux convoque convoquer convoquez convocation rendez-vous audience audiences demain après-demain lundi mardi mercredi jeudi vendredi samedi dimanche semaine semaines mois heure heures "+
- "directive directives rapport rapports note notes proposition propositions situation sécurité santé éducation enseignement supérieur secondaire défense finances économie agriculture élevage "+
+ "directive directives instruction instructions rapport rapports note notes proposition propositions situation sécurité santé éducation enseignement supérieur secondaire défense finances économie agriculture élevage "+
  "commerce transports travaux publics électricité délestage délestages coupure coupures eau potable route routes pont ponts construire construction bitumer réhabiliter université universités "+
  "grève grèves syndicat syndicats enseignants enseignant primes prime salaires salaire arriérés patrimoine déclaration déclarations corruption détournement détournements audit femmes parité "+
  "gouvernement président présidence présidentiel palais cortège escorte chauffeur hélicoptère avion voiture train bus taxi moto urgence urgent urgemment immédiatement téléphone appel appeler "+

@@ -32,9 +32,10 @@ INSTR.attach=function(el){if(!el||el.querySelector("#rnLog,.instr")||el.hasAttri
   if(window.VOY&&VOY.driving){inp.disabled=true;inp.placeholder="Au volant : dictez votre consigne avec 🎙";const g=d.querySelector("[data-igo]");if(g)g.disabled=true}
   const go=async()=>{const v=inp.value.trim();if(!v)return;inp.value="";inp.style.height="";await INSTR.run(el,v,hint)};
   d.querySelector("[data-igo]").onclick=go;inp.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();go()}};
-  const mic=d.querySelector("[data-imic]");if(mic)mic.onclick=()=>{try{A.stop()}catch(e){}const r=new SR();r.lang="fr-FR";r.interimResults=true;mic.textContent="⏹";hint("J'écoute…");
-    r.onresult=e=>{let f="",t="";for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)f+=x[0].transcript;else t+=x[0].transcript}if(t)hint(t);if(f){inp.value=f;try{r.stop()}catch(x){}go()}};
-    r.onerror=e=>{hint(e.error==="not-allowed"||e.error==="service-not-allowed"?"Micro bloqué ici : autorisez-le dans Chrome, ou écrivez la consigne.":"Micro : "+e.error)};r.onend=()=>{mic.textContent="🎙"};try{r.start()}catch(e){mic.textContent="🎙"}}};
+  const mic=d.querySelector("[data-imic]");if(mic){const ui=(st,x)=>{mic.textContent=MIC.want?"⏹":"🎙";mic.classList.toggle("micon",MIC.want);mic.title=MIC.want?"Couper le micro":"Dicter la consigne";
+      if(st==="tmp")hint(x);else if(st==="blocked"||st==="err")hint(MIC.msg(st))};
+    MIC.bind({onText:t=>{inp.value=t;go()},onState:ui,alive:()=>d.isConnected&&!!d.offsetParent});
+    mic.onclick=()=>{MIC.toggle();ui(MIC.state);if(MIC.want)hint("Micro activé : dictez votre consigne. Il reste ouvert jusqu'à ce que vous le coupiez.")}}};
 
 INSTR.run=async function(el,text,hint){if(window.DICO)text=DICO.fix(text);hint=hint||(()=>{});const S=G.S;
   const n=norm(text);if(window.VOIX&&/(convoqu|recevoir|audience|rendez vous|aller a|visiter|rencontrer)/.test(n)&&/(\d{1,2} ?h|heure|demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|semaine|en avion|en train|en voiture|sans cortege)/.test(n)){el.remove();VOIX.handle(text);return}
