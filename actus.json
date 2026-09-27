@@ -1,0 +1,236 @@
+{
+ "maj": "2026-09-27",
+ "items": [
+  {
+   "id": "2026-09-25-limbe-collision",
+   "date": "2026-09-25",
+   "cat": "accident",
+   "grav": 2,
+   "reg": "SW",
+   "ville": "Limbé",
+   "lieu": "axe de Moliwe",
+   "titre": "Limbé : un bus et un camion se percutent sur l'axe de Moliwe, deux morts",
+   "resume": "Le 25 septembre, vers 7 heures, un car de la compagnie Moghamo Express est entré en collision avec un camion sur l'axe de Moliwe, près de Limbé, dans le Sud-Ouest. L'accident a fait deux morts ; les secours ont évacué les blessés vers des structures de santé locales.",
+   "aut": [
+    "MINT",
+    "MINSANTE"
+   ],
+   "src": "allAfrica / Camer.be",
+   "url": "https://www.camer.be/94883/11:1/cameroun-moliwe-deux-morts-dans-un-crash-de-bus-moghamo-express.html"
+  },
+  {
+   "id": "2026-09-24-feminicides-73",
+   "date": "2026-09-24",
+   "cat": "violence",
+   "grav": 3,
+   "reg": null,
+   "ville": null,
+   "titre": "Féminicides : au moins 73 femmes tuées entre janvier et septembre 2026 selon le MINPROFF",
+   "resume": "Selon des données du ministère de la Promotion de la femme et de la famille relayées par la presse, au moins 73 féminicides ont été recensés au Cameroun entre janvier et septembre 2026, soit environ deux femmes tuées chaque semaine. Huit de ces meurtres se sont produits en une seule semaine fin août ; la majorité des agressions sont attribuées à des maris, petits amis ou partenaires.",
+   "aut": [
+    "MINPROFF",
+    "MINJUSTICE",
+    "DGSN"
+   ],
+   "src": "Cameroun Actuel",
+   "url": "https://camerounactuel.com/deux-femmes-tuees-chaque-semaine-73-feminicides-recenses-au-cameroun-en-neuf-mois/"
+  },
+  {
+   "id": "2026-09-24-yaounde-nintcheu-ngohngoh",
+   "date": "2026-09-24",
+   "cat": "politique",
+   "grav": 1,
+   "reg": "CE",
+   "ville": "Yaoundé",
+   "titre": "Yaoundé : le tribunal se déclare incompétent dans l'affaire Nintcheu contre Ngoh Ngoh, la procédure visant Paul Biya renvoyée à novembre",
+   "resume": "Le 24 septembre, le Tribunal de grande instance du Mfoundi a examiné deux procédures introduites par le Collectif Sylvain Souop. Il s'est déclaré incompétent dans l'affaire opposant le député Jean-Michel Nintcheu au secrétaire général de la Présidence Ferdinand Ngoh Ngoh, et a renvoyé au 26 novembre la procédure visant le président Paul Biya pour non-respect du calendrier électoral.",
+   "aut": [
+    "MINJUSTICE",
+    "MINATD"
+   ],
+   "src": "allAfrica / Camer.be",
+   "url": "https://www.camer.be/94880/6:1/cameroun-tgi-mfoundi-incompetence-dans-laffaire-nintcheu-ngoh-ngoh.html"
+  },
+  {
+   "id": "2026-09-23-tiko-naufrage",
+   "date": "2026-09-23",
+   "cat": "accident",
+   "grav": 3,
+   "reg": "SW",
+   "ville": "Tiko",
+   "lieu": "Mudeka",
+   "titre": "Naufrage à Tiko : cinq morts, dont quatre adolescentes, lors d'une traversée en pirogue",
+   "resume": "Dans la nuit du 22 au 23 septembre, une pirogue transportant des jeunes vers une île au large de Mudeka, dans l'arrondissement de Tiko (Sud-Ouest), a chaviré. Le préfet du Fako a confirmé un bilan de cinq morts, dont quatre filles, et sept blessés pris en charge à l'hôpital baptiste de Mbingo.",
+   "aut": [
+    "MINT",
+    "MINSANTE"
+   ],
+   "src": "allAfrica / Camer.be",
+   "url": "https://www.camer.be/94887/10:1/cameroun-naufrage-a-tiko-5-morts-dont-4-filles-lors-dun-pelerinage.html"
+  },
+  {
+   "id": "2026-09-22-bafoussam-machette",
+   "date": "2026-09-22",
+   "cat": "violence",
+   "grav": 2,
+   "reg": "OU",
+   "ville": "Bafoussam",
+   "lieu": "quartier Djenleng 4",
+   "titre": "Bafoussam : une femme grièvement blessée à la machette par son époux présumé",
+   "resume": "Le 22 septembre, au quartier Djenleng 4 à Bafoussam, une femme de 29 ans a été grièvement blessée à coups de machette. Son époux présumé, 41 ans, est mis en cause ; une dispute aurait précédé l'agression.",
+   "aut": [
+    "MINPROFF",
+    "DGSN",
+    "MINJUSTICE"
+   ],
+   "src": "Lebledparle / Équinoxe",
+   "url": "https://www.lebledparle.com/cameroun-les-trois-faits-divers-a-ne-pas-manquer-ce-24-septembre-2026/"
+  },
+  {
+   "id": "2026-09-23-nyalla-camion",
+   "date": "2026-09-23",
+   "cat": "accident",
+   "grav": 1,
+   "reg": "LT",
+   "ville": "Douala",
+   "lieu": "Nyalla, Douala 3e",
+   "titre": "Douala-Nyalla : un camion de 20 tonnes finit sa course dans un atelier de couture",
+   "resume": "Le 23 septembre à Nyalla (Douala 3e), un camion de plus de 20 tonnes a quitté la route et s'est encastré dans un conteneur servant d'atelier de couture. Une femme et son enfant qui s'y trouvaient sont vivants ; le chauffeur et son convoyeur ont pris la fuite.",
+   "aut": [
+    "MINT",
+    "DGSN"
+   ],
+   "src": "Camer.be / Lebledparle",
+   "url": "https://www.camer.be/94858/11:1/cameroun-nyalla-le-camion-de-20-tonnes-finit-dans-un-atelier.html"
+  },
+  {
+   "id": "2026-09-24-yaounde-homicide",
+   "date": "2026-09-24",
+   "cat": "violence",
+   "grav": 2,
+   "reg": "CE",
+   "ville": "Yaoundé",
+   "titre": "Yaoundé : une femme de 62 ans soupçonnée d'avoir mortellement poignardé sa belle-fille",
+   "resume": "À Yaoundé, une sexagénaire est soupçonnée d'avoir tué sa belle-fille à l'arme blanche. L'enquête est en cours.",
+   "aut": [
+    "DGSN",
+    "MINJUSTICE",
+    "MINPROFF"
+   ],
+   "src": "Lebledparle",
+   "url": "https://www.lebledparle.com/cameroun-les-trois-faits-divers-a-ne-pas-manquer-ce-24-septembre-2026/"
+  },
+  {
+   "id": "2026-09-feminicides",
+   "date": "2026-09-21",
+   "cat": "violence",
+   "grav": 3,
+   "reg": null,
+   "ville": null,
+   "titre": "Féminicides : au moins 26 femmes et filles tuées en six semaines",
+   "resume": "Selon un décompte de MMI publié en septembre, au moins 26 femmes et filles ont été tuées ou sont présumées tuées au Cameroun entre le 1er août et le 11 septembre 2026. Des personnalités, dont la footballeuse Ajara Nchout Njoya, dénoncent un silence face à cette vague.",
+   "aut": [
+    "MINPROFF",
+    "MINJUSTICE",
+    "DGSN"
+   ],
+   "src": "MMI (Mimi Mefo Info)",
+   "url": "https://mimimefoinfos.com/cameroon-26-women-girls-killed-august-september-2026/"
+  },
+  {
+   "id": "2026-09-synes-greve",
+   "date": "2026-09-24",
+   "cat": "education",
+   "grav": 3,
+   "reg": "CE",
+   "ville": "Yaoundé",
+   "titre": "Grève illimitée du SYNES : onze universités d'État tournent au ralenti",
+   "resume": "Depuis le 3 septembre, le Syndicat national des enseignants du supérieur (SYNES) observe une grève illimitée. Il réclame les primes de recherche impayées et le règlement de la dette académique (15,5 milliards de FCFA reconnus après les négociations du 11 septembre). Trois semaines plus tard, onze universités d'État restent perturbées.",
+   "aut": [
+    "MINESUP",
+    "MINFI"
+   ],
+   "src": "allAfrica / Jeune Afrique / 237online",
+   "url": "https://fr.allafrica.com/stories/202609240435.html"
+  },
+  {
+   "id": "2026-09-14-bamenda-bar",
+   "date": "2026-09-14",
+   "cat": "securite",
+   "grav": 3,
+   "reg": "NW",
+   "ville": "Bamenda",
+   "titre": "Bamenda : des hommes armés attaquent un bar, trois morts",
+   "resume": "Le 14 septembre, des hommes armés ont ouvert le feu sur les clients d'un bar à Bamenda, faisant trois morts et deux blessés, dans le contexte de la crise anglophone.",
+   "aut": [
+    "MINDEF",
+    "MINATD"
+   ],
+   "src": "Chronologie de la crise anglophone 2026",
+   "url": "https://en.wikipedia.org/wiki/Timeline_of_the_Anglophone_Crisis_(2026)"
+  },
+  {
+   "id": "2026-09-13-bangourain-enlevement",
+   "date": "2026-09-13",
+   "cat": "securite",
+   "grav": 3,
+   "reg": "OU",
+   "ville": "Foumban",
+   "lieu": "Bangourain (Noun)",
+   "titre": "Bangourain : sept personnes enlevées par des séparatistes présumés",
+   "resume": "Le 13 septembre, sept personnes ont été enlevées à Bangourain, dans le département du Noun, par des combattants séparatistes présumés.",
+   "aut": [
+    "MINDEF",
+    "MINATD"
+   ],
+   "src": "Chronologie de la crise anglophone 2026",
+   "url": "https://en.wikipedia.org/wiki/Timeline_of_the_Anglophone_Crisis_(2026)"
+  },
+  {
+   "id": "2026-09-russie-recrutement",
+   "date": "2026-09-20",
+   "cat": "politique",
+   "grav": 2,
+   "reg": null,
+   "ville": null,
+   "titre": "Jeunes Camerounais recrutés pour le front en Ukraine : un collectif demande des comptes",
+   "resume": "Le Cameroun figure parmi les pays africains les plus touchés par le recrutement de jeunes hommes envoyés combattre en Ukraine pour la Russie. Un collectif citoyen réclame la transparence et une action diplomatique.",
+   "aut": [
+    "MINREX",
+    "MINJEC"
+   ],
+   "src": "Jeune Afrique",
+   "url": "https://www.jeuneafrique.com/pays/cameroun/"
+  },
+  {
+   "id": "2026-09-24-lions-comores",
+   "date": "2026-09-24",
+   "cat": "sport",
+   "grav": 0,
+   "reg": "NO",
+   "ville": "Garoua",
+   "titre": "Éliminatoires CAN 2027 : les Lions indomptables battent les Comores 3-1 à Garoua",
+   "resume": "Le 24 septembre au stade Roumdé Adjia de Garoua, le Cameroun a battu les Comores 3-1 pour son entrée dans les éliminatoires de la CAN 2027.",
+   "aut": [
+    "MINSEP"
+   ],
+   "src": "Jeune Afrique",
+   "url": "https://www.jeuneafrique.com/pays/cameroun/"
+  },
+  {
+   "id": "2026-09-douanes-objectif",
+   "date": "2026-09-10",
+   "cat": "economie",
+   "grav": 0,
+   "reg": "LT",
+   "ville": "Douala",
+   "titre": "Douanes : objectif de 111,1 milliards de FCFA de recettes en septembre",
+   "resume": "La Direction générale des douanes vise 111,1 milliards de FCFA de recettes pour septembre 2026, soit 9,1 % de plus qu'un an plus tôt.",
+   "aut": [
+    "MINFI"
+   ],
+   "src": "Business in Cameroon",
+   "url": "https://www.businessincameroon.com/"
+  }
+ ]
+}
