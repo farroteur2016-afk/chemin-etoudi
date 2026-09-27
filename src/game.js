@@ -116,6 +116,7 @@ function advanceDays(d,auto){
   if(window.CAB)CAB.tick(S);
   if(window.DOSS)DOSS.tick(S);
   if(window.REC)REC.tick(S);
+  if(window.CTR){CTR.tick(S);CTR.offerTick(S)}
   if(window.PB&&PB.tick)PB.tick(S);
   if(window.VOIX)VOIX.tick(S);
 }

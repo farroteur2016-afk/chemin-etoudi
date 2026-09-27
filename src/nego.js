@@ -53,20 +53,21 @@ NEGO.open=function(S,d){const t=tpl(d);if(!t)return NEGO.talk(S,d);const N=st(S,
   const opp=!!t.opp;const g=Math.round(stateGain(t,N.sel)*100);
   G.sheet('<span class="eyebrow">Négociation · '+esc(d.t)+'</span><h3 class="h2">Négocier avec : '+esc(t.n)+'</h3><p class="small muted">'+esc(d.x)+'</p>'+
    '<p class="small">'+(opp?"Ce que vous concédez : plus vous accordez, plus cela coûte au Trésor, mais plus vite le conflit s'apaise.":"Vos exigences : plus elles sont fortes, plus l'État y gagne, mais plus l'autre partie risque de se retirer.")+'</p>'+
-   t.terms.map((x,i)=>'<label class="f" for="ng'+i+'"><b>'+esc(x[1])+'</b><select id="ng'+i+'" data-ng="'+i+'">'+x[2].map((o,j)=>'<option value="'+j+'"'+(N.sel[i]===j?" selected":"")+'>'+esc(o)+'</option>').join("")+'</select></label>').join("")+
+   t.terms.map((x,i)=>'<label class="f" for="ng'+i+'"><b>'+esc(x[1])+'</b><select id="ng'+i+'" data-ng="'+i+'">'+x[2].map((o,j)=>'<option value="'+j+'"'+(N.sel[i]===j?" selected":"")+'>'+esc(o)+'</option>').join("")+'</select><input data-ngn="'+i+'" placeholder="Votre contre-proposition sur ce point (facultatif)" value="'+esc((N.notes||{})[i]||"")+'" style="width:100%;margin-top:4px"></label>').join("")+
    '<div class="card" style="gap:4px;background:var(--panel3)"><span class="small"><b>Intérêt pour l\'État de votre offre :</b> <span id="ngG">'+g+'</span> / 100 · <b>Patience de l\'autre partie :</b> '+"●".repeat(N.pat)+"○".repeat(3-N.pat)+'</span>'+
    (N.log.length?'<div class="vxlog" style="max-height:26vh;margin-top:6px">'+N.log.map(l=>'<div class="'+(l.me?"me":"it")+'">'+esc(l.t)+'</div>').join("")+'</div>':"")+'</div>'+
    '<div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn primary" id="ngGo">📨 Soumettre cette offre</button>'+(N.ok?'<button class="btn primary" id="ngSign">✍️ Signer l\'accord</button>':"")+'<button class="btn" id="ngTalk">💬 Discuter de vive voix</button><button class="btn ghost" id="ngMin">📋 Avis du ministre</button></div>'+
    '<p class="small muted">Vous pouvez aussi trancher directement le dossier sur votre bureau.</p>',el=>{el.setAttribute("data-noinstr","");el.dataset.nego="1";
     el.querySelectorAll("[data-ng]").forEach(s=>s.onchange=()=>{N.sel[+s.dataset.ng]=+s.value;N.ok=false;el.querySelector("#ngG").textContent=Math.round(stateGain(t,N.sel)*100)});
-    el.querySelector("#ngGo").onclick=()=>{offer(S,d,t,N);el.remove();NEGO.open(S,d)};
+    const rn=()=>{N.notes=N.notes||{};el.querySelectorAll("[data-ngn]").forEach(x=>{N.notes[x.dataset.ngn]=x.value.trim()})};
+    el.querySelector("#ngGo").onclick=()=>{rn();offer(S,d,t,N);el.remove();NEGO.open(S,d)};
     const sg=el.querySelector("#ngSign");if(sg)sg.onclick=()=>{el.remove();sign(S,d,t,N)};
     el.querySelector("#ngTalk").onclick=()=>{el.remove();NEGO.talk(S,d)};
     el.querySelector("#ngMin").onclick=()=>{const m=advice(S,d,t,N);N.log.push({t:"Ministre : "+m});say(m,"m");el.remove();NEGO.open(S,d)}})};
 const lc=s=>s.charAt(0).toLowerCase()+s.slice(1);
 function describe(t,sel){return t.terms.map((x,i)=>lc(x[1])+" : "+x[2][sel[i]]).join(" ; ")}
 function offer(S,d,t,N){N.round++;const c=cost(t,N.sel);const lim=t.opp?1-N.lim:N.lim;const over=t.opp?(lim-c):(c-lim);
-  N.log.push({me:1,t:"Vous proposez : "+describe(t,N.sel)+"."});
+  const nt=Object.entries(N.notes||{}).filter(([k,v])=>v);N.log.push({me:1,t:"Vous proposez : "+describe(t,N.sel)+"."+(nt.length?" Contre-propositions : "+nt.map(([k,v])=>lc(t.terms[+k][1])+" — "+v).join(" ; ")+".":"")});
   if(over<=0){N.ok=true;const m=t.opp?"Nous acceptons ces conditions. Nous appellerons à la reprise dès la signature.":"C'est exigeant, mais nous pouvons accepter ces conditions. Nous sommes prêts à signer.";N.log.push({t:cap(t.qui)+" : "+m});say(m);return}
   N.ok=false;N.pat=Math.max(0,N.pat-(over>.2?2:1));
   if(N.pat<=0){N.walk=true;const m=t.opp?"Vos propositions sont insuffisantes. La base décide de durcir le mouvement.":"Nous suspendons les discussions. D'autres pays nous font des offres plus raisonnables.";N.log.push({t:cap(t.qui)+" : "+m});say(m);

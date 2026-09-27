@@ -421,6 +421,7 @@ SYS.openMail=function(S,id){
   if(window.ACTU)acts+=ACTU.mailActs(S,it);
   if(window.DIR)acts+=DIR.mailActs(S,it);
   if(window.REC)acts+=REC.mailActs(S,it);
+  if(window.CTR)acts+=CTR.mailActs(it);
   if(window.PB&&PB.mailActs)acts+=PB.mailActs(S,it);
   if(window.NOTE)acts+=NOTE.mailActs(S,it);
   if(it.org&&window.VIE)acts+='<button class="btn primary" id="mOrg">Prendre des mesures</button>';
@@ -434,6 +435,7 @@ SYS.openMail=function(S,id){
     if(window.ACTU)ACTU.mailBind(S,it,el);
     if(window.DIR)DIR.mailBind(S,it,el);
     if(window.REC)REC.mailBind(S,it,el);
+    if(window.CTR)CTR.mailBind(S,it,el);
     if(window.PB&&PB.mailBind)PB.mailBind(S,it,el);
     if(window.NOTE)NOTE.mailBind(S,it,el);
     if(q("#mOrg"))q("#mOrg").onclick=()=>{el.remove();VIE.openOrg(S,it.org)};
@@ -569,19 +571,15 @@ SYS.renderDefense=function(S){
   const D=S.def,T=E.DEFENSE;const used=D.espUsed===S.m;
   let h='<div class="card"><span class="eyebrow">Forces de défense</span><div class="kv"><span>Militaires actifs (estimation)</span><b>'+fmt(D.eff)+'</b><span>Bataillon d\'intervention rapide</span><b>≥ '+fmt(D.bir)+'</b><span>Budget MINDEF</span><b>'+fmt(S.gov.alloc.MINDEF,1)+' Mds</b><span>Fournisseurs principaux</span><b>Chine, Russie, France, Israël</b></div><span class="small muted">Formation : '+esc(T.formations.join(", "))+'.</span></div>'+
    '<div class="card"><span class="eyebrow">Répartition des forces par théâtre</span><span class="small muted">Si un théâtre reçoit moins que son besoin, la sécurité s\'y dégrade. Le total fait 100 %.</span>'+T.theatres.map(t=>{const a=D.alloc[t.id],sec=t.id==="RES"?null:S.regs[t.id].sec;return'<div class="row" style="justify-content:space-between;border-bottom:1px dashed var(--line);padding-bottom:6px"><div style="flex:1;min-width:0"><b>'+esc(t.n)+'</b> '+(sec!=null?pill("sécurité "+Math.round(sec),sec<30?"bad":sec<55?"warn":"ok"):"")+'<br><span class="small muted">'+esc(t.op)+(t.need?" · besoin "+t.need+" %":"")+'</span></div><div class="row" style="flex-wrap:nowrap">'+(t.id!=="RES"?'<button class="btn small" data-dm="'+t.id+'">−</button>':"")+'<b style="font-family:var(--mono);min-width:44px;text-align:center">'+a+' %</b>'+(t.id!=="RES"?'<button class="btn small" data-dp="'+t.id+'">+</button>':"")+'</div></div>'}).join("")+'</div>'+
-   '<div class="card"><span class="eyebrow">Équipement (appel d\'offres international)</span>'+T.equipements.map(e=>'<div class="row" style="justify-content:space-between"><span>'+esc(e.n)+' <span class="small muted">≈ '+e.cout+' Mds</span></span><button class="btn small" data-eq="'+e.id+'"'+(D.equip.includes(e.id)?" disabled":"")+'>'+(D.equip.includes(e.id)?"Acquis":"Acheter")+'</button></div>').join("")+'</div>'+
-   '<div class="card"><span class="eyebrow">Renseignement extérieur (DGRE) · une mission par mois</span>'+E.ESPIONNAGE.map(x=>'<button class="choice" data-esp="'+x.id+'"'+(used?" disabled":"")+'><span class="t">'+esc(x.n)+'</span><span class="small muted">'+esc(x.d)+' Chances : '+Math.round(x.ok*100)+' %.</span></button>').join("")+'</div>';
+   (window.CTR?CTR.ordersHTML(S):"")+'<div class="card"><span class="eyebrow">Équipement (appel d\'offres international)</span><span class="small muted">Consultez les fournisseurs, comparez les prix et négociez avant toute commande.</span>'+T.equipements.map(e=>'<div class="row" style="justify-content:space-between"><span>'+esc(e.n)+' <span class="small muted">≈ '+e.cout+' Mds</span></span><button class="btn small" data-eq="'+e.id+'">'+(D.equip.includes(e.id)?"Commander à nouveau":"Consulter et négocier")+'</button></div>').join("")+'</div>'+
+   '<div class="card"><span class="eyebrow">Renseignement extérieur (DGRE) · une mission par mois</span>'+(window.CTR?CTR.missionHTML(S):"")+'<span class="small muted">Cliquer ouvre la fiche de la mission : vous réglez les moyens, la discrétion et la durée avant de décider. Rien n\'est lancé sans votre confirmation.</span>'+E.ESPIONNAGE.map(x=>'<button class="choice" data-esp="'+x.id+'"'+(used||(D.esp&&!D.esp.fin0)?" disabled":"")+'><span class="t">'+esc(x.n)+'</span><span class="small muted">'+esc(x.d)+' Chances : '+Math.round(x.ok*100)+' %.</span></button>').join("")+'</div>';
   panel().innerHTML=h;const P=panel();
   const mv=(id,d)=>{if(D.alloc.RES-d<0||D.alloc[id]+d<0)return;D.alloc[id]+=d;D.alloc.RES-=d;rerender()};
   P.querySelectorAll("[data-dp]").forEach(b=>b.onclick=()=>mv(b.dataset.dp,2));
   P.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>mv(b.dataset.dm,-2));
-  P.querySelectorAll("[data-eq]").forEach(b=>b.onclick=()=>{const e=T.equipements.find(x=>x.id===b.dataset.eq);S.nums.dette+=e.cout;D.equip.push(e.id);S.st.sec=clamp(S.st.sec+e.sec,0,100);if(e.reg)S.regs[e.reg].sec=clamp(S.regs[e.reg].sec+8,0,100);else{S.regs.EN.sec=clamp(S.regs.EN.sec+4,0,100);S.regs.NW.sec=clamp(S.regs.NW.sec+3,0,100);S.regs.SW.sec=clamp(S.regs.SW.sec+3,0,100)}
-    SYS.inbox(S,{from:"Ministère délégué à la Défense",t:"Contrat d'armement signé : "+e.n,b:"Appel d'offres international restreint (secret défense). Livraison et formation des équipages dans les prochains mois. Coût : "+e.cout+" milliards FCFA.",k:"info"});G.toast("Contrat signé.");rerender()});
-  P.querySelectorAll("[data-esp]").forEach(b=>b.onclick=()=>{const x=E.ESPIONNAGE.find(y=>y.id===b.dataset.esp);D.espUsed=S.m;const ok=Math.random()<x.ok;
-    if(ok){for(const k in x.gain)S.st[k]=clamp(S.st[k]+x.gain[k],0,100);if(x.reg)for(const r in x.reg)S.regs[r].sec=clamp(S.regs[r].sec+x.reg[r],0,100)}
-    else if(Math.random()<.5||x.scandale&&Math.random()<.6){for(const k in x.risk)S.st[k]=clamp(S.st[k]+x.risk[k],0,100)}
-    const txt=ok?"Mission réussie : "+x.n.toLowerCase()+". Informations exploitables transmises aux forces.":"Mission compromise"+(x.scandale?" : la presse révèle des écoutes, scandale national.":". Un agent a été identifié.");
-    SYS.inbox(S,{from:"Direction générale de la recherche extérieure",t:"Compte rendu de mission",b:txt,k:ok?"bonne":"alerte"});G.toast(ok?"Mission réussie":"Mission compromise");rerender()});
+  P.querySelectorAll("[data-eq]").forEach(b=>b.onclick=()=>{if(window.CTR)CTR.achat(S,b.dataset.eq)});
+  P.querySelectorAll("[data-esp]").forEach(b=>b.onclick=()=>{if(window.CTR)CTR.mission(S,b.dataset.esp)});
+  P.querySelectorAll("[data-esprec]").forEach(b=>b.onclick=()=>{if(window.CTR)CTR.recall(S)});
 };
 
 /* ---------- onglet Monde ---------- */

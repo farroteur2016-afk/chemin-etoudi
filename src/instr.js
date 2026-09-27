@@ -55,3 +55,27 @@ function custom(el,text,rep,hint){const S=G.S;const title=(el.querySelector(".h2
   hint(msg);say(msg);window.SYS.inbox(S,{from:"Cabinet",t:"Instruction : "+title.slice(0,70),b:"Votre consigne : « "+text+" »\n"+msg,k:"info",read:true});
   S.consignes=S.consignes||[];S.consignes.push({t:text,sur:title.slice(0,80),day:S.day});S.consignes=S.consignes.slice(-50);G.toast("Instruction enregistrée")}
 })();
+/* Chemin d'Etoudi — « Votre propre décision » : en bas de chaque onglet, un champ libre (écrit ou dicté) pour décider
+   directement, sans passer par les propositions par défaut ni par le cabinet. */
+(function(){
+"use strict";
+const G=window.GAME;const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const say=m=>{try{window.Audio2.speak(m,{voix:"f"})}catch(e){}};
+function tabName(){const t=document.querySelector('#tabs .tab[aria-selected="true"]');return t?t.textContent.trim():"Bureau"}
+function sub(){const b=document.querySelector('#panel .btn.primary[data-jt],#panel [aria-pressed="true"].btn');return b?b.textContent.trim():""}
+function box(){const P=document.getElementById("panel");const S=G.S;if(!P||!S||S.phase!=="play"||S.mode==="multi")return;if(P.querySelector("#freeBox"))return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;const d=document.createElement("div");d.id="freeBox";d.className="card";
+  d.innerHTML='<span class="eyebrow">✍️ Votre propre décision — '+esc(tabName())+'</span><span class="small muted">Écrivez ou dictez ce que vous voulez faire, directement, sans passer par les propositions ci-dessus ni par votre cabinet.</span>'+
+   '<textarea data-grow rows="2" id="fbTx" placeholder="Ex. : je veux que les détenus en attente de jugement depuis plus de 2 ans soient présentés à un juge sous 30 jours" style="width:100%"></textarea>'+
+   '<div class="row" style="gap:6px"><button class="btn primary" id="fbGo">Décider</button>'+(SR?'<button class="btn" id="fbMic" aria-pressed="false">🎙 Dicter</button>':"")+'</div><p class="small muted" id="fbHint"></p>';
+  P.appendChild(d);const tx=d.querySelector("#fbTx"),hint=t=>{d.querySelector("#fbHint").textContent=t||""};
+  const go=async()=>{let v=tx.value.trim();if(v.length<4)return G.toast("Écrivez ou dictez votre décision.");const ctx=tabName()+(sub()?" · "+sub():"");const rep=m=>{hint(m);say(m);G.toast(m.slice(0,140))};
+    tx.value="";if(window.NOTE&&NOTE.matches(v)){NOTE.handle(S,v,rep,{ctx});return}
+    if(window.VOIX&&/^(convoqu|recevoir|visite|va a|aller a|appelle|ouvre)/i.test(v)){VOIX.handle(v);return}
+    if(window.DIR){const n=window.DICO?DICO.n(v):v.toLowerCase();const txt=DIR.matches(n)?v:"Je veux "+v.charAt(0).toLowerCase()+v.slice(1);await DIR.handle(S,txt,rep,{force:true,ctx})}};
+  d.querySelector("#fbGo").onclick=go;tx.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();go()}};
+  const mic=d.querySelector("#fbMic");if(mic&&window.MIC){const ui=()=>{mic.textContent=MIC.want?"⏹ Micro activé":"🎙 Dicter";mic.classList.toggle("micon",MIC.want);mic.setAttribute("aria-pressed",MIC.want?"true":"false")};
+    MIC.bind({onText:t=>{tx.value=(tx.value.trim()?tx.value.trim()+" ":"")+t},onState:ui,alive:()=>d.isConnected&&document.activeElement===tx});mic.onclick=()=>{MIC.toggle();ui();tx.focus()}}}
+const start=()=>{const P=document.getElementById("panel");if(!P)return;new MutationObserver(()=>{if(!P.querySelector("#freeBox"))setTimeout(box,0)}).observe(P,{childList:true});box()};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
+})();
