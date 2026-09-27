@@ -175,7 +175,7 @@ function arrival(S,from,to,p,horsNorme){
     else if(S.pro){S.pro.xp+=1}}
   S.loc={reg:to.reg,v:to.v,lieu:to.lieu||null};
   G.advanceDays(hrs/24,false);
-  window.SYS.inbox(S,{from:"Votre agenda",t:"Arrivé à "+(to.lieu?to.lieu+", ":"")+to.v,b:VOY.MODES[p.mode].n+" · "+p.d+" km · "+dur(hrs)+" · "+F(p.cost)+(p.who!=="personnel"?" (payé par : "+p.who+")":"")+". "+extra.join(" "),k:extra.length?"alerte":"info",reg:to.reg,read:!extra.length});
+  window.SYS.inbox(S,{from:"Votre agenda",t:"Arrivé à "+(to.lieu?to.lieu+", ":"")+to.v,b:(p.legs?"Trajet en "+p.legs.length+" étapes : "+p.legs.map(l=>l.v+" ("+VOY.MODES[l.mode].n+", "+dur(l.hrs)+")").join(" ; ")+". Total":VOY.MODES[p.mode].n)+" · "+p.d+" km · "+dur(hrs)+" · "+F(p.cost)+(p.who!=="personnel"?" (payé par : "+p.who+")":"")+". "+extra.join(" "),k:extra.length?"alerte":"info",reg:to.reg,read:!extra.length});
   G.viewRegion(to.reg);G.toast("Arrivé à "+to.v+(extra.length?" · "+extra[0]:""));G.render();
 }
 /* ---------- agglomérations (pour la carte) ---------- */
@@ -206,11 +206,45 @@ VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.h
   const modeOf=()=>{if(st.moy!=="vehicule")return st.moy;if(st.typ==="incognito")st.esc="sans";if(st.esc==="complet")return r==="pres"?"cortege":"convoi";if(st.esc==="reduit")return"cortegeR";if(st.esc==="restreint")return"restreint";return st.drv?"chauffeur":"voiture"};
   const others=Object.keys(VOY.MODES).filter(k=>N.ok.includes(k)&&!["cortege","cortegeR","restreint","convoi","chauffeur","voiture"].includes(k));
   const vehOk=N.ok.some(k=>["cortege","convoi","chauffeur","voiture","restreint"].includes(k));
-  const draw=el=>{const m=modeOf();const p=VOY.plan(S,here,to,m);const drvNeeded=st.moy==="vehicule"&&st.esc==="sans"&&st.drv;const hasD=VOY.hasDriver(S,st.typ);
+  const vehDef=()=>{const o2=Object.assign({},st);if(st.moy!=="vehicule"){const f=fromMode(N.city);st.moy="vehicule";st.esc=f.esc;st.drv=f.drv}const m=modeOf();Object.assign(st,o2);return m};
+  const legName=k=>{const M=VOY.MODES[k];return M.ic+" "+(k==="voiture"?"Voiture (vous conduisez)":M.n)};
+  const nearAir=(v,kind)=>{const L=kind===1?AIR_COM:Object.keys(AIR);let best=null,bd=1e9;for(const n of L){const c=city(n);if(!c)continue;const d=n===v?0:roadKm(city(v),c);if(d<bd){bd=d;best=n}}return best};
+  const cityRef=n=>{const c=city(n);return{reg:c.reg,v:c.n}};
+  const viaAir=k=>{const kind=VOY.MODES[k].air;const A1=nearAir(here.v,kind),A2=nearAir(to.v,kind);if(!A1||!A2||A1===A2)return null;const veh=vehDef();const L=[];
+    if(A1!==here.v)L.push({from:{reg:here.reg,v:here.v},to:cityRef(A1),mode:veh});L.push({from:cityRef(A1),to:cityRef(A2),mode:k});if(A2!==to.v)L.push({from:cityRef(A2),to:{reg:to.reg,v:to.v,lieu:to.lieu},mode:veh});return L};
+  const legsSum=()=>{let hrs=0,cost=0,d=0,ok=true,why="",self=false,main=null;st.legs.forEach((l,i)=>{const q=VOY.plan(S,l.from,l.to,l.mode);l.q=q;if(!q.ok){ok=false;why=why||("Étape "+(i+1)+" : "+q.why);return}hrs+=q.hrs+(i?.5:0);cost+=q.cost;d+=q.d;if(!main||q.hrs>main.hrs)main=q;if(l.mode==="voiture")self=true});return{ok,why,hrs,cost,d,self,main}};
+  const legModes=()=>N.ok.slice().sort((a,b)=>(VOY.MODES[a].air?1:0)-(VOY.MODES[b].air?1:0));
+  const allCities=VOY.CITIES.slice().sort((a,b)=>a.n.localeCompare(b.n,"fr"));
+  const drawLegs=el=>{const T=legsSum();const needDrv=st.legs.some(l=>l.mode==="chauffeur")&&!VOY.hasDriver(S,st.typ);
+    el.querySelector("#vaBody").innerHTML='<div class="kv"><span>Départ</span><b>'+esc((here.lieu?here.lieu+", ":"")+here.v)+'</b><span>Arrivée</span><b>'+esc((to.lieu?to.lieu+", ":"")+to.v)+'</b></div>'+
+     '<span class="eyebrow">Votre trajet, étape par étape</span>'+st.legs.map((l,i)=>'<div class="card" style="gap:6px;padding:10px"><div class="row" style="justify-content:space-between"><b class="small">Étape '+(i+1)+' : '+esc(l.from.v)+' → '+(i<st.legs.length-1?'<select data-lto="'+i+'">'+allCities.map(c=>'<option'+(c.n===l.to.v?" selected":"")+'>'+esc(c.n)+'</option>').join("")+'</select>':esc(l.to.v))+'</b>'+(st.legs.length>1?'<button class="btn small ghost" data-ldel="'+i+'" aria-label="Supprimer l\'étape">🗑</button>':"")+'</div>'+
+       '<select data-lmode="'+i+'" style="width:100%">'+legModes().map(k=>'<option value="'+k+'"'+(k===l.mode?" selected":"")+'>'+esc(legName(k))+'</option>').join("")+'</select><span class="small '+(l.q.ok?"muted":"")+'" style="'+(l.q.ok?"":"color:var(--bad,#ef5350)")+'">'+(l.q.ok?dur(l.q.hrs)+" · "+l.q.d+" km · "+F(l.q.cost):esc(l.q.why))+'</span></div>').join("")+
+     '<div class="row"><button class="btn small" id="vaAdd">＋ Ajouter une étape</button><button class="btn small ghost" id="vaSimple">Revenir au choix simple</button></div>'+
+     (OFFICIEL.includes(r)?'<span class="eyebrow">Type de déplacement</span><div class="row">'+[["officiel","Officiel"],["prive","Privé"],["incognito","Incognito"]].map(([k,lb])=>'<button class="btn small'+(st.typ===k?" primary":"")+'" data-at="'+k+'">'+lb+'</button>').join("")+'</div>':"")+
+     (needDrv?'<div class="card" style="gap:6px"><b>Une étape « voiture avec chauffeur » mais vous n\'avez pas de chauffeur.</b><button class="btn primary" id="vaRec">Recruter un chauffeur ('+F(salDriver(S))+' par mois)</button></div>':"")+
+     '<div class="card" style="gap:4px"><b>Total : '+st.legs.length+' étape'+(st.legs.length>1?"s":"")+'</b><span class="small">'+(T.ok?dur(T.hrs)+" (correspondances comprises) · "+T.d+" km · "+F(T.cost)+(st.typ==="officiel"?"":" (à vos frais)"):esc(T.why))+'</span><span class="small" style="color:'+(T.self?"var(--warn,#f0a93a)":"var(--ok,#43c47c)")+'">'+(T.self?"Au moins une étape où vous conduisez : pendant celle-ci, travail à la voix uniquement.":"Vous êtes passager sur tout le trajet : travail possible (écrit et voix).")+'</span></div>'+
+     '<label class="row small" style="gap:8px"><input type="checkbox" id="vaW"'+(st.watch?" checked":"")+'> Regarder la vidéo du trajet (sinon, arrivée directe)</label>'+
+     '<div class="row"><button class="btn primary" id="vaGo"'+(T.ok&&!needDrv?"":" disabled")+'>Partir</button><button class="btn ghost" id="vaNo">Annuler</button></div>';
+    el.querySelectorAll("[data-lmode]").forEach(s=>s.onchange=()=>{st.legs[+s.dataset.lmode].mode=s.value;drawLegs(el)});
+    el.querySelectorAll("[data-lto]").forEach(s=>s.onchange=()=>{const i=+s.dataset.lto;const c=cityRef(s.value);st.legs[i].to=c;st.legs[i+1].from=c;drawLegs(el)});
+    el.querySelectorAll("[data-ldel]").forEach(b=>b.onclick=()=>{const i=+b.dataset.ldel;const L=st.legs;if(i<L.length-1){L[i+1].from=L[i].from}else{L[i-1].to=L[i].to}L.splice(i,1);drawLegs(el)});
+    el.querySelector("#vaAdd").onclick=()=>{const L=st.legs;const last=L[L.length-1];const mid=nearAir(last.from.v,2)||last.from.v;const midC=mid!==last.from.v&&mid!==last.to.v?cityRef(mid):cityRef(last.from.v===here.v?(allCities.find(c=>c.n!==here.v&&c.n!==to.v)||{n:here.v}).n:last.from.v);
+      L.splice(L.length-1,0,{from:last.from,to:midC,mode:last.mode});last.from=midC;drawLegs(el)};
+    el.querySelector("#vaSimple").onclick=()=>{st.legs=null;draw(el)};
+    el.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{st.typ=b.dataset.at;drawLegs(el)});
+    const rc=el.querySelector("#vaRec");if(rc)rc.onclick=()=>{const c=VOY.recruit(S);if(!c)return G.toast("Fonds insuffisants pour payer un chauffeur.");G.toast("Chauffeur recruté : "+c.n);drawLegs(el)};
+    el.querySelector("#vaW").onchange=e=>{st.watch=e.target.checked};
+    el.querySelector("#vaNo").onclick=()=>{el.remove();if(!gone&&o.cancel)o.cancel()};
+    el.querySelector("#vaGo").onclick=()=>{const T2=legsSum();if(!T2.ok)return G.toast(T2.why);
+      const q={ok:true,mode:T2.main.mode,hrs:T2.hrs,cost:T2.cost,d:T2.d,who:st.typ==="officiel"?T2.main.who:"personnel",sec:Math.min(...st.legs.map(l=>l.q.sec)),same:false,a:city(here.v),b:city(to.v),jam:false,typ:st.typ,self:T2.self&&T2.main.mode==="voiture",
+        legs:st.legs.map(l=>({v:l.from.v+" → "+l.to.v,mode:l.mode,hrs:l.q.hrs}))};
+      if(!pay(S,q))return G.toast("Fonds insuffisants pour ce trajet.");gone=true;el.remove();go(S,here,to,q,st.watch,false,o.cb)}};
+  const draw=el=>{if(st.legs)return drawLegs(el);const m=modeOf();const p=VOY.plan(S,here,to,m);const drvNeeded=st.moy==="vehicule"&&st.esc==="sans"&&st.drv;const hasD=VOY.hasDriver(S,st.typ);
     const self=st.moy==="vehicule"&&st.esc==="sans"&&!st.drv;const pv=k=>{const q=VOY.plan(S,here,to,k);return q.ok?dur(q.hrs)+" · "+F(q.cost):q.why};
     el.querySelector("#vaBody").innerHTML='<div class="kv"><span>Départ</span><b>'+esc((here.lieu?here.lieu+", ":"")+here.v)+'</b><span>Arrivée</span><b>'+esc((to.lieu?to.lieu+", ":"")+to.v)+'</b></div>'+
-     '<span class="eyebrow">Moyen de transport</span><div class="choices">'+(vehOk?'<button class="choice" data-am="vehicule" aria-pressed="'+(st.moy==="vehicule")+'" style="'+(st.moy==="vehicule"?"border-color:var(--y)":"")+'"><span class="t">🚗 Véhicule (voiture'+(ESC[r]?", cortège ou escorte":"")+')</span></button>':"")+
-       others.map(k=>{const q=VOY.plan(S,here,to,k);const M=VOY.MODES[k];return'<button class="choice" data-am="'+k+'"'+(q.ok?"":" disabled")+' aria-pressed="'+(st.moy===k)+'" style="'+(st.moy===k?"border-color:var(--y)":"")+(q.ok?"":";opacity:.45")+'"><span class="t">'+M.ic+" "+esc(M.n)+'</span><span class="small muted">'+esc(pv(k))+'</span></button>'}).join("")+'</div>'+
+     '<span class="eyebrow">Moyen de transport</span><div class="choices">'+(vehOk?'<button class="choice" data-am="vehicule" aria-pressed="'+(st.moy==="vehicule")+'" style="'+(st.moy==="vehicule"?"border-color:var(--y)":"")+'"><span class="t">🚗 Véhicule (voiture'+(ESC[r]?", cortège ou escorte":"")+')</span><span class="small muted">'+esc(pv(st.moy==="vehicule"?m:vehDef()))+'</span></button>':"")+
+       others.map(k=>{const q=VOY.plan(S,here,to,k);const M=VOY.MODES[k];const via=!q.ok&&M.air&&viaAir(k);return'<button class="choice" data-am="'+k+'"'+(q.ok?"":" disabled")+' aria-pressed="'+(st.moy===k)+'" style="'+(st.moy===k?"border-color:var(--y)":"")+(q.ok?"":";opacity:.45")+'"><span class="t">'+M.ic+" "+esc(M.n)+'</span><span class="small muted">'+esc(pv(k))+'</span></button>'+(via?'<button class="btn small" data-via="'+k+'">✈️ '+esc(M.n)+' via '+esc(via.map(l=>l.to.v).slice(0,-1).join(" et "))+' (voiture jusqu\'à l\'aéroport)</button>':"")}).join("")+'</div>'+
+     '<button class="btn small" id="vaLegs">✏️ Composer ou modifier le trajet (plusieurs étapes, plusieurs moyens)</button>'+
      (OFFICIEL.includes(r)?'<span class="eyebrow">Type de déplacement</span><div class="row">'+[["officiel","Officiel"],["prive","Privé"],["incognito","Incognito"]].map(([k,l])=>'<button class="btn small'+(st.typ===k?" primary":"")+'" data-at="'+k+'">'+l+'</button>').join("")+'</div><p class="small muted">'+(st.typ==="officiel"?"Frais pris en charge par "+(r==="pres"?"l'État":r==="min"?"le ministère":r==="maire"?"la commune":r==="dg"?"l'entreprise":"l'institution")+", protocole normal.":st.typ==="prive"?"À vos frais, protocole allégé.":"Sans protocole ni escorte, à vos frais : discret, mais plus risqué.")+'</p>':"")+
      (st.moy==="vehicule"&&ESC[r]&&st.typ!=="incognito"?'<span class="eyebrow">'+(r==="pres"?"Cortège":"Escorte")+'</span><div class="choices">'+ESC[r].map(([k,l])=>'<label class="row small" style="gap:8px"><input type="radio" name="vaEsc" value="'+k+'"'+(st.esc===k?" checked":"")+'> '+esc(l)+'</label>').join("")+'</div>':"")+
      (st.moy==="vehicule"?'<span class="eyebrow">Conduite</span>'+(st.esc!=="sans"?'<p class="small">Les véhicules du '+(r==="pres"?"cortège":"convoi")+' sont conduits par des chauffeurs de l\'État.</p>':
@@ -222,6 +256,8 @@ VOY.ask=function(S,to,o){o=o||{};if(!S||S.phase!=="play")return;const here=VOY.h
      '<label class="row small" style="gap:8px"><input type="checkbox" id="vaW"'+(st.watch?" checked":"")+'> Regarder la vidéo du trajet (sinon, arrivée directe)</label>'+
      '<div class="row"><button class="btn primary" id="vaGo"'+(p.ok&&!(drvNeeded&&!hasD)?"":" disabled")+'>Partir</button><button class="btn ghost" id="vaNo">Annuler</button></div>';
     el.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{st.moy=b.dataset.am;draw(el)});
+    el.querySelectorAll("[data-via]").forEach(b=>b.onclick=()=>{st.legs=viaAir(b.dataset.via);draw(el)});
+    el.querySelector("#vaLegs").onclick=()=>{st.legs=[{from:{reg:here.reg,v:here.v},to:{reg:to.reg,v:to.v,lieu:to.lieu},mode:modeOf()}];draw(el)};
     el.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{st.typ=b.dataset.at;draw(el)});
     el.querySelectorAll("input[name=vaEsc]").forEach(i=>i.onchange=()=>{st.esc=i.value;if(st.esc!=="sans")st.drv=true;draw(el)});
     const dv=el.querySelector("#vaDrv");if(dv)dv.onchange=()=>{st.drv=dv.checked;draw(el)};
